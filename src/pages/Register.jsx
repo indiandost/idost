@@ -1,0 +1,570 @@
+import React, { useState, useCallback } from "react";
+import { useNavigate, Link } from "react-router-dom";
+
+export default function Register() {
+  const navigate = useNavigate();
+  const API = import.meta.env.VITE_API_URL;
+
+  const [form, setForm] = useState({
+    user: "",
+    pass: "",
+    name: "",
+    dob: "",
+    city: "",
+    email: "",
+    telephone: ""
+  });
+
+  const [errors, setErrors] = useState({});
+
+  const [userExists, setUserExists] = useState(false);
+  const [checkingUser, setCheckingUser] = useState(false);
+
+  const [emailExists, setEmailExists] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+
+  // ✅ Notice State
+  const [notice, setNotice] = useState({
+    type: "",
+    message: ""
+  });
+
+  // -----------------------------
+  // Handle Change
+  // -----------------------------
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+
+    setErrors((prev) => ({
+      ...prev,
+      [name]: ""
+    }));
+
+    // Clear notice while typing
+    setNotice({
+      type: "",
+      message: ""
+    });
+
+    // Username Check
+    if (name === "user") {
+      setUserExists(false);
+
+      if (value.trim().length >= 3) {
+        checkUsername(value.trim());
+      }
+    }
+
+    // Email Check
+    if (name === "email") {
+      setEmailExists(false);
+
+      if (/\S+@\S+\.\S+/.test(value)) {
+        checkEmail(value.trim());
+      }
+    }
+  };
+
+  // -----------------------------
+  // Username Check
+  // -----------------------------
+  const checkUsername = useCallback(
+    async (username) => {
+      try {
+        setCheckingUser(true);
+
+        const res = await fetch(`${API}/api/check-username`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ user: username })
+        });
+
+        const data = await res.json();
+
+        const exists = Boolean(data?.exists);
+
+        setUserExists(exists);
+
+        // ✅ Notice
+        setNotice({
+          type: exists ? "error" : "success",
+          message: exists
+            ? "Username already exists ❌"
+            : "Username available ✅"
+        });
+      } catch (error) {
+        console.error("Username check failed:", error);
+
+        setNotice({
+          type: "error",
+          message: "Unable to check username"
+        });
+      } finally {
+        setCheckingUser(false);
+      }
+    },
+    [API]
+  );
+
+  // -----------------------------
+  // Email Check
+  // -----------------------------
+  const checkEmail = useCallback(
+    async (email) => {
+      try {
+        setCheckingEmail(true);
+
+        const res = await fetch(`${API}/api/check-email`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ email })
+        });
+
+        const data = await res.json();
+
+        const exists = Boolean(data?.exists);
+
+        setEmailExists(exists);
+
+        // ✅ Notice
+        setNotice({
+          type: exists ? "error" : "success",
+          message: exists
+            ? "Email already exists ❌"
+            : "Email available ✅"
+        });
+      } catch (error) {
+        console.error("Email check failed:", error);
+
+        setNotice({
+          type: "error",
+          message: "Unable to check email"
+        });
+      } finally {
+        setCheckingEmail(false);
+      }
+    },
+    [API]
+  );
+
+  // -----------------------------
+  // Validation
+  // -----------------------------
+  const validate = () => {
+    const newErrors = {};
+
+    if (!form.user.trim()) {
+      newErrors.user = "Username required";
+    } else if (form.user.trim().length < 3) {
+      newErrors.user = "Minimum 3 characters";
+    }
+
+    if (!form.pass) {
+      newErrors.pass = "Password required";
+    } else if (form.pass.length < 4) {
+      newErrors.pass = "Minimum 4 characters";
+    }
+
+    if (!form.name.trim()) {
+      newErrors.name = "Name required";
+    }
+
+    if (!form.dob) {
+      newErrors.dob = "DOB required";
+    }
+
+    if (!form.city.trim()) {
+      newErrors.city = "City required";
+    }
+
+    if (!form.email.trim()) {
+      newErrors.email = "Email required";
+    } else if (!/\S+@\S+\.\S+/.test(form.email)) {
+      newErrors.email = "Invalid email";
+    }
+
+    if (!form.telephone.trim()) {
+      newErrors.telephone = "Phone required";
+    } else if (!/^\d{10}$/.test(form.telephone)) {
+      newErrors.telephone = "Must be exactly 10 digits";
+    }
+
+    if (userExists) {
+      newErrors.user = "Username already exists";
+    }
+
+    if (emailExists) {
+      newErrors.email = "Email already exists";
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // -----------------------------
+  // Send Data
+  // -----------------------------
+  const sendData = async (lat = null, lng = null) => {
+    try {
+      setLoading(true);
+
+      const res = await fetch(`${API}/api/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          ...form,
+          latitude: lat,
+          longitude: lng
+        })
+      });
+
+      const data = await res.json();
+
+      if (data?.success) {
+        setNotice({
+          type: "success",
+          message: "Registered successfully ✅"
+        });
+
+        setTimeout(() => {
+          navigate("/login");
+        }, 1200);
+      } else {
+        setNotice({
+          type: "error",
+          message: data?.message || "Registration failed ❌"
+        });
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+
+      setNotice({
+        type: "error",
+        message: "Server error ❌"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // -----------------------------
+  // Register
+  // -----------------------------
+  const handleRegister = async () => {
+    if (!validate()) return;
+
+    if (checkingUser || checkingEmail) {
+      setNotice({
+        type: "error",
+        message: "Please wait for validation"
+      });
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      sendData();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        sendData(
+          position.coords.latitude,
+          position.coords.longitude
+        );
+      },
+      () => {
+        sendData();
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 5000,
+        maximumAge: 0
+      }
+    );
+  };
+
+  return (
+<div className="min-h-screen overflow-hidden flex items-center justify-center bg-gray-900 text-white px-4 relative">
+
+  {/* Background Glow */}
+  <div className="absolute w-72 h-72 bg-pink-600/20 rounded-full blur-3xl top-0 left-0"></div>
+  <div className="absolute w-72 h-72 bg-blue-600/20 rounded-full blur-3xl bottom-0 right-0"></div>
+
+  <div className="relative bg-gray-800/95 backdrop-blur-md border border-gray-700 p-8 rounded-3xl w-full max-w-sm shadow-2xl space-y-4">
+
+    {/* LOGO */}
+    <div className="flex flex-col items-center justify-center mb-2">
+
+      <div className="w-20 h-20 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center shadow-lg">
+
+        {/* Replace with your image if needed */}
+        <span className="text-3xl font-extrabold text-white">
+          ID
+        </span>
+
+      </div>
+
+      <h1 className="text-3xl font-extrabold mt-4 bg-gradient-to-r from-pink-400 to-blue-400 bg-clip-text text-transparent">
+        IndianDost
+      </h1>
+
+      <p className="text-gray-400 text-sm mt-1">
+        Connect • Chat • Meet
+      </p>
+
+    </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleRegister();
+        }}
+        className="w-full max-w-sm bg-gray-800 p-6 rounded-2xl shadow-xl space-y-4"
+      >
+        <h2 className="text-2xl font-bold text-center">
+          Register
+        </h2>
+
+        {/* ✅ NOTICE BOX */}
+        {notice.message && (
+          <div
+            className={`p-3 rounded-lg text-sm font-medium border
+              ${
+                notice.type === "error"
+                  ? "bg-red-500/10 text-red-300 border-red-500"
+                  : "bg-green-500/10 text-green-300 border-green-500"
+              }
+            `}
+          >
+            {notice.message}
+          </div>
+        )}
+
+        {/* Username */}
+        <div>
+          <input
+            type="text"
+            name="user"
+            placeholder="Username"
+            value={form.user}
+            onChange={handleChange}
+            autoComplete="username"
+            className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white
+              ${
+                errors.user
+                  ? "border-red-500"
+                  : "border-gray-600 focus:border-green-500"
+              }`}
+          />
+
+          {checkingUser && (
+            <p className="text-yellow-400 text-sm mt-1">
+              Checking username...
+            </p>
+          )}
+
+          {errors.user && (
+            <p className="text-red-400 text-sm mt-1">
+              {errors.user}
+            </p>
+          )}
+        </div>
+
+        {/* Password */}
+        <div>
+          <input
+            type="password"
+            name="pass"
+            placeholder="Password"
+            value={form.pass}
+            onChange={handleChange}
+            autoComplete="new-password"
+            className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white
+              ${
+                errors.pass
+                  ? "border-red-500"
+                  : "border-gray-600 focus:border-green-500"
+              }`}
+          />
+
+          {errors.pass && (
+            <p className="text-red-400 text-sm mt-1">
+              {errors.pass}
+            </p>
+          )}
+        </div>
+
+        {/* Name */}
+        <div>
+          <input
+            type="text"
+            name="name"
+            placeholder="Full Name"
+            value={form.name}
+            onChange={handleChange}
+            className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white
+              ${
+                errors.name
+                  ? "border-red-500"
+                  : "border-gray-600 focus:border-green-500"
+              }`}
+          />
+
+          {errors.name && (
+            <p className="text-red-400 text-sm mt-1">
+              {errors.name}
+            </p>
+          )}
+        </div>
+
+        {/* Email */}
+        <div>
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            value={form.email}
+            onChange={handleChange}
+            autoComplete="email"
+            className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white
+              ${
+                errors.email
+                  ? "border-red-500"
+                  : "border-gray-600 focus:border-green-500"
+              }`}
+          />
+
+          {checkingEmail && (
+            <p className="text-yellow-400 text-sm mt-1">
+              Checking email...
+            </p>
+          )}
+
+          {errors.email && (
+            <p className="text-red-400 text-sm mt-1">
+              {errors.email}
+            </p>
+          )}
+        </div>
+
+        {/* Phone */}
+        <div>
+          <input
+            type="tel"
+            name="telephone"
+            placeholder="Phone Number"
+            value={form.telephone}
+            onChange={handleChange}
+            maxLength={10}
+            className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white
+              ${
+                errors.telephone
+                  ? "border-red-500"
+                  : "border-gray-600 focus:border-green-500"
+              }`}
+          />
+
+          {errors.telephone && (
+            <p className="text-red-400 text-sm mt-1">
+              {errors.telephone}
+            </p>
+          )}
+        </div>
+
+        {/* DOB */}
+        <div>
+          <input
+            type="date"
+            name="dob"
+            value={form.dob}
+            onChange={handleChange}
+            className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white
+              ${
+                errors.dob
+                  ? "border-red-500"
+                  : "border-gray-600 focus:border-green-500"
+              }`}
+          />
+
+          {errors.dob && (
+            <p className="text-red-400 text-sm mt-1">
+              {errors.dob}
+            </p>
+          )}
+        </div>
+
+        {/* City */}
+        <div>
+          <input
+            type="text"
+            name="city"
+            placeholder="City"
+            value={form.city}
+            onChange={handleChange}
+            className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white
+              ${
+                errors.city
+                  ? "border-red-500"
+                  : "border-gray-600 focus:border-green-500"
+              }`}
+          />
+
+          {errors.city && (
+            <p className="text-red-400 text-sm mt-1">
+              {errors.city}
+            </p>
+          )}
+        </div>
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={
+            loading ||
+            checkingUser ||
+            checkingEmail ||
+            userExists ||
+            emailExists
+          }
+          className={`w-full py-3 rounded-lg font-semibold transition
+            ${
+              loading ||
+              checkingUser ||
+              checkingEmail ||
+              userExists ||
+              emailExists
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-green-500 hover:bg-green-600"
+            }`}
+        >
+          {loading ? "Registering..." : "Register"}
+        </button>
+
+        {/* Login */}
+        <div className="text-center text-sm">
+          <Link
+            to="/login"
+            className="text-blue-400 hover:text-blue-300"
+          >
+            ← Back to Login
+          </Link>
+        </div>
+      </form>
+    </div>
+    </div>
+  );
+}
