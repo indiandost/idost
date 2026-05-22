@@ -4,6 +4,7 @@
   "webDir": "dist",
     "server": {
     "url": "https://indiandost.com/idost",
-    "cleartext": true
+    "cleartext": true,
+    "androidScheme": "https"
   }
 }

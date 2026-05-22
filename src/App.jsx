@@ -7,7 +7,8 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
-
+import { Geolocation } from "@capacitor/geolocation";
+import { Camera } from "@capacitor/camera";
 import Splash from "./Splash";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
@@ -475,7 +476,34 @@ export default function App() {
   useEffect(() => {
     incomingCallRef.current = incomingCall;
   }, [incomingCall]);
+///ask one time permissions
+  useEffect(() => {
 
+    const askPermissions = async () => {
+
+      try {
+
+        // LOCATION
+        await Geolocation.requestPermissions();
+
+        // CAMERA
+        await Camera.requestPermissions();
+
+        // MIC
+        await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: true
+        });
+
+      } catch (err) {
+        console.log(err);
+      }
+
+    };
+
+    askPermissions();
+
+  }, []);
   //check meeting
   /*useEffect(() => {
 
