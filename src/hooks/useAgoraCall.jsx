@@ -5,7 +5,6 @@ import socket from "../socket";
 const APP_ID = import.meta.env.VITE_AGORA_APP_ID;
 
 export default function useAgoraCall(friendId) {
-
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
 
@@ -21,28 +20,20 @@ export default function useAgoraCall(friendId) {
   const [inCall, setInCall] = useState(false);
   const [calling, setCalling] = useState(false);
 
-  const [callStatus, setCallStatus] =
-    useState("");
+  const [callStatus, setCallStatus] = useState("");
 
-  const [isMuted, setIsMuted] =
-    useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
-  const [isCameraOn, setIsCameraOn] =
-    useState(true);
+  const [isCameraOn, setIsCameraOn] = useState(true);
 
-  const myId = JSON.parse(
-    localStorage.getItem("user")
-  )?.srno;
+  const myId = JSON.parse(localStorage.getItem("user"))?.srno;
 
   // =========================
   // CLEANUP
   // =========================
   const cleanupAgora = async () => {
-
     try {
-
-      const { mic, cam } =
-        tracksRef.current;
+      const { mic, cam } = tracksRef.current;
 
       if (mic) {
         mic.stop();
@@ -55,7 +46,6 @@ export default function useAgoraCall(friendId) {
       }
 
       if (clientRef.current) {
-
         clientRef.current.removeAllListeners();
 
         await clientRef.current.leave();
@@ -77,7 +67,6 @@ export default function useAgoraCall(friendId) {
       if (remoteVideoRef.current) {
         remoteVideoRef.current.innerHTML = "";
       }
-
     } catch (err) {
       console.log(err);
     }
@@ -87,22 +76,15 @@ export default function useAgoraCall(friendId) {
   // SOCKET EVENTS
   // =========================
   useEffect(() => {
-
-    const acceptedHandler = async (
-      data
-    ) => {
-
+    const acceptedHandler = async (data) => {
       console.log("✅ ACCEPTED");
 
       setCalling(false);
 
-     await joinAgora(
-  data?.type || "video"
-);
+      await joinAgora(data?.type || "video");
     };
 
     const rejectedHandler = async () => {
-
       console.log("❌ REJECTED");
 
       alert("Call Rejected");
@@ -111,7 +93,6 @@ export default function useAgoraCall(friendId) {
     };
 
     const endedHandler = async () => {
-
       console.log("📴 CALL ENDED");
 
       await endCall(false);
@@ -121,50 +102,26 @@ export default function useAgoraCall(friendId) {
     socket.off("callRejected");
     socket.off("callEnded");
 
-    socket.on(
-      "callAccepted",
-      acceptedHandler
-    );
+    socket.on("callAccepted", acceptedHandler);
 
-    socket.on(
-      "callRejected",
-      rejectedHandler
-    );
+    socket.on("callRejected", rejectedHandler);
 
-    socket.on(
-      "callEnded",
-      endedHandler
-    );
+    socket.on("callEnded", endedHandler);
 
     return () => {
+      socket.off("callAccepted", acceptedHandler);
 
-      socket.off(
-        "callAccepted",
-        acceptedHandler
-      );
+      socket.off("callRejected", rejectedHandler);
 
-      socket.off(
-        "callRejected",
-        rejectedHandler
-      );
-
-      socket.off(
-        "callEnded",
-        endedHandler
-      );
+      socket.off("callEnded", endedHandler);
     };
-
   }, []);
 
   // =========================
   // JOIN AGORA
   // =========================
-  const joinAgora = async (
-    type = "video"
-  ) => {
-
+  const joinAgora = async (type = "video") => {
     try {
-
       if (joinedRef.current) {
         return;
       }
@@ -172,113 +129,64 @@ export default function useAgoraCall(friendId) {
       joinedRef.current = true;
 
       setInCall(true);
-      window.history.replaceState(
-        {},
-        document.title,
-        window.location.pathname
-      );
-      const client =
-        AgoraRTC.createClient({
-          mode: "rtc",
-          codec: "vp8",
-        });
+      window.history.replaceState({}, document.title, window.location.pathname);
+      const client = AgoraRTC.createClient({
+        mode: "rtc",
+        codec: "vp8",
+      });
 
       clientRef.current = client;
 
-      const channel =
-        [myId, friendId]
-          .sort()
-          .join("_");
+      const channel = [myId, friendId].sort().join("_");
 
       // =====================
       // REMOTE USER
       // =====================
-      client.on(
-        "user-published",
-        async (user, mediaType) => {
+      client.on("user-published", async (user, mediaType) => {
+        console.log("REMOTE USER:", mediaType);
 
-          console.log(
-            "REMOTE USER:",
-            mediaType
-          );
+        await client.subscribe(user, mediaType);
 
-          await client.subscribe(
-            user,
-            mediaType
-          );
+        // VIDEO
+        if (mediaType === "video") {
+          const remoteDiv = remoteVideoRef.current;
 
-          // VIDEO
-          if (
-            mediaType === "video"
-          ) {
+          console.log("REMOTE DIV:", remoteDiv);
 
-            const remoteDiv =
-              remoteVideoRef.current;
+          if (remoteDiv && user.videoTrack) {
+            remoteDiv.innerHTML = "";
 
-            console.log(
-              "REMOTE DIV:",
-              remoteDiv
-            );
+            user.videoTrack.play(remoteDiv);
 
-            if (
-              remoteDiv &&
-              user.videoTrack
-            ) {
-
-              remoteDiv.innerHTML = "";
-
-              user.videoTrack.play(
-                remoteDiv
-              );
-
-              console.log(
-                "REMOTE VIDEO PLAYING"
-              );
-            }
+            console.log("REMOTE VIDEO PLAYING");
           }
-
-          // AUDIO
-          if (
-            mediaType === "audio"
-          ) {
-        console.log(
-            "PLAY REMOTE AUDIO"
-          );
-            user.audioTrack?.play();
-          }
-
-          setCalling(false);
-          setCallStatus("Connected");
         }
-      );
 
-      client.on(
-        "user-left",
-        async () => {
-
-          console.log(
-            "REMOTE LEFT"
-          );
-
-          await endCall(false);
+        // AUDIO
+        if (mediaType === "audio") {
+          console.log("PLAY REMOTE AUDIO");
+          user.audioTrack?.play();
         }
-      );
+
+        setCalling(false);
+        setCallStatus("Connected");
+      });
+
+      client.on("user-left", async () => {
+        console.log("REMOTE LEFT");
+
+        await endCall(false);
+      });
 
       // =====================
       // JOIN
       // =====================
-      await client.join(
-        APP_ID,
-        channel,
-        null,
-        Number(myId)
-      );
+      await client.join(APP_ID, channel, null, Number(myId));
 
       // =====================
       // MIC
       // =====================
-      const mic =
-        await AgoraRTC.createMicrophoneAudioTrack();
+      const mic = await AgoraRTC.createMicrophoneAudioTrack();
 
       // =====================
       // CAMERA
@@ -286,9 +194,7 @@ export default function useAgoraCall(friendId) {
       let cam = null;
 
       if (type === "video") {
-
-        cam =
-          await AgoraRTC.createCameraVideoTrack();
+        cam = await AgoraRTC.createCameraVideoTrack();
       }
 
       tracksRef.current = {
@@ -299,45 +205,26 @@ export default function useAgoraCall(friendId) {
       // =====================
       // PLAY LOCAL
       // =====================
-      if (
-        cam &&
-        localVideoRef.current
-      ) {
+      if (cam && localVideoRef.current) {
+        console.log("PLAY LOCAL VIDEO");
 
-        console.log(
-          "PLAY LOCAL VIDEO"
-        );
+        localVideoRef.current.innerHTML = "";
 
-        localVideoRef.current.innerHTML =
-          "";
-
-        cam.play(
-          localVideoRef.current
-        );
+        cam.play(localVideoRef.current);
       }
 
       // =====================
       // PUBLISH
       // =====================
-      const tracks =
-        [mic, cam].filter(Boolean);
+      const tracks = [mic, cam].filter(Boolean);
 
-      await client.publish(
-        tracks
-      );
+      await client.publish(tracks);
 
-      console.log(
-        "TRACKS PUBLISHED"
-      );
+      console.log("TRACKS PUBLISHED");
 
       setInCall(true);
-
     } catch (err) {
-
-      console.log(
-        "JOIN ERROR",
-        err
-      );
+      console.log("JOIN ERROR", err);
 
       joinedRef.current = false;
 
@@ -348,16 +235,9 @@ export default function useAgoraCall(friendId) {
   // =========================
   // START CALL
   // =========================
-  const startCall = async (
-    type = "video"
-  ) => {
-
+  const startCall = async (type = "video") => {
     try {
-
-      if (
-        calling ||
-        joinedRef.current
-      ) {
+      if (calling || joinedRef.current) {
         return;
       }
 
@@ -373,9 +253,7 @@ export default function useAgoraCall(friendId) {
         to: friendId,
         type,
       });
-
     } catch (err) {
-
       console.log(err);
 
       await endCall(false);
@@ -385,21 +263,13 @@ export default function useAgoraCall(friendId) {
   // =========================
   // END CALL
   // =========================
-  const endCall = async (
-    emit = true
-  ) => {
-
+  const endCall = async (emit = true) => {
     try {
-
       if (emit) {
-
-        socket.emit(
-          "endCall",
-          {
-            from: myId,
-            to: friendId,
-          }
-        );
+        socket.emit("endCall", {
+          from: myId,
+          to: friendId,
+        });
       }
 
       await cleanupAgora();
@@ -411,9 +281,7 @@ export default function useAgoraCall(friendId) {
 
       setIsMuted(false);
       setIsCameraOn(true);
-
     } catch (err) {
-
       console.log(err);
     }
   };
@@ -421,91 +289,59 @@ export default function useAgoraCall(friendId) {
   // =========================
   // MUTE
   // =========================
-  const toggleMute =
-    async () => {
+  const toggleMute = async () => {
+    const { mic } = tracksRef.current;
 
-      const { mic } =
-        tracksRef.current;
+    if (!mic) return;
 
-      if (!mic) return;
+    const next = !isMuted;
 
-      const next =
-        !isMuted;
+    await mic.setEnabled(!next);
 
-      await mic.setEnabled(
-        !next
-      );
-
-      setIsMuted(next);
-    };
+    setIsMuted(next);
+  };
 
   // =========================
   // CAMERA
   // =========================
-  const toggleCamera =
-    async () => {
+  const toggleCamera = async () => {
+    const { cam } = tracksRef.current;
 
-      const { cam } =
-        tracksRef.current;
+    if (!cam) return;
 
-      if (!cam) return;
+    const next = !isCameraOn;
 
-      const next =
-        !isCameraOn;
+    await cam.setEnabled(next);
 
-      await cam.setEnabled(
-        next
-      );
-
-      setIsCameraOn(next);
-    };
+    setIsCameraOn(next);
+  };
 
   // =========================
   // FLIP
   // =========================
-  const flipCamera =
-    async () => {
+  const flipCamera = async () => {
+    try {
+      const { cam } = tracksRef.current;
 
-      try {
+      if (!cam) return;
 
-        const { cam } =
-          tracksRef.current;
+      const cameras = await AgoraRTC.getCameras();
 
-        if (!cam) return;
+      if (cameras.length < 2) return;
 
-        const cameras =
-          await AgoraRTC.getCameras();
+      const current = cam.getTrackLabel();
 
-        if (
-          cameras.length < 2
-        ) return;
+      const next = cameras.find((c) => !current.includes(c.label));
 
-        const current =
-          cam.getTrackLabel();
-
-        const next =
-          cameras.find(
-            (c) =>
-              !current.includes(
-                c.label
-              )
-          );
-
-        if (next) {
-
-          await cam.setDevice(
-            next.deviceId
-          );
-        }
-
-      } catch (err) {
-
-        console.log(err);
+      if (next) {
+        await cam.setDevice(next.deviceId);
       }
-    };
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   return {
-
     localVideoRef,
     remoteVideoRef,
 

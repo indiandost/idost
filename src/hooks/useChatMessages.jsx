@@ -16,9 +16,7 @@ export default function useChatMessages(friendId) {
 
     const loadChat = async () => {
       try {
-        const res = await fetch(
-          `${API}/api/chat/${myId}/${friendId}`
-        );
+        const res = await fetch(`${API}/api/chat/${myId}/${friendId}`);
 
         const data = await res.json();
 
@@ -40,9 +38,7 @@ export default function useChatMessages(friendId) {
     const handler = (data) => {
       setMessages((prev) => {
         const exists = prev.some(
-          (m) =>
-            m.from === data.from &&
-            m.createdAt === data.createdAt
+          (m) => m.from === data.from && m.createdAt === data.createdAt
         );
 
         if (exists) return prev;

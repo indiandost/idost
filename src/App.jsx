@@ -35,7 +35,6 @@ import GameHome from "./pages/GameHome";
 import JamRoom from "./pages/JamRoom";
 import CreateJamRoom from "./pages/CreateJamRoom";
 
-
 import socket from "./socket";
 import {
   Home as HomeIcon,
@@ -61,61 +60,49 @@ function PrivateRoute({ children }) {
 function Navbar() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
- const [menuOpen, setMenuOpen] =  useState(false);
- const [searchOpen, setSearchOpen] =  useState(false);
- const [search, setSearch] = useState("");
-const [searchResults, setSearchResults] = useState([]);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
 
-const { coins, setCoins } = useCoins();
+  const { coins, setCoins } = useCoins();
   useLoadCoins(user?.srno);
-socket.on("coinUpdate", (data) => {
-  setCoins(data.coins);
-});
- //reward popup 
-useEffect(() => {  socket.on( "rewardReceived",
-    (data) => {
-      alert( `🎉 Reward Earned! ${data.coins} Coins${data.value}`
-      );
+  socket.on("coinUpdate", (data) => {
+    setCoins(data.coins);
+  });
+  //reward popup
+  useEffect(() => {
+    socket.on("rewardReceived", (data) => {
+      alert(`🎉 Reward Earned! ${data.coins} Coins${data.value}`);
     });
-  return () => {
-    socket.off(
-      "rewardReceived"
-    );};
-}, []);
+    return () => {
+      socket.off("rewardReceived");
+    };
+  }, []);
 
-//search api call
-useEffect(() => {
-console.log("viewer", user?.srno);
-  if (!search.trim()) {
-    setSearchResults([]);
-    return;
-  }
- const delay = setTimeout(() => {
-    fetch(
-      `${API}/users/search?q=${search}&viewer=${user?.srno}`
-    )
-      .then(res => res.json())
-      .then(data => {
+  //search api call
+  useEffect(() => {
+    console.log("viewer", user?.srno);
+    if (!search.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const delay = setTimeout(() => {
+      fetch(`${API}/users/search?q=${search}&viewer=${user?.srno}`)
+        .then((res) => res.json())
+        .then((data) => {
+          console.log(data);
 
-        console.log(data);
+          setSearchResults(Array.isArray(data.users) ? data.users : []);
+        })
+        .catch((err) => {
+          console.log(err);
+          setSearchResults([]);
+        });
+    }, 300);
 
-        setSearchResults(
-          Array.isArray(data.users)
-            ? data.users
-            : []
-        );
-
-      })
-      .catch(err => {
-        console.log(err);
-        setSearchResults([]);
-      });
-
-  }, 300);
-
-  return () => clearTimeout(delay);
-
-}, [search]);
+    return () => clearTimeout(delay);
+  }, [search]);
 
   const logout = () => {
     const u = JSON.parse(localStorage.getItem("user"));
@@ -124,7 +111,7 @@ console.log("viewer", user?.srno);
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: u.srno }),
     }).then(() => {
-          socket.disconnect();
+      socket.disconnect();
       localStorage.removeItem("user");
       navigate("/login");
     });
@@ -132,58 +119,44 @@ console.log("viewer", user?.srno);
 
   return (
     <div className="flex justify-between items-center p-4 bg-gray-800 text-white">
-       {/* ================= HEADER ================= */}
+      {/* ================= HEADER ================= */}
       <div className="fixed top-0 left-0 w-full h-14 bg-gray-900 flex items-center justify-between px-4 z-50 border-b border-gray-700">
-
         {/* LEFT */}
         <div className="flex items-center gap-3">
+          {/* MENU BUTTON */}
+          <button onClick={() => setMenuOpen(true)} className="text-white">
+            <Menu size={28} />
+          </button>
 
-  {/* MENU BUTTON */}
-  <button
-    onClick={() => setMenuOpen(true)}
-    className="text-white"
-  >
-    <Menu size={28} />
-  </button>
+          {/* LOGO */}
+          <Link to="/">
+            {" "}
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center shadow-lg">
+              <span className="text-2xl font-extrabold text-white">ID</span>
+            </div>
+          </Link>
+        </div>
+        <div className="flex items-center gap-3">
+          {/* 💰 COINS DISPLAY (NEW) */}
+          <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-orange-500 px-3 py-1 rounded-full text-black font-bold shadow-md">
+            💰 {coins}
+          </div>
 
-  {/* LOGO */}
-  <Link to="/"> <div className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center shadow-lg">
+          {/* SEARCH AREA */}
 
-   <span className="text-2xl font-extrabold text-white">
-          ID
-        </span></div>
-  </Link>
+          <button onClick={() => setSearchOpen(true)}>🔍</button>
+        </div>
 
-</div><div className="flex items-center gap-3">
-  {/* 💰 COINS DISPLAY (NEW) */}
-<div className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-orange-500 px-3 py-1 rounded-full text-black font-bold shadow-md">
-  💰 {coins}
-</div>
-
-
-{/* SEARCH AREA */}
-
-
-  <button onClick={() => setSearchOpen(true)}>
-    🔍
-  </button>
-
-</div>
-
-{searchOpen && (
-  <div className="fixed inset-0 bg-black/90 z-[9999] p-4">
-
-    {/* TOP */}
-    <div className="flex gap-2 mb-4">
-
-      <input
-        type="text"
-        value={search}
-        onChange={(e) =>
-          setSearch(e.target.value)
-        }
-        placeholder="Search username or email..."
-        className="
+        {searchOpen && (
+          <div className="fixed inset-0 bg-black/90 z-[9999] p-4">
+            {/* TOP */}
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search username or email..."
+                className="
           flex-1
           p-3
           rounded-xl
@@ -191,33 +164,30 @@ console.log("viewer", user?.srno);
           text-white
           outline-none
         "
-      />
+              />
 
-      <button
-        onClick={() => {
-          setSearchOpen(false);
-          setSearch("");
-        }}
-        className="text-white text-xl"
-      >
-        ✖
-      </button>
+              <button
+                onClick={() => {
+                  setSearchOpen(false);
+                  setSearch("");
+                }}
+                className="text-white text-xl"
+              >
+                ✖
+              </button>
+            </div>
 
-    </div>
-
-    {/* RESULTS */}
-    <div className="space-y-2 overflow-y-auto max-h-[80vh]">
-
-      {searchResults.map((u) => (
-
-        <Link
-          key={u.srno}
-          to={`/profile/${u.srno}`}
-          onClick={() => {
-            setSearchOpen(false);
-            setSearch("");
-          }}
-          className="
+            {/* RESULTS */}
+            <div className="space-y-2 overflow-y-auto max-h-[80vh]">
+              {searchResults.map((u) => (
+                <Link
+                  key={u.srno}
+                  to={`/profile/${u.srno}`}
+                  onClick={() => {
+                    setSearchOpen(false);
+                    setSearch("");
+                  }}
+                  className="
             flex
             items-center
             gap-3
@@ -226,50 +196,35 @@ console.log("viewer", user?.srno);
             rounded-xl
             hover:bg-gray-700
           "
-        >
+                >
+                  <img
+                    src={u.pic || "/default-user.png"}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
 
-          <img
-            src={u.pic || "/default-user.png"}
-            className="w-12 h-12 rounded-full object-cover"
-          />
+                  <div>
+                    <div className="text-white font-semibold">{u.name}</div>
 
-          <div>
+                    <div className="text-gray-400 text-sm">{u.email}</div>
+                  </div>
+                </Link>
+              ))}
 
-            <div className="text-white font-semibold">
-              {u.name}
+              {search && searchResults.length === 0 && (
+                <div className="text-gray-400 text-center mt-10">
+                  No users found
+                </div>
+              )}
             </div>
-
-            <div className="text-gray-400 text-sm">
-              {u.email}
-            </div>
-
           </div>
-
-        </Link>
-
-      ))}
-
-      {search &&
-        searchResults.length === 0 && (
-          <div className="text-gray-400 text-center mt-10">
-            No users found
-          </div>
-      )}
-
-    </div>
-
-  </div>
-)}
-
+        )}
       </div>
-      
+
       {/* ================= OVERLAY ================= */}
       {menuOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-50"
-          onClick={() =>
-            setMenuOpen(false)
-          }
+          onClick={() => setMenuOpen(false)}
         />
       )}
 
@@ -279,104 +234,99 @@ console.log("viewer", user?.srno);
           fixed top-0 left-0 h-full w-72
           bg-gray-900 z-50
           transform transition-transform duration-300
-          ${menuOpen
-            ? "translate-x-0"
-            : "-translate-x-full"}
+          ${menuOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-
         {/* TOP */}
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
+          <h2 className="text-white text-lg font-bold">Menu</h2>
 
-          <h2 className="text-white text-lg font-bold">
-            Menu
-          </h2>
-
-          <button
-            onClick={() =>
-              setMenuOpen(false)
-            }
-            className="text-white"
-          >
+          <button onClick={() => setMenuOpen(false)} className="text-white">
             <X size={26} />
           </button>
-
         </div>
 
         {/* MENU LINKS */}
         <div className="flex flex-col p-3 space-y-2 text-white">
           {user && (
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm">Hi, {user.name}</span>
-                    <button
-                      onClick={logout}
-                      className="bg-red-500 px-3 py-1 rounded text-sm"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
+            <div className="flex items-center gap-3">
+              <span className="text-sm">Hi, {user.name}</span>
+              <button
+                onClick={logout}
+                className="bg-red-500 px-3 py-1 rounded text-sm"
+              >
+                Logout
+              </button>
+            </div>
+          )}
           <Link
-            to="/me" onClick={() => setMenuOpen(false)} 
+            to="/me"
+            onClick={() => setMenuOpen(false)}
             className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
           >
             👤 My Profile
           </Link>
-           <Link
-            to="/game"  onClick={() => setMenuOpen(false)} 
+          <Link
+            to="/game"
+            onClick={() => setMenuOpen(false)}
             className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
           >
             🕹️ Games
           </Link>
           <Link
-            to="/create-jam"  onClick={() => setMenuOpen(false)} 
+            to="/create-jam"
+            onClick={() => setMenuOpen(false)}
             className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
           >
-            🕹️ Jamming 
+            🕹️ Jamming
           </Link>
-           <Link
-            to="/my-visitors"  onClick={() => setMenuOpen(false)} 
+          <Link
+            to="/my-visitors"
+            onClick={() => setMenuOpen(false)}
             className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
           >
             🎥 My Visitors
           </Link>
           <Link
-            to="/friends"  onClick={() => setMenuOpen(false)} 
+            to="/friends"
+            onClick={() => setMenuOpen(false)}
             className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
           >
             🎥 Friends
           </Link>
           <Link
-            to="/blocked-users"  onClick={() => setMenuOpen(false)} 
+            to="/blocked-users"
+            onClick={() => setMenuOpen(false)}
             className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
           >
             🚫 Block List
           </Link>
-          
-            <Link
-            to="/my-rewards"  onClick={() => setMenuOpen(false)} 
+
+          <Link
+            to="/my-rewards"
+            onClick={() => setMenuOpen(false)}
             className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
           >
             💰 Rewards History
           </Link>
 
-              <Link
-        to={`/meeting/${Math.random().toString(36).substring(2, 8)}`}
-        onClick={() => setMenuOpen(false)}
-        className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
-      >
-        🎥 Meeting Room
-      </Link>
-
-          
           <Link
-            to="/settings"  onClick={() => setMenuOpen(false)} 
+            to={`/meeting/${Math.random().toString(36).substring(2, 8)}`}
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
+          >
+            🎥 Meeting Room
+          </Link>
+
+          <Link
+            to="/settings"
+            onClick={() => setMenuOpen(false)}
             className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
           >
             ⚙️ Settings
           </Link>
 
-        {/*  <button
+          {/*  <button
           onClick={() => {
             setMenuOpen(false);
             logout();
@@ -384,13 +334,9 @@ console.log("viewer", user?.srno);
           className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
         >
           🚪 Logout
-        </button>*/ }
-
+        </button>*/}
         </div>
-
       </div>
-
-     
     </div>
   );
 }
@@ -411,7 +357,7 @@ console.log("viewer", user?.srno);
   );
 }*/
 function BottomNav() {
-   const location = useLocation();
+  const location = useLocation();
   const navItems = [
     {
       name: "Home",
@@ -428,7 +374,7 @@ function BottomNav() {
       path: "/chats",
       icon: MessageCircle,
     },
-   /* {
+    /* {
       name: "Community",
       path: "/community",
       icon: UsersRound,
@@ -454,67 +400,59 @@ function BottomNav() {
       icon: User,
     },
     */
-     {
+    {
       name: "T",
       path: "/timeline",
       icon: Newspaper,
     },
   ];
 
-return (
-  <>
-    {/* Bottom spacing */}
-    <div className="h-16"></div>
+  return (
+    <>
+      {/* Bottom spacing */}
+      <div className="h-16"></div>
 
-{/* Bottom Navbar */}
-<div className="fixed bottom-0 left-0 w-full z-50 px-2">
+      {/* Bottom Navbar */}
+      <div className="fixed bottom-0 left-0 w-full z-50 px-2">
+        <div className="bg-gray-900/95 backdrop-blur-lg border border-gray-800 rounded-t-2xl shadow-2xl">
+          <div className="flex justify-around items-center py-2 overflow-x-auto scrollbar-hide">
+            {navItems.map((item) => {
+              const Icon = item.icon;
 
-      <div className="bg-gray-900/95 backdrop-blur-lg border border-gray-800 rounded-t-2xl shadow-2xl">
+              const active =
+                location.pathname === item.path ||
+                (item.name === "Meet" &&
+                  location.pathname.startsWith("/meeting"));
 
-        <div className="flex justify-around items-center py-2 overflow-x-auto scrollbar-hide">
-
-          {navItems.map((item) => {
-
-            const Icon = item.icon;
-
-            const active = location.pathname === item.path ||
-              (item.name === "Meet" &&
-                location.pathname.startsWith("/meeting"));
-
-            return (
-              <Link
-                key={item.name}
-                to={item.path}
-                className={`flex flex-col items-center min-w-[65px] transition-all duration-300 ${
-                  active
-                    ? "text-pink-400"
-                    : "text-gray-400 hover:text-white"
-                }`}
-              >
-
-                <div
-                  className={`p-2 rounded-xl transition-all duration-300 ${
-                    active
-                      ? "bg-pink-500/20 shadow-lg shadow-pink-500/20 scale-110"
-                      : "hover:bg-gray-800"
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className={`flex flex-col items-center min-w-[65px] transition-all duration-300 ${
+                    active ? "text-pink-400" : "text-gray-400 hover:text-white"
                   }`}
                 >
-                  <Icon size={22} />
-                </div>
+                  <div
+                    className={`p-2 rounded-xl transition-all duration-300 ${
+                      active
+                        ? "bg-pink-500/20 shadow-lg shadow-pink-500/20 scale-110"
+                        : "hover:bg-gray-800"
+                    }`}
+                  >
+                    <Icon size={22} />
+                  </div>
 
-                <span className="text-[11px] mt-1 font-medium">
-                  {item.name}
-                </span>
-
-              </Link>
-            );
-          })}
-
+                  <span className="text-[11px] mt-1 font-medium">
+                    {item.name}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </div>
-    </div>
-  </>
-);
+    </>
+  );
 }
 
 export default function App() {
@@ -523,30 +461,23 @@ export default function App() {
   const user = JSON.parse(localStorage.getItem("user"));
   const [incomingCall, setIncomingCall] = useState(null);
   const [loading, setLoading] = useState(true);
-const incomingCallRef = useRef(null);
-const [isInCall, setIsInCall] = useState(false);
-const inMeetingRef = useRef(false);
-const location = useLocation();
-//const [callStartTime, setCallStartTime] = useState(null);
-const hideLayoutRoutes = [
-  "/login",
-  "/register",
-  "/forgot-password",
-];
-const shouldHideLayout =
-  hideLayoutRoutes.includes(location.pathname) ||
-  location.pathname.startsWith("/reset-password/");
+  const incomingCallRef = useRef(null);
+  const [isInCall, setIsInCall] = useState(false);
+  const inMeetingRef = useRef(false);
+  const location = useLocation();
+  //const [callStartTime, setCallStartTime] = useState(null);
+  const hideLayoutRoutes = ["/login", "/register", "/forgot-password"];
+  const shouldHideLayout =
+    hideLayoutRoutes.includes(location.pathname) ||
+    location.pathname.startsWith("/reset-password/");
 
+  const hideLayout = hideLayoutRoutes.includes(location.pathname);
+  useEffect(() => {
+    incomingCallRef.current = incomingCall;
+  }, [incomingCall]);
 
-const hideLayout =  hideLayoutRoutes.includes(
-    location.pathname
-  );
-useEffect(() => {
-  incomingCallRef.current = incomingCall;
-}, [incomingCall]);
-
-//check meeting
-/*useEffect(() => {
+  //check meeting
+  /*useEffect(() => {
 
   const checkMeeting = () => {
 
@@ -569,390 +500,444 @@ useEffect(() => {
 
 }, []);
 */
-useEffect(() => {
+  useEffect(() => {
+    // initial check
+    inMeetingRef.current = localStorage.getItem("in_meeting") === "1";
 
-  // initial check
-  inMeetingRef.current =
-    localStorage.getItem(
-      "in_meeting"
-    ) === "1";
+    // listen changes
+    const handleStorage = () => {
+      inMeetingRef.current = localStorage.getItem("in_meeting") === "1";
+    };
 
-  // listen changes
-  const handleStorage = () => {
+    window.addEventListener("storage", handleStorage);
 
-    inMeetingRef.current =
-      localStorage.getItem(
-        "in_meeting"
-      ) === "1";
-  };
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
 
-  window.addEventListener(
-    "storage",
-    handleStorage
-  );
+  //chat notification
+  useEffect(() => {
+    const currentUser = JSON.parse(localStorage.getItem("user"));
 
-  return () => {
+    const handleMessageNotification = async (data) => {
+      console.log("🔔 GLOBAL MSG:", data);
 
-    window.removeEventListener(
-      "storage",
-      handleStorage
-    );
-  };
+      // 🚫 IGNORE OWN MESSAGE
+      if (Number(data.from) === Number(currentUser?.srno)) {
+        return;
+      }
 
-}, []);
+      // ✅ CHECK ACTIVE CHAT
+      const currentPath = window.location.pathname;
 
-//chat notification
-useEffect(() => {
+      const activeChatMatch = currentPath.match(/\/chat\/(\d+)/);
 
-  const currentUser =
-    JSON.parse(
-      localStorage.getItem("user")
-    );
+      const activeChatUserId = activeChatMatch?.[1];
 
-  const handleMessageNotification =
-  async (data) => {
+      // 🚫 already inside same chat
+      if (activeChatUserId && Number(activeChatUserId) === Number(data.from)) {
+        return;
+      }
 
-    console.log(
-      "🔔 GLOBAL MSG:",
-      data
-    );
+      // 🔔 PLAY SOUND
+      const audio = new Audio("/icon/notification.mp3");
 
-    // 🚫 IGNORE OWN MESSAGE
-    if (
-      Number(data.from) ===
-      Number(currentUser?.srno)
-    ) {
-      return;
-    }
+      audio.play().catch(() => {});
 
-    // ✅ CHECK ACTIVE CHAT
-    const currentPath =
-      window.location.pathname;
+      try {
+        const res = await fetch(`${API}/users/${data.from}`);
 
-    const activeChatMatch =
-      currentPath.match(/\/chat\/(\d+)/);
+        const user = await res.json();
 
-    const activeChatUserId =
-      activeChatMatch?.[1];
+        setChatNotice({
+          ...data,
+          senderName: user.name,
+          senderPic: user.pic,
+        });
+      } catch (err) {
+        console.log(err);
+      }
+    };
+    socket.on("receiveMessage", handleMessageNotification);
 
-    // 🚫 already inside same chat
-    if (
-      activeChatUserId &&
-      Number(activeChatUserId) ===
-        Number(data.from)
-    ) {
-      return;
-    }
+    return () => {
+      socket.off("receiveMessage", handleMessageNotification);
+    };
+  }, []);
 
-    // 🔔 PLAY SOUND
-    const audio = new Audio(
-      "/icon/notification.mp3"
-    );
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 2000);
 
-    audio.play().catch(() => {});
-
-    try {
-
-      const res = await fetch(
-        `${API}/users/${data.from}`
-      );
-
-      const user =
-        await res.json();
-
-      setChatNotice({
-        ...data,
-        senderName: user.name,
-        senderPic: user.pic,
-      });
-
-    } catch (err) {
-
-      console.log(err);
-
-    }
-
-};
-  socket.on(
-    "receiveMessage",
-    handleMessageNotification
-  );
-
-  return () => {
-
-    socket.off(
-      "receiveMessage",
-      handleMessageNotification
-    );
-
-  };
-
-}, []);
-
-
-useEffect(() => {
-  const timer = setTimeout(() => {
-    setLoading(false);
-  }, 2000);
-
-  return () => clearTimeout(timer);
-}, []);
+    return () => clearTimeout(timer);
+  }, []);
   // 📍 Location update
-useEffect(() => {
-  if (!user || !navigator.geolocation) return;
+  useEffect(() => {
+    if (!user || !navigator.geolocation) return;
 
-  let watchId;
+    let watchId;
 
-  const sendLocation = (pos) => {
-    fetch(`${API}/users/update-location`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: user.srno,
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
-      }),
-    });
-  };
+    const sendLocation = (pos) => {
+      fetch(`${API}/users/update-location`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.srno,
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        }),
+      });
+    };
 
-  const handleError = (err) => {
-    console.log("Location error:", err.message);
-  };
+    const handleError = (err) => {
+      console.log("Location error:", err.message);
+    };
 
-  // ✅ Better than setInterval
-  watchId = navigator.geolocation.watchPosition(
-    sendLocation,
-    handleError,
-    {
+    // ✅ Better than setInterval
+    watchId = navigator.geolocation.watchPosition(sendLocation, handleError, {
       enableHighAccuracy: true,
       maximumAge: 10000,
       timeout: 10000,
-    }
-  );
+    });
 
-  return () => {
-    if (watchId) navigator.geolocation.clearWatch(watchId);
-  };
-}, [user]);
+    return () => {
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+    };
+  }, [user]);
 
   // 🔌 Register socket
-/*useEffect(() => {
+  /*useEffect(() => {
   if (user?.srno) {
     socket.emit("register", user.srno);
     console.log('user register'); 
   }
 }, [user]);
 */
-useEffect(() => {
-  if (!user?.srno) return;
+  useEffect(() => {
+    if (!user?.srno) return;
 
-  const handleConnect = () => {
+    const handleConnect = () => {
+      socket.emit("register", Number(user.srno));
+      console.log("user re-registered after reconnect");
+    };
+
+    socket.on("connect", handleConnect);
+
+    // initial register
     socket.emit("register", Number(user.srno));
-    console.log("user re-registered after reconnect");
-  };
 
-  socket.on("connect", handleConnect);
+    return () => {
+      socket.off("connect", handleConnect);
+    };
+  }, [user?.srno]);
+  // 📞 Incoming call ringtone
+  const ringtoneRef = useRef(null);
 
-  // initial register
-  socket.emit("register", Number(user.srno));
+  // 🔊 create ringtone ONCE
+  useEffect(() => {
+    ringtoneRef.current = new Audio("/icon/notification2.mp3");
 
-  return () => {
-    socket.off("connect", handleConnect);
-  };
-}, [user?.srno]);
- // 📞 Incoming call ringtone
-const ringtoneRef = useRef(null);
+    ringtoneRef.current.loop = true;
 
-// 🔊 create ringtone ONCE
-useEffect(() => {
-  ringtoneRef.current = new Audio(
-    "/icon/notification2.mp3"
-  );
+    return () => {
+      if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current.currentTime = 0;
+      }
+    };
+  }, []);
 
-  ringtoneRef.current.loop = true;
-
-  return () => {
-    if (ringtoneRef.current) {
-      ringtoneRef.current.pause();
-      ringtoneRef.current.currentTime = 0;
+  // 🔇 stop ringtone
+  const stopRingtone = () => {
+    try {
+      if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current.currentTime = 0;
+      }
+    } catch (err) {
+      console.log(err);
     }
-  };
-}, []);
 
-// 🔇 stop ringtone
-const stopRingtone = () => {
-  try {
-    if (ringtoneRef.current) {
-      ringtoneRef.current.pause();
-      ringtoneRef.current.currentTime = 0;
-    }
-  } catch (err) {
-    console.log(err);
-  }
-
-  setIncomingCall(null);
-};
-
-/// call refresh issue fix
-useEffect(() => {
-  const cleanup = () => {
-    localStorage.removeItem("isInCall");
-    incomingCallRef.current = null;
     setIncomingCall(null);
   };
 
-  window.addEventListener("beforeunload", cleanup);
-
-  return () => window.removeEventListener("beforeunload", cleanup);
-}, []);
-
-useEffect(() => {
-
- const incomingHandler = (data) => {
-  console.log("📞 Incoming call:", data);
-
-  // ❌ only REAL busy check
-  const isBusy = localStorage.getItem("isInCall") === "1";
-
-  if (isBusy) {
-    socket.emit("rejectCall", {
-      from: data.from,
-      to: data.to,
-      reason: "busy",
-    });
-    return;
-  }
-
-  // ✅ create unique call
-  const callId = `${data.from}_${data.to}_${Date.now()}`;
-
-  const callData = {
-    ...data,
-    callId,
-  };
-
-  incomingCallRef.current = callData;
-
-  // 🔥 IMPORTANT: force state update
-  setIncomingCall(null); // reset first
-  setTimeout(() => {
-    setIncomingCall(callData);
-  }, 10);
-
-  // ringtone
-  stopRingtone();
-
-  if (ringtoneRef.current) {
-    ringtoneRef.current.loop = true;
-    ringtoneRef.current.play().catch(() => {});
-  }
-
-  // missed call timer
-  setTimeout(() => {
-    if (incomingCallRef.current?.callId === callId) {
-      socket.emit("sendMessage", {
-        from: data.from,
-        to: data.to,
-        message: `Missed ${data.type} call`,
-        type: "call_missed",
-        createdAt: new Date().toISOString(),
-      });
-
-      stopRingtone();
-      setIncomingCall(null);
+  /// call refresh issue fix
+  useEffect(() => {
+    const cleanup = () => {
+      localStorage.removeItem("isInCall");
       incomingCallRef.current = null;
-    }
-  }, 30000);
-};
+      setIncomingCall(null);
+    };
 
-  socket.on("incomingCall", incomingHandler);
+    window.addEventListener("beforeunload", cleanup);
 
-  return () => {
-    socket.off("incomingCall", incomingHandler);
-  };
+    return () => window.removeEventListener("beforeunload", cleanup);
+  }, []);
 
-}, []);
+  useEffect(() => {
+    const incomingHandler = (data) => {
+      console.log("📞 Incoming call:", data);
 
-// ❌ ALL STOP EVENTS
-useEffect(() => {
+      // ❌ only REAL busy check
+      const isBusy = localStorage.getItem("isInCall") === "1";
 
-  const stopHandler = () => {
-    console.log("🔇 stopping ringtone");
-    stopRingtone();
-  };
+      if (isBusy) {
+        socket.emit("rejectCall", {
+          from: data.from,
+          to: data.to,
+          reason: "busy",
+        });
+        return;
+      }
 
-  socket.on("callRejected", stopHandler);
-  socket.on("callAcceptedSelf", stopHandler);
-  socket.on("callEnded", stopHandler);
+      // ✅ create unique call
+      const callId = `${data.from}_${data.to}_${Date.now()}`;
 
-  return () => {
-    socket.off("callRejected", stopHandler);
-    socket.off("callAcceptedSelf", stopHandler);
-    socket.off("callEnded", stopHandler);
-  };
+      const callData = {
+        ...data,
+        callId,
+      };
 
-}, []);
+      incomingCallRef.current = callData;
 
-//daily login rewards
-  useDailyReward(user?.srno );
+      // 🔥 IMPORTANT: force state update
+      setIncomingCall(null); // reset first
+      setTimeout(() => {
+        setIncomingCall(callData);
+      }, 10);
+
+      // ringtone
+      stopRingtone();
+
+      if (ringtoneRef.current) {
+        ringtoneRef.current.loop = true;
+        ringtoneRef.current.play().catch(() => {});
+      }
+
+      // missed call timer
+      setTimeout(() => {
+        if (incomingCallRef.current?.callId === callId) {
+          socket.emit("sendMessage", {
+            from: data.from,
+            to: data.to,
+            message: `Missed ${data.type} call`,
+            type: "call_missed",
+            createdAt: new Date().toISOString(),
+          });
+
+          stopRingtone();
+          setIncomingCall(null);
+          incomingCallRef.current = null;
+        }
+      }, 30000);
+    };
+
+    socket.on("incomingCall", incomingHandler);
+
+    return () => {
+      socket.off("incomingCall", incomingHandler);
+    };
+  }, []);
+
+  // ❌ ALL STOP EVENTS
+  useEffect(() => {
+    const stopHandler = () => {
+      console.log("🔇 stopping ringtone");
+      stopRingtone();
+    };
+
+    socket.on("callRejected", stopHandler);
+    socket.on("callAcceptedSelf", stopHandler);
+    socket.on("callEnded", stopHandler);
+
+    return () => {
+      socket.off("callRejected", stopHandler);
+      socket.off("callAcceptedSelf", stopHandler);
+      socket.off("callEnded", stopHandler);
+    };
+  }, []);
+
+  //daily login rewards
+  useDailyReward(user?.srno);
   // ✅ SHOW SPLASH FIRST
   if (loading) {
     return <Splash />;
   }
 
   return (
-   
-      <div className="min-h-screen bg-gray-900 flex flex-col">
-{/* search function */}
-        {!shouldHideLayout  && (  <Navbar />  )}
+    <div className="min-h-screen bg-gray-900 flex flex-col">
+      {/* search function */}
+      {!shouldHideLayout && <Navbar />}
 
-        <div className="flex-grow">
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-             <Route path="/forgot-password" element={<ForgotPassword />} />
-             <Route path="/reset-password/:token" element={<ResetPassword />}/>
-             <Route path="/post/:id" element={<Timeline />}/>
+      <div className="flex-grow">
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/post/:id" element={<Timeline />} />
 
-            <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
-            <Route path="/me" element={<PrivateRoute><MyProfile /></PrivateRoute>} />
-            <Route path="/explore" element={<PrivateRoute><Explore /></PrivateRoute>} />
-            <Route path="/friends" element={<PrivateRoute><Friends /></PrivateRoute>} />
-            <Route path="/chats" element={<PrivateRoute><ChatsList /></PrivateRoute>} />
-            <Route path="/chat/:id" element={<PrivateRoute><Chat /></PrivateRoute>} />
-            <Route path="/community" element={<PrivateRoute><Community /></PrivateRoute>} />
-            <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-            <Route path="/profile/:id" element={<PrivateRoute><UserProfile /></PrivateRoute>} />
-            <Route path="/meeting/:roomId" element={ <PrivateRoute> <MeetingRoom /> </PrivateRoute> }/>
-            <Route path="/blocked-users"  element={ <PrivateRoute><BlockedUsers /> </PrivateRoute>}/>
-            <Route path="/my-visitors"  element={ <PrivateRoute><MyVisitors /> </PrivateRoute>}/>
-            <Route path="/my-rewards"  element={ <PrivateRoute><RewardsHistory/> </PrivateRoute>}/>
-            <Route path="/game"  element={ <PrivateRoute><GameHome/> </PrivateRoute>}/>
-            <Route path="/game/room/:roomId"  element={ <PrivateRoute><GameRoom/> </PrivateRoute>}/>     
-            <Route path="/create-jam" element={ <PrivateRoute> <CreateJamRoom /> </PrivateRoute> }/>
-            <Route path="/jam-room/:roomId" element={ <PrivateRoute> <JamRoom /></PrivateRoute> }/>    
-            
-            <Route path="/timeline" element={<Timeline />} />
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </div>
-         {!shouldHideLayout  && (  <BottomNav />  )}        
+          <Route
+            path="/"
+            element={
+              <PrivateRoute>
+                <Home />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/me"
+            element={
+              <PrivateRoute>
+                <MyProfile />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/explore"
+            element={
+              <PrivateRoute>
+                <Explore />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/friends"
+            element={
+              <PrivateRoute>
+                <Friends />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/chats"
+            element={
+              <PrivateRoute>
+                <ChatsList />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/chat/:id"
+            element={
+              <PrivateRoute>
+                <Chat />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/community"
+            element={
+              <PrivateRoute>
+                <Community />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <Profile />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profile/:id"
+            element={
+              <PrivateRoute>
+                <UserProfile />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/meeting/:roomId"
+            element={
+              <PrivateRoute>
+                {" "}
+                <MeetingRoom />{" "}
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/blocked-users"
+            element={
+              <PrivateRoute>
+                <BlockedUsers />{" "}
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/my-visitors"
+            element={
+              <PrivateRoute>
+                <MyVisitors />{" "}
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/my-rewards"
+            element={
+              <PrivateRoute>
+                <RewardsHistory />{" "}
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/game"
+            element={
+              <PrivateRoute>
+                <GameHome />{" "}
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/game/room/:roomId"
+            element={
+              <PrivateRoute>
+                <GameRoom />{" "}
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/create-jam"
+            element={
+              <PrivateRoute>
+                {" "}
+                <CreateJamRoom />{" "}
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/jam-room/:roomId"
+            element={
+              <PrivateRoute>
+                {" "}
+                <JamRoom />
+              </PrivateRoute>
+            }
+          />
 
-        {/* 📞 GLOBAL CALL POPUP (FIXED POSITION) */}
-        
+          <Route path="/timeline" element={<Timeline />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </div>
+      {!shouldHideLayout && <BottomNav />}
+
+      {/* 📞 GLOBAL CALL POPUP (FIXED POSITION) */}
+
       {incomingCall && (
-  <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-50">
+          <h2 className="text-white text-xl">
+            📞 Incoming {incomingCall.type} call
+          </h2>
 
-    <h2 className="text-white text-xl">
-      📞 Incoming {incomingCall.type} call
-    </h2>
-
-    <div className="flex gap-4 mt-5">
-
-      {/* ================= ACCEPT ================= */}
-     {/* ================= ACCEPT ================= */}
-<button
-  className="
+          <div className="flex gap-4 mt-5">
+            {/* ================= ACCEPT ================= */}
+            {/* ================= ACCEPT ================= */}
+            <button
+              className="
     bg-green-500
     hover:bg-green-600
     px-5 py-2
@@ -960,76 +945,57 @@ useEffect(() => {
     text-white
     font-semibold
   "
-  onClick={async () => {
+              onClick={async () => {
+                try {
+                  if (!incomingCall) return;
 
-    try {
+                  const callData = {
+                    ...incomingCall,
+                  };
 
-      if (!incomingCall) return;
+                  console.log("✅ ACCEPTING CALL", callData);
 
-      const callData = {
-        ...incomingCall
-      };
+                  // stop ringtone first
+                  stopRingtone();
 
-      console.log(
-        "✅ ACCEPTING CALL",
-        callData
-      );
+                  // IMPORTANT
+                  // clear popup immediately
+                  setIncomingCall(null);
 
-      // stop ringtone first
-      stopRingtone();
+                  incomingCallRef.current = null;
 
-      // IMPORTANT
-      // clear popup immediately
-      setIncomingCall(null);
+                  // lock call state
+                  localStorage.setItem("isInCall", "1");
 
-      incomingCallRef.current =
-        null;
+                  setIsInCall(true);
 
-      // lock call state
-      localStorage.setItem(
-        "isInCall",
-        "1"
-      );
+                  // send accepted event
+                  socket.emit("acceptCall", {
+                    from: callData.from,
+                    to: user.srno,
+                    type: callData.type || "video",
+                  });
 
-      setIsInCall(true);
+                  // SMALL DELAY
+                  // helps socket sync
+                  setTimeout(() => {
+                    navigate(
+                      `/chat/${callData.from}?autoStart=true&type=${
+                        callData.type || "video"
+                      }`
+                    );
+                  }, 300);
+                } catch (err) {
+                  console.log("ACCEPT ERROR", err);
+                }
+              }}
+            >
+              Accept
+            </button>
 
-      // send accepted event
-      socket.emit(
-        "acceptCall",
-        {
-          from: callData.from,
-          to: user.srno,
-          type:
-            callData.type ||
-            "video",
-        }
-      );
-
-      // SMALL DELAY
-      // helps socket sync
-      setTimeout(() => {
-
-        navigate(
-          `/chat/${callData.from}?autoStart=true&type=${callData.type || "video"}`
-        );
-
-      }, 300);
-
-    } catch (err) {
-
-      console.log(
-        "ACCEPT ERROR",
-        err
-      );
-    }
-  }}
->
-  Accept
-</button>
-
-{/* ================= REJECT ================= */}
-<button
-  className="
+            {/* ================= REJECT ================= */}
+            <button
+              className="
     bg-red-500
     hover:bg-red-600
     px-5 py-2
@@ -1037,121 +1003,87 @@ useEffect(() => {
     text-white
     font-semibold
   "
-  onClick={() => {
+              onClick={() => {
+                try {
+                  if (!incomingCall) return;
 
-    try {
+                  const callData = {
+                    ...incomingCall,
+                  };
 
-      if (!incomingCall) return;
+                  console.log("❌ REJECTING CALL", callData);
 
-      const callData = {
-        ...incomingCall
-      };
+                  stopRingtone();
 
-      console.log(
-        "❌ REJECTING CALL",
-        callData
-      );
+                  // clear popup FIRST
+                  setIncomingCall(null);
 
-      stopRingtone();
+                  incomingCallRef.current = null;
 
-      // clear popup FIRST
-      setIncomingCall(null);
+                  // unlock call
+                  localStorage.removeItem("isInCall");
 
-      incomingCallRef.current =
-        null;
+                  setIsInCall(false);
 
-      // unlock call
-      localStorage.removeItem(
-        "isInCall"
-      );
+                  // notify caller
+                  socket.emit("rejectCall", {
+                    from: callData.from,
+                    to: user.srno,
+                  });
 
-      setIsInCall(false);
+                  // optional chat msg
+                  socket.emit("sendMessage", {
+                    from: user.srno,
+                    to: callData.from,
+                    message: `Rejected ${callData.type} call`,
+                    type: "call_rejected",
+                    createdAt: new Date().toISOString(),
+                  });
+                } catch (err) {
+                  console.log("REJECT ERROR", err);
+                }
+              }}
+            >
+              Reject
+            </button>
+          </div>
+        </div>
+      )}
 
-      // notify caller
-      socket.emit(
-        "rejectCall",
-        {
-          from: callData.from,
-          to: user.srno,
-        }
-      );
+      {chatNotice && (
+        <div className="fixed top-10 right-5 bg-gray-900 text-white p-3 rounded-xl shadow-2xl z-[9999] w-72 border border-gray-700">
+          <div className="flex justify-between items-start">
+            <div
+              onClick={() => {
+                navigate(`/chat/${chatNotice.from}`);
+                setChatNotice(null);
+              }}
+              className="flex items-center gap-3 cursor-pointer flex-1"
+            >
+              <img
+                src={chatNotice.senderPic || "/default-user.png"}
+                className="w-12 h-12 rounded-full object-cover"
+              />
 
-      // optional chat msg
-      socket.emit(
-        "sendMessage",
-        {
-          from: user.srno,
-          to: callData.from,
-          message:
-            `Rejected ${callData.type} call`,
-          type:
-            "call_rejected",
-          createdAt:
-            new Date().toISOString(),
-        }
-      );
+              <div>
+                <div className="font-bold">{chatNotice.senderName}</div>
 
-    } catch (err) {
-
-      console.log(
-        "REJECT ERROR",
-        err
-      );
-    }
-  }}
->
-  Reject
-</button>
-
-    </div>
-  </div>
-)}
-
-        {chatNotice && (
-          <div className="fixed top-10 right-5 bg-gray-900 text-white p-3 rounded-xl shadow-2xl z-[9999] w-72 border border-gray-700">
-
-            <div className="flex justify-between items-start">
-
-              <div
-                onClick={() => {
-                  navigate(`/chat/${chatNotice.from}`);
-                  setChatNotice(null);
-                }}
-                className="flex items-center gap-3 cursor-pointer flex-1"
-              >
-
-                <img
-                  src={chatNotice.senderPic || "/default-user.png"}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-
-                <div>
-
-                  <div className="font-bold">
-                    {chatNotice.senderName}
-                  </div>
-
-                  <div className="text-sm text-gray-300 truncate">
-                    {chatNotice.message || "📷 Photo"}
-                  </div>
-
+                <div className="text-sm text-gray-300 truncate">
+                  {chatNotice.message || "📷 Photo"}
                 </div>
-
               </div>
-
-              {/* ❌ Close */}
-              <button
-                onClick={() => setChatNotice(null)}
-                className="ml-2 text-gray-400 text-white"
-              >
-                ✕
-              </button>
-
             </div>
 
+            {/* ❌ Close */}
+            <button
+              onClick={() => setChatNotice(null)}
+              className="ml-2 text-gray-400 text-white"
+            >
+              ✕
+            </button>
           </div>
-        )}
-
-      </div>
+        </div>
+      )}
+    </div>
   );
 }

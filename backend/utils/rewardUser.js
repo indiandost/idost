@@ -1,12 +1,4 @@
-export default function rewardUser(
-  db,
-  io,
-  userId,
-  coins,
-  type,
-  value = ""
-) {
-
+export default function rewardUser(db, io, userId, coins, type, value = "") {
   // =========================
   // ADD COINS
   // =========================
@@ -14,7 +6,6 @@ export default function rewardUser(
     "UPDATE users SET coins = coins + ? WHERE srno=?",
     [coins, userId],
     (err) => {
-
       if (err) {
         console.log("Reward Error:", err);
         return;
@@ -34,12 +25,7 @@ export default function rewardUser(
         )
         VALUES (?,?,?,?)
         `,
-        [
-          userId,
-          type,
-          value,
-          coins
-        ]
+        [userId, type, value, coins]
       );
 
       // =========================
@@ -49,40 +35,29 @@ export default function rewardUser(
         "SELECT coins FROM users WHERE srno=? LIMIT 1",
         [userId],
         (err, rows) => {
-
           if (err || !rows?.length) {
             return;
           }
 
-          const newBalance =
-            Number(rows[0].coins) || 0;
+          const newBalance = Number(rows[0].coins) || 0;
 
           // =========================
           // REALTIME COIN UPDATE
           // =========================
-          io.to(`user-${userId}`).emit(
-            "coinUpdate",
-            {
-              coins: newBalance
-            }
-          );
+          io.to(`user-${userId}`).emit("coinUpdate", {
+            coins: newBalance,
+          });
 
           // =========================
           // REWARD POPUP
           // =========================
-          io.to(`user-${userId}`).emit(
-            "rewardReceived",
-            {
-              coins,
-              type,
-              value
-            }
-          );
-
+          io.to(`user-${userId}`).emit("rewardReceived", {
+            coins,
+            type,
+            value,
+          });
         }
       );
-
     }
   );
-
 }

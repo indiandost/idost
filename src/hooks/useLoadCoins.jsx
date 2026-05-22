@@ -5,7 +5,7 @@ const API = import.meta.env.VITE_API_URL;
 
 export default function useLoadCoins(userId) {
   const { setCoins } = useCoins();
-console.log("🔥 useLoadCoins triggered:", userId);
+  console.log("🔥 useLoadCoins triggered:", userId);
   useEffect(() => {
     if (!userId) return;
 
