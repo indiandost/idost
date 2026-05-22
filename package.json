@@ -28,6 +28,7 @@
     "vite-plugin-pwa": "^0.19.8"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/postcss": "^4.2.4",
     "@types/react": "^19.2.14",
