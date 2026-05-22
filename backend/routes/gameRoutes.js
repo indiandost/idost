@@ -1,58 +1,26 @@
 import express from "express";
 
-import {
-  createJamRoom,
-  getLiveJamRooms,
-  getJamRoomDetails,
-  endJamRoom,
-  getTopPerformers,
-} from "../controllers/jamRoomController.js";
-
 const router = express.Router();
 
-
-// ==============================
-// CREATE JAM ROOM
-// ==============================
-router.post(
-  "/create",
-  createJamRoom
-);
+import {
+  getRooms,
+  getRoomDetails,
+  getLeaderboard,
+  getUserGameHistory,
+} from "../controllers/gameController.js";
 
 
-// ==============================
-// LIVE ROOMS
-// ==============================
-router.get(
-  "/live",
-  getLiveJamRooms
-);
+// =========================
+// ROUTES
+// =========================
 
+router.get("/rooms", getRooms);
 
-// ==============================
-// ROOM DETAILS
-// ==============================
-router.get(
-  "/:roomId",
-  getJamRoomDetails
-);
+router.get("/room/:roomId", getRoomDetails);
 
+router.get("/leaderboard", getLeaderboard);
 
-// ==============================
-// END ROOM
-// ==============================
-router.post(
-  "/end/:roomId",
-  endJamRoom
-);
+router.get("/history/:userId", getUserGameHistory);
 
-
-// ==============================
-// TOP PERFORMERS
-// ==============================
-router.get(
-  "/top-performers/:roomId",
-  getTopPerformers
-);
 
 export default router;
