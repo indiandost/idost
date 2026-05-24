@@ -71,7 +71,10 @@ const app = express();
 
 app.use(cors());
 
-app.use(express.json());
+//app.use(express.json());
+app.use(express.json({
+  limit: "10mb"
+}));
 
 
 
@@ -79,7 +82,7 @@ app.use(express.json());
 
 app.set("db", db);
 
-app.use("/uploads", express.static("uploads"));
+//app.use("/uploads", express.static("uploads"));
 
 app.use("/api", postRoutes);
 
@@ -341,13 +344,13 @@ app.use("/api/rewards", rewardsRoutes);
 
 // serve images
 
-app.use("/uploads", express.static("uploads"));
+//app.use("/uploads", express.static("uploads"));
 
 app.use("/friends", friendsRoutes);
 
 app.use("/api", blockRoutes);
 app.use("/api/game", gameRoutes);
-app.use("/api/jam-room", gameRoutes);
+app.use("/api/jam-room", jamRoutes);
 
 // =============================
 
@@ -373,7 +376,206 @@ app.get("/", (req, res) => {
 
 const server = http.createServer(app);
 
+const io = new Server(server, {
 
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  },
+
+  transports: ["websocket", "polling"],
+
+  pingTimeout: 60000,
+
+  pingInterval: 25000
+
+});
+
+// IMPORTANT
+app.set("io", io);
+
+// =============================
+// USERS MAP
+// =============================
+const users = {}; // userId -> socketId
+
+// =============================
+// MAIN SOCKET CONNECTION
+// ONLY ONE io.on("connection")
+// =============================
+io.on("connection", (socket) => {
+
+  console.log("🔌 Connected:", socket.id);
+
+  // =============================
+  // LOAD SOCKET MODULES
+  // =============================
+  chatSocket(io, socket, db);
+
+  jamRoomSocket(io, socket);
+
+  colorCrashSocket(io, socket);
+
+  // =============================
+  // 🎁 GIFT HANDLER
+  // =============================
+  socket.on("giftSent", (data) => {
+
+    try {
+
+      console.log(
+        "🎁 Gift received on server:",
+        data
+      );
+
+      if (!data?.roomId) return;
+
+      // send to room
+      io.to(data.roomId).emit(
+        "giftReceived",
+        data
+      );
+
+    } catch (err) {
+
+      console.log(
+        "❌ GIFT ERROR:",
+        err
+      );
+    }
+  });
+
+  // =============================
+  // ✅ REGISTER USER
+  // =============================
+  socket.on("register", (userId) => {
+
+    try {
+
+      const id =
+        Number(userId);
+
+      if (!id) return;
+
+      // prevent duplicate register
+      if (socket.userId === id) {
+        return;
+      }
+
+      // save on socket
+      socket.userId = id;
+
+      // map user => socket
+      users[id] = socket.id;
+
+      // private room
+      socket.join(`user-${id}`);
+
+      // broadcast online users
+      io.emit(
+        "onlineUsers",
+        Object.keys(users)
+      );
+
+      console.log(
+        "👤 User mapped:",
+        id,
+        "=>",
+        socket.id
+      );
+
+    } catch (err) {
+
+      console.log(
+        "❌ REGISTER ERROR:",
+        err
+      );
+    }
+  });
+
+  // =============================
+  // ✅ DISCONNECT
+  // =============================
+  socket.on("disconnect", () => {
+
+    try {
+
+      console.log(
+        "🔌 Disconnected:",
+        socket.id
+      );
+
+      // remove mapped user
+      if (socket.userId) {
+
+        delete users[
+          socket.userId
+        ];
+
+        io.emit(
+          "onlineUsers",
+          Object.keys(users)
+        );
+      }
+
+    } catch (err) {
+
+      console.log(
+        "❌ DISCONNECT ERROR:",
+        err
+      );
+    }
+  });
+
+});
+
+// =============================
+// SERVER START
+// =============================
+server.listen(
+  5000,
+  "0.0.0.0",
+  () => {
+
+    console.log(
+      "🚀 Server running on 5000"
+    );
+  }
+);
+
+// =============================
+// SERVER TIMEOUTS
+// =============================
+server.timeout = 300000;
+
+server.keepAliveTimeout = 300000;
+
+server.headersTimeout = 300000;
+
+// =============================
+// GLOBAL ERROR HANDLERS
+// =============================
+process.on(
+  "uncaughtException",
+  (err) => {
+
+    console.log(
+      "❌ UNCAUGHT EXCEPTION:",
+      err
+    );
+  }
+);
+
+process.on(
+  "unhandledRejection",
+  (err) => {
+
+    console.log(
+      "❌ UNHANDLED REJECTION:",
+      err
+    );
+  }
+);
 
 // 👇 attach socket.io
 
@@ -391,7 +593,7 @@ const server = http.createServer(app);
 
 });*/
 
-const io = new Server(server, {
+/*const io = new Server(server, {
 
   cors: {
 
