@@ -9,9 +9,7 @@ const jamRooms = {};
 
 const roomDeleteTimers = {};
 
-const jamRoomSocket = (io) => {
-
-  io.on("connection", (socket) => {
+const jamRoomSocket = (io, socket) => {
 
     console.log(
       "🎤 Jam Connected:",
@@ -67,7 +65,13 @@ const jamRoomSocket = (io) => {
 
             roomType,
 
-            speakers: [],
+            speakers: [
+              {
+                userId: Number(userId),
+                muted: false,
+                socketId: socket.id,
+              }
+            ],
 
             viewers: [],
 
@@ -264,8 +268,14 @@ const jamRoomSocket = (io) => {
                 rows[0]
                   .room_type,
 
-              speakers: [],
-
+              //speakers: [],
+              speakers: [
+                {
+                  userId: Number(rows[0].host_id),
+                  muted: false,
+                  socketId: null,
+                }
+              ],
               viewers: [],
 
               reactions: [],
@@ -337,7 +347,39 @@ const jamRoomSocket = (io) => {
 
           }
 
-          // REMOVE DUPLICATE
+              // HOST AUTO SPEAKER
+
+        if (
+          Number(userId) ===
+          Number(room.hostId)
+        ) {
+
+          const hostSpeakerExists =
+            room.speakers.find(
+              s =>
+                Number(s.userId) ===
+                Number(userId)
+            );
+
+          if (!hostSpeakerExists) {
+
+            room.speakers.push({
+
+              userId:
+                Number(userId),
+
+              muted: false,
+
+              socketId:
+                socket.id,
+
+            });
+
+          }
+
+        }
+          
+      // REMOVE DUPLICATE
 
           room.viewers =
             room.viewers.filter(
@@ -420,6 +462,10 @@ const jamRoomSocket = (io) => {
 
             }
           );
+          io.to(roomId).emit(
+          "speaker_update",
+          room.speakers
+        );
 
         }
 
@@ -440,7 +486,7 @@ const jamRoomSocket = (io) => {
     // =========================================
 
     socket.on(
-      "send_message",
+      "jam:send_message",
       (data) => {
 
         try {
@@ -477,7 +523,7 @@ const jamRoomSocket = (io) => {
           };
 
           io.in(roomId).emit(
-            "receive_message",
+            "jam:receive_message",
             payload
           );
 
@@ -659,6 +705,51 @@ const jamRoomSocket = (io) => {
 
       }
     );
+
+///admin mute
+socket.on(
+  "toggle_speaker_mute",
+  (data) => {
+
+    io.to(data.roomId).emit(
+      "speaker_mute_toggle",
+      data
+    );
+
+    // update speakers array
+    const room =
+      jamRooms[data.roomId];
+
+    if (room) {
+
+      room.speakers =
+        room.speakers.map((s) => {
+
+          if (
+            Number(s.userId) ===
+            Number(data.userId)
+          ) {
+
+            return {
+              ...s,
+              muted: data.muted
+            };
+
+          }
+
+          return s;
+
+        });
+
+      io.to(data.roomId).emit(
+        "speaker_update",
+        room.speakers
+      );
+
+    }
+
+  }
+);
 
     // =========================================
     // TOGGLE MUTE
@@ -1272,7 +1363,7 @@ const jamRoomSocket = (io) => {
       }
     );
 
-  });
+  //});
 
 };
 

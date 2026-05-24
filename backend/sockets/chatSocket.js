@@ -1,17 +1,11 @@
 import giveReward from "../utils/giveReward.js";
-export default function chatSocket(io, db) {
+const users = {}; // shared memory
+const meetingRooms = {};
+const activeCalls = {};
 
+export default function chatSocket(io, socket, db) {
 
-
-  const users = {}; // userId → socketId
-
-  const meetingRooms = {};
-
-  const activeCalls = {};
-
-  io.on("connection", (socket) => {
-
-  console.log("🔌 User connected:", socket.id);
+   console.log("🔌 User connected:", socket.id);
 
 
    // =========================
@@ -137,6 +131,7 @@ if (toSocket) {
 }
 
 // optional: send ACK to sender (different event)
+const tempId = data.tempId || null;
 io.to(socket.id).emit("messageSent", {
   tempId: payload.tempId,
   status: "sent",
@@ -233,10 +228,13 @@ socket.on("acceptCall", ({ from, to, type }) => {
 
   // ✅ mark both busy
 
-  activeCalls[fromId] = true;
+  //activeCalls[fromId] = true;
 
-  activeCalls[toId] = true;
-
+//  activeCalls[toId] = true;
+if (activeCalls[fromId] || activeCalls[toId]) {
+  io.to(socket.id).emit("callRejected", { reason: "busy" });
+  return;
+}
 
 
   console.log("✅ Call accepted:", {
@@ -1486,9 +1484,5 @@ socket.on("disconnect", () => {
 
 
 });
-
-
-
-  });
 
 }

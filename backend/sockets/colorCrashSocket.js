@@ -9,13 +9,13 @@ const ENTRY_FEE = 10;
 
 const creatingRooms = {};
 
-const colorCrashSocket = (io) => {
+
 
   // ===================================
   // COIN UPDATE
   // ===================================
   const updateUserCoinsRealtime =
-    async (userId) => {
+    async (io,userId) => {
 
       try {
 
@@ -56,8 +56,7 @@ const colorCrashSocket = (io) => {
       }
     };
 
-
-  // ===================================
+// ===================================
   // SAVE REWARD HISTORY
   // ===================================
   const saveRewardHistory =
@@ -101,33 +100,20 @@ const colorCrashSocket = (io) => {
       }
     };
 
+//const colorCrashSocket = (io) => {
+const colorCrashSocket = (io, socket) => {
 
-  // ===================================
-  // CONNECTION
-  // ===================================
-  io.on("connection", (socket) => {
-
-    console.log(
-      "🎮 Connected:",
-      socket.id
-    );
     // ===================================
     // USER ROOM
     // ===================================
-    socket.on(
-      "join_user_room",
-      (userId) => {
+    socket.on("join_user_room", (userId) => {
+  const room = `user-${userId}`;
 
-        socket.join(
-          `user-${userId}`
-        );
+  if (socket.rooms.has(room)) return; // 👈 prevents spam
 
-        console.log(
-          "👤 User Joined Room:",
-          userId
-        );
-      }
-    );
+  socket.join(room);
+  console.log("👤 User Joined Room:", userId);
+});
 
 
     // ===================================
@@ -379,101 +365,101 @@ const colorCrashSocket = (io) => {
     // ===================================
     // JOIN ROOM
     // ===================================
-   socket.on(
-  "join_room",
-  async (data) => {
+    socket.on(
+    "join_room",
+    async (data) => {
 
-    try {
+      try {
 
-      const {
-        roomId,
-        userId,
-        name,
-      } = data;
+        const {
+          roomId,
+          userId,
+          name,
+        } = data;
 
-      let room =
-        rooms[roomId];
+        let room =
+          rooms[roomId];
 
-      // =========================
-      // LOAD ROOM
-      // =========================
-      if (!room) {
+        // =========================
+        // LOAD ROOM
+        // =========================
+        if (!room) {
 
-        const [roomRows] =
+          const [roomRows] =
+            await db.promise().query(
+              `
+              SELECT *
+              FROM game_rooms
+              WHERE room_id=?
+              LIMIT 1
+              `,
+              [roomId]
+            );
+
+          if (!roomRows.length) {
+
+            return socket.emit(
+              "error_message",
+              "Room not found"
+            );
+          }
+
+          const dbRoom =
+            roomRows[0];
+
+          rooms[roomId] = {
+
+            roomId,
+
+            hostId: null,
+
+            hostUserId:
+              dbRoom.host_user_id,
+
+            players: [],
+
+            viewers: [],
+
+            currentColor:
+              "gray",
+
+            gameStarted:
+              dbRoom.status ===
+              "running",
+
+            gameTime: 60,
+
+            interval:
+              null,
+          };
+
+          room =
+            rooms[roomId];
+        }
+
+        // =========================
+        // USER EXISTS?
+        // =========================
+        const [users] =
           await db.promise().query(
             `
-            SELECT *
-            FROM game_rooms
-            WHERE room_id=?
+            SELECT
+              srno,
+              coins
+            FROM users
+            WHERE srno=?
             LIMIT 1
             `,
-            [roomId]
+            [userId]
           );
 
-        if (!roomRows.length) {
+        if (!users.length) {
 
           return socket.emit(
             "error_message",
-            "Room not found"
+            "User not found"
           );
         }
-
-        const dbRoom =
-          roomRows[0];
-
-        rooms[roomId] = {
-
-          roomId,
-
-          hostId: null,
-
-          hostUserId:
-            dbRoom.host_user_id,
-
-          players: [],
-
-          viewers: [],
-
-          currentColor:
-            "gray",
-
-          gameStarted:
-            dbRoom.status ===
-            "running",
-
-          gameTime: 60,
-
-          interval:
-            null,
-        };
-
-        room =
-          rooms[roomId];
-      }
-
-      // =========================
-      // USER EXISTS?
-      // =========================
-      const [users] =
-        await db.promise().query(
-          `
-          SELECT
-            srno,
-            coins
-          FROM users
-          WHERE srno=?
-          LIMIT 1
-          `,
-          [userId]
-        );
-
-      if (!users.length) {
-
-        return socket.emit(
-          "error_message",
-          "User not found"
-        );
-      }
 
       const user =
         users[0];
@@ -586,9 +572,7 @@ const colorCrashSocket = (io) => {
         // =========================
         // REALTIME COINS
         // =========================
-        await updateUserCoinsRealtime(
-          userId
-        );
+        await updateUserCoinsRealtime(io, userId );
       }
 
       // =========================
@@ -688,7 +672,7 @@ const colorCrashSocket = (io) => {
             true;
 
           room.gameTime =
-            60;
+            45;
 
           await db.promise().query(
             `
@@ -706,6 +690,12 @@ const colorCrashSocket = (io) => {
             "yellow",
           ];
 
+          //////
+io.to(roomId).emit("game_tick", {
+  time: room.gameTime,
+  color: room.currentColor,
+  players: room.players
+});
           io.to(roomId).emit(
             "game_started"
           );
@@ -811,9 +801,7 @@ const colorCrashSocket = (io) => {
                         debit: "0",
                       });
 
-                      await updateUserCoinsRealtime(
-                        winner.userId
-                      );
+                      await updateUserCoinsRealtime(io, winner.userId);
 
                       await db.promise().query(
                         `
@@ -912,7 +900,10 @@ const colorCrashSocket = (io) => {
                         room.gameTime,
                     }
                   );
-
+                  io.to(roomId).emit("room_sync", {
+                    gameTime: room.gameTime,
+                    players: room.players,
+                  });
                 } catch (err) {
 
                   console.log(
@@ -1009,165 +1000,117 @@ const colorCrashSocket = (io) => {
     // ===================================
     // CHAT
     // ===================================
-    socket.on(
-      "send_message",
-      async (data) => {
+socket.on("color:send_message", async (data) => {
+  const { roomId, userId, name, message } = data;
 
-        try {
+  // per-socket spam protection only
+  socket.data.msgLock = socket.data.msgLock || {};
 
-          const {
-            roomId,
-            userId,
-            name,
-            message,
-          } = data;
+  const key = `${roomId}-${message}`;
 
-          const room =
-            rooms[roomId];
+  if (socket.data.msgLock[key]) return;
 
-          if (!room) return;
+  socket.data.msgLock[key] = true;
 
-          const msg = {
+  setTimeout(() => {
+    delete socket.data.msgLock[key];
+  }, 300);
 
-            id:
-              Date.now() +
-              Math.random(),
+  const msg = {
+    id: Date.now() + Math.random(),
+    userId,
+    name,
+    message,
+    createdAt: new Date(),
+  };
 
-            userId,
+  await db.promise().query(
+    `INSERT INTO game_chat_logs (room_id, user_id, message)
+     VALUES (?, ?, ?)`,
+    [roomId, userId, message]
+  );
 
-            name,
+  io.to(roomId).emit("color:receive_message", msg);
+});
 
-            message,
+function safeRoom(room) {
+  return {
+    roomId: room.roomId,
+    hostUserId: room.hostUserId,
+    players: room.players,
+    viewers: room.viewers,
+    currentColor: room.currentColor,
+    gameStarted: room.gameStarted,
+    gameTime: room.gameTime,
+  };
+}
+let lastEmit = {};
+function emitRoom(io, roomId, room) {
+  const now = Date.now();
 
-            createdAt:
-              new Date(),
-          };
+  if (lastEmit[roomId] && now - lastEmit[roomId] < 200) return;
 
-          await db.promise().query(
-            `
-            INSERT INTO
-            game_chat_logs
-            (
-              room_id,
-              user_id,
-              message
-            )
-            VALUES (?, ?, ?)
-            `,
-            [
-              roomId,
-              userId,
-              message,
-            ]
-          );
+  lastEmit[roomId] = now;
 
-          io.to(roomId).emit(
-            "receive_message",
-            msg
-          );
-
-        } catch (err) {
-
-          console.log(
-            "❌ CHAT ERROR:",
-            err
-          );
-        }
-      }
-    );
-
-
+  io.to(roomId).emit("room_update", safeRoom(room));
+}
     // ===================================
     // DISCONNECT
     // ===================================
-    socket.on(
-      "disconnect",
-      () => {
+    socket.on("disconnect", () => {
+  console.log("❌ Disconnect:", socket.id);
 
-        console.log(
-          "❌ Disconnect:",
-          socket.id
-        );
+  for (const roomId in rooms) {
+    const room = rooms[roomId];
 
-        for (
-          const roomId
-          in rooms
-        ) {
+    const beforePlayers = room.players.length;
+    const beforeViewers = room.viewers.length;
 
-          const room =
-            rooms[roomId];
-
-          room.players =
-            room.players.filter(
-              (p) =>
-                p.socketId !==
-                socket.id
-            );
-
-          room.viewers =
-            room.viewers.filter(
-              (v) =>
-                v.socketId !==
-                socket.id
-            );
-
-          io.to(roomId).emit(
-            "room_update",
-            room
-          );
-
-          // =========================
-          // DELETE ROOM
-          // =========================
-          if (
-            room.players.length ===
-              0 &&
-            room.viewers.length ===
-              0
-          ) {
-
-            if (
-              room.interval
-            ) {
-
-              clearInterval(
-                room.interval
-              );
-            }
-
-            delete rooms[roomId];
-
-            console.log(
-              "🗑 Room Deleted:",
-              roomId
-            );
-          }
-        }
-      }
+    room.players = room.players.filter(
+      (p) => p.socketId !== socket.id
     );
+
+    room.viewers = room.viewers.filter(
+      (v) => v.socketId !== socket.id
+    );
+
+    const changed =
+      room.players.length !== beforePlayers ||
+      room.viewers.length !== beforeViewers;
+
+    if (!changed) continue; // 👈 IMPORTANT
+
+   emitRoom(io, roomId, room);
+
+    // delete room if empty
+    if (room.players.length === 0 && room.viewers.length === 0) {
+      if (room.interval) clearInterval(room.interval);
+      delete rooms[roomId];
+      console.log("🗑 Room Deleted:", roomId);
+    }
+  }
+});
 
 //LEAVE ROOM ...
 socket.on("leave_room", ({ roomId, userId }) => {
 
   socket.leave(roomId);
 
-  if (!gameRooms[roomId]) return;
+  if (!rooms[roomId]) return;
 
-  gameRooms[roomId].players =
-    gameRooms[roomId].players.filter(
+  rooms[roomId].players =
+    rooms[roomId].players.filter(
       (p) => p.userId != userId
     );
 
   io.to(roomId).emit(
     "room_update",
-    gameRooms[roomId]
+    rooms[roomId]
   );
 
 });
 
-
-  });
+ // });
 };
-
 
 export default colorCrashSocket;

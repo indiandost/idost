@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 
 import socket from "../socket";
@@ -38,7 +39,7 @@ export default function ChatBox({
     if (!message.trim()) return;
 
     socket.emit(
-      "send_message",
+      "color:send_message",
       {
         roomId,
         userId: user?.srno,

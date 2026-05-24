@@ -1,0 +1,1009 @@
+import { useEffect, useState, useRef  } from "react";
+import { useParams, useLocation } from "react-router-dom";
+import socket from "../socket";
+import AgoraRTC from "agora-rtc-sdk-ng";
+AgoraRTC.setLogLevel(1); // 👈 ADD HERE
+import imageCompression from "browser-image-compression";
+import GiftBar from "../components/GiftBar";
+const API = import.meta.env.VITE_API_URL;
+const APP_ID = import.meta.env.VITE_AGORA_APP_ID;
+
+export default function Chat() {
+const { id } = useParams();
+const friendId =  id && !isNaN(id)   ? Number(id)  : null;
+ console.log('fr-id '+ friendId);
+  const location = useLocation();
+  const callTimeoutRef = useRef(null);
+  const hasCalledRef = useRef(false);
+ // const myId = JSON.parse(localStorage.getItem("user"))?.srno;
+  const storedUser =  JSON.parse(localStorage.getItem("user"));
+  const myId =  parseInt(storedUser?.srno) || 0;
+if (!myId) {
+
+  console.log("Invalid user");
+
+  return (
+    <div className="text-white p-4">
+      Please login again
+    </div>
+  );
+}
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([]);
+  //const [client, setClient] = useState(null);
+const [image, setImage] = useState(null);
+const [preview, setPreview] = useState(null);
+const [callStarted, setCallStarted] = useState(false);
+const [joined, setJoined] = useState(false);
+const [friend, setFriend] = useState(null);
+const [onlineUsers, setOnlineUsers] = useState([]);
+const [calling, setCalling] = useState(false);
+const [localTracks, setLocalTracks] = useState(null);
+const [isCameraOn, setIsCameraOn] = useState(true);
+const [isMuted, setIsMuted] = useState(false);
+const [callLoading, setCallLoading] = useState(false);
+  const clientRef = useRef(null);
+  const callStartRef = useRef(null);
+const callTypeRef = useRef("audio");
+
+  if (friendId === null) {
+  return ( <div className="text-white p-4">  Invalid chat user </div> );
+  }
+useEffect(() => {
+  if (!friendId) return;
+
+  fetch( `${API}/users/${friendId}?viewer=${myId}`)
+    .then(res => res.json())
+    .then(data => setFriend(data))
+    .catch(err => console.log(err));
+
+}, [friendId]);
+
+//Listen to socket
+useEffect(() => {
+  socket.on("onlineUsers", (list) => {
+    console.log("🟢 Online users:", list);
+    setOnlineUsers(list);
+  });
+
+  return () => socket.off("onlineUsers");
+}, []);
+
+const isOnline = onlineUsers.some(
+  (id) => Number(id) === Number(friendId)
+);
+
+  // =============================
+  // AUTO CALL
+  // =============================
+/*useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  const callType = params.get("call");
+  const join = params.get("join");
+
+  // Caller side
+  if (callType && friendId && myId && !callStarted) {
+    setCallStarted(true);
+    startCall(callType);
+  }
+}, [location.search, friendId, myId]);
+*/
+
+/*useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  const accepted = params.get("callAccepted");
+  const type = params.get("type");
+
+  if (accepted && !joined) {
+    console.log("📲 Receiver starting call");
+    setJoined(true);
+    startAgoraCall(type || "video");
+  }
+}, [location.search]);
+*/
+
+  // Receiver side
+ /* if (join && !joined) {
+    setJoined(true);
+    startAgoraCall(params.get("type") || "video");
+  }
+    */
+
+
+
+// =============================
+// 📥 RECEIVE MESSAGE
+// =============================
+useEffect(() => {
+  const handler = (data) => {
+    console.log("📩 Incoming:", data);
+
+    setMessages((prev) => {
+      // ❗ prevent duplicate (if same message already added locally)
+      const exists = prev.some(
+        (m) =>
+          m.id === data.id ||
+          (m.createdAt === data.createdAt &&
+            m.from === data.from &&
+            m.to === data.to)
+      );
+
+      if (exists) return prev;
+
+      return [...prev, data];
+    });
+  };
+
+  socket.on("receiveMessage", handler);
+
+  return () => socket.off("receiveMessage", handler);
+}, []);
+
+//imp for proper ending call//
+const cleanupCall = async () => {
+  try {
+
+    if (localTracks?.mic) {
+      localTracks.mic.stop();
+      localTracks.mic.close();
+    }
+
+    if (localTracks?.cam) {
+      localTracks.cam.stop();
+      localTracks.cam.close();
+    }
+
+    if (clientRef.current) {
+
+      clientRef.current.removeAllListeners();
+
+      await clientRef.current.leave();
+
+      clientRef.current = null;
+    }
+
+    document.getElementById("local-video")?.replaceChildren();
+
+    document.getElementById("remote-video")?.replaceChildren();
+
+    setLocalTracks(null);
+
+    setJoined(false);
+
+    setCallStarted(false);
+
+    setIsMuted(false);
+
+    setIsCameraOn(true);
+
+    setCalling(false);
+
+    localStorage.removeItem("isInCall");
+
+    hasCalledRef.current = false;
+
+  } catch (err) {
+
+    console.log(err);
+
+  }
+};
+
+useEffect(() => {
+  const handleCallEnded = () => {
+    console.log("📴 Call ended (remote)");
+
+    cleanupCall(); // 👈 use separate cleanup
+  };
+
+  socket.on("callEnded", handleCallEnded);
+
+  return () => socket.off("callEnded", handleCallEnded);
+}, [clientRef.current, localTracks]);
+
+useEffect(() => {
+  const handler = () => {
+    console.log("❌ Call rejected");
+
+    // ✅ stop calling UI
+    setCalling(false);
+
+    // ✅ clear timeout
+    if (callTimeoutRef.current) {
+      clearTimeout(callTimeoutRef.current);
+      callTimeoutRef.current = null;
+    }
+
+    // ✅ reset guard
+    hasCalledRef.current = false;
+
+    // ❗ optional UI (better than alert)
+    // showToast("Call rejected");
+  };
+
+  socket.on("callRejected", handler);
+
+  return () => {
+    socket.off("callRejected", handler);
+  };
+}, []);
+
+
+//audio mute unmute
+const toggleMute = async () => {
+  if (!localTracks?.mic) return;
+
+  if (isMuted) {
+    await localTracks.mic.setEnabled(true); // unmute
+    setIsMuted(false);
+  } else {
+    await localTracks.mic.setEnabled(false); // mute
+    setIsMuted(true);
+  }
+};
+//video on off
+const toggleCamera = async () => {
+  if (!localTracks?.cam) {
+    alert("No camera available");
+    return;
+  }
+
+  const newState = !isCameraOn;
+
+  await localTracks.cam.setEnabled(newState);
+
+  setIsCameraOn(newState);
+};
+
+//GIFT code
+useEffect(() => {
+  const roomId =
+    [myId, friendId]
+    .sort()
+    .join("_");
+  socket.emit("joinRoom", roomId);
+}, [myId, friendId]);
+
+// =============================
+// 📤 SEND MESSAGE
+// =============================
+
+const sendMessage = async () => {
+  if (!message.trim() && !image) return;
+
+  let imageUrl = null;
+
+  try {
+    if (image) {
+      // 🔥 COMPRESS IMAGE
+      const options = {
+        maxSizeMB: 0.3,           // 👈 max 300KB
+        maxWidthOrHeight: 1024,   // 👈 resize
+        useWebWorker: true,
+      };
+
+      const compressedFile = await imageCompression(image, options);
+
+      const formData = new FormData();
+      formData.append("image", compressedFile);
+
+      const res = await fetch(`${API}/api/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      imageUrl = data.url;
+    }
+
+    const msgData = {
+      from: parseInt(myId) || 0,
+      to: parseInt(friendId) || 0,
+      message,
+      media_url: imageUrl,
+      type: imageUrl ? "image" : "text",
+      createdAt: new Date().toISOString(),
+    };
+
+    socket.emit("sendMessage", msgData);
+    //setMessages((prev) => [...prev, msgData]);
+
+    setMessage("");
+    setImage(null);
+    setPreview(null);
+
+  } catch (err) {
+    console.error("❌ Upload error:", err);
+  }
+};
+
+  // =============================
+  // START CALL
+  // =============================
+  /*
+const startLocalPreview = async (type) => {
+  try {
+    let mic = null;
+    let cam = null;
+
+    if (type === "audio") {
+      mic = await AgoraRTC.createMicrophoneAudioTrack();
+    }
+
+    if (type === "video") {
+      [mic, cam] = await AgoraRTC.createMicrophoneAndCameraTracks();
+
+      //document.getElementById("local-video")?.replaceChildren();
+      const localDiv = document.getElementById("local-video");
+
+        if (localDiv) {
+          localDiv.replaceChildren();   // ✅ CLEAR
+          cam.play(localDiv);
+        }
+    }
+
+    setLocalTracks({ mic, cam });
+
+  } catch (err) {
+    console.error("Preview error:", err);
+  }
+};
+*/
+  /*const startCall = (type) => {
+    socket.emit("callUser", {
+      from: myId,
+      to: friendId,
+      type,
+    });
+  };
+*/
+const startCall = async (type) => {
+   if (hasCalledRef.current) return; // 🚫 prevents double run
+  hasCalledRef.current = true;  
+  setCalling(true);
+  callStartRef.current = Date.now();
+  callTypeRef.current = type;
+  // 1️⃣ Start local preview ONLY (no join yet)
+  /////////await startLocalPreview(type);
+  // 2️⃣ Send call request
+  socket.emit("callUser", {
+    from: myId,
+    to: friendId,
+    type,
+  });
+
+  // 3️⃣ Start timeout
+ // clear old timeout
+  if (callTimeoutRef.current) {
+    clearTimeout(callTimeoutRef.current);
+  }
+
+  callTimeoutRef.current = setTimeout(() => {
+    setCalling(false);
+    hasCalledRef.current = false; // ✅ reset
+    alert("No response");
+  }, 10000);
+};
+  // =============================
+  // AGORA CALL
+ /* // =============================
+const startAgoraCall = async (type) => {
+const devices = await navigator.mediaDevices.enumerateDevices();
+
+const hasMic = devices.some(d => d.kind === "audioinput");
+const hasCam = devices.some(d => d.kind === "videoinput");
+
+// 🚫 NO DEVICE → SIGNAL ONLY (DO NOT JOIN AGORA)
+if (!hasMic && !hasCam) {
+  console.log("⚠️ No device → call signaling only");
+
+  setJoined(false); // important
+  return;
+}
+
+if (client !== null) {
+    console.log("⚠️ Already in call");
+    return;
+  }
+
+  try {
+    // 🔐 Ask permission (must be user-triggered)
+    await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: type === "video",
+    });
+
+    const channel = [myId, friendId].sort().join("_");
+
+    const rtcClient = AgoraRTC.createClient({
+      mode: "rtc",
+      codec: "vp8",
+    });
+
+    await rtcClient.join(APP_ID, channel, null, Number(myId));
+
+    // ✅ set client once
+    setClient(rtcClient);
+
+    // 🔥 clear old UI safely
+    const localDiv = document.getElementById("local-video");
+    const remoteDiv = document.getElementById("remote-video");
+    if (localDiv) localDiv.innerHTML = "";
+    if (remoteDiv) remoteDiv.innerHTML = "";
+
+    let mic = null;
+    let cam = null;
+
+    // 🎤 AUDIO CALL
+    if (type === "audio") {
+      mic = await AgoraRTC.createMicrophoneAudioTrack();
+      //await rtcClient.publish([mic]);
+    }
+
+    // 🎥 VIDEO CALL
+    if (type === "video") {
+      try {
+        [mic, cam] = await AgoraRTC.createMicrophoneAndCameraTracks();
+
+        await rtcClient.publish([mic, cam]);
+        const localDiv = document.getElementById("local-video");
+       if (localDiv) {
+          localDiv.replaceChildren();   // ✅ CLEAR OLD VIDEO
+          cam.play(localDiv);
+        }
+      } catch (err) {
+        console.log("⚠️ Camera error → fallback to audio");
+
+        mic = await AgoraRTC.createMicrophoneAudioTrack();
+        await rtcClient.publish([mic]);
+
+        alert("🎤 Camera not available. Switched to audio.");
+      }
+    }
+
+    // ✅ store tracks
+    setLocalTracks({ mic, cam });
+
+    // =============================
+    // 👤 REMOTE USER HANDLER
+    // =============================
+    rtcClient.on("user-published", async (user, mediaType) => {
+      // ❌ ignore self
+      if (user.uid == myId) return;
+
+      await rtcClient.subscribe(user, mediaType);
+
+      if (mediaType === "video") {
+        const remoteDiv = document.getElementById("remote-video");
+       if (remoteDiv) {
+          remoteDiv.replaceChildren();  // ✅ CLEAR OLD VIDEO
+          user.videoTrack.play(remoteDiv);
+        }
+      }
+
+      if (mediaType === "audio") {
+        user.audioTrack.play();
+      }
+    });
+
+  } catch (err) {
+    console.error("Agora error:", err);
+    alert("❌ Camera/Mic permission denied or device not found");
+  }
+};
+*/
+const startAgoraCall = async (type) => {
+  if (localStorage.getItem("isInCall") === "1" && clientRef.current) {
+  return;
+}
+  setCallLoading(true);
+  if (clientRef.current) {
+    console.log("⚠️ Already in call");
+    return;
+  }
+
+  try {
+
+    const channel = [myId, friendId].sort().join("_");
+
+    const rtcClient = AgoraRTC.createClient({
+      mode: "rtc",
+      codec: "vp8",
+    });
+
+    await rtcClient.join(APP_ID, channel, null, Number(myId));
+    await rtcClient.enableAudioVolumeIndicator();
+
+   clientRef.current = rtcClient;
+   //setClient(rtcClient);
+
+    // 🔥 clear old video safely
+    const localDiv = document.getElementById("local-video");
+    const remoteDiv = document.getElementById("remote-video");
+
+    if (localDiv) localDiv.replaceChildren();
+    if (remoteDiv) remoteDiv.replaceChildren();
+
+    let mic = null;
+    let cam = null;
+
+    // =============================
+    // 🎤 CREATE MIC
+    // =============================
+    try {
+      mic = await AgoraRTC.createMicrophoneAudioTrack();
+    } catch (err) {
+      console.log("⚠️ No microphone available");
+    }
+
+    // =============================
+    // 🎥 CREATE CAMERA (VIDEO CALL)
+    // =============================
+    if (type === "video") {
+      try {
+
+        cam = await AgoraRTC.createCameraVideoTrack();
+
+        if (localDiv) {
+          cam.play(localDiv);
+         }
+
+      } catch (err) {
+        console.log("⚠️ Camera unavailable");
+      }
+    }
+
+    // =============================
+    // 🚀 PUBLISH AVAILABLE TRACKS
+    // =============================
+  const tracks = [mic, cam].filter(Boolean);
+
+if (tracks.length > 0) {
+  await rtcClient.publish(tracks);
+
+  // ✅ force enable
+  if (mic) await mic.setEnabled(true);
+  if (cam) await cam.setEnabled(true);
+}
+
+// ✅ hide loader after publish success
+setCallLoading(false);
+
+    // ✅ save tracks
+    setLocalTracks({ mic, cam });
+
+    // =============================
+    // 👤 REMOTE USER HANDLER
+    // =============================
+   rtcClient.on("user-published", async (user, mediaType) => {
+
+  if (user.uid == myId) return;
+
+  await rtcClient.subscribe(user, mediaType);
+
+  // 🎥 REMOTE VIDEO
+  if (mediaType === "video" && user.videoTrack) {
+
+    const remoteDiv = document.getElementById("remote-video");
+
+    if (remoteDiv) {
+
+      if (!remoteDiv.hasChildNodes()) {
+        user.videoTrack.play(remoteDiv);
+      }
+    }
+  }
+
+  // 🎤 REMOTE AUDIO
+ /* if (mediaType === "audio" && user.audioTrack) {
+
+    setTimeout(() => {
+      try {
+        user.audioTrack.play();
+      } catch (err) {
+        console.log("Remote audio play error", err);
+      }
+    }, 500);
+  }*/
+  if (mediaType === "audio" && user.audioTrack) {
+    try {
+      user.audioTrack.play();
+      console.log("🔊 Remote audio playing");
+    } catch (err) {
+      console.log("Remote audio play error", err);
+    }
+  }
+});
+
+    // =============================
+    // 👋 REMOTE USER LEFT
+    // =============================
+   rtcClient.on("user-unpublished", (user, mediaType) => {
+  if (mediaType === "video") {
+    const remoteDiv =
+      document.getElementById("remote-video");
+
+    if (remoteDiv) {
+      remoteDiv.innerHTML = "";
+    }
+  }
+});
+
+  } catch (err) {
+    setCallLoading(false); 
+    console.error("Agora error:", err);
+    alert("❌ Unable to start call");
+  }
+};
+  // =============================
+  // CALL ACCEPT (triggered from App.jsx normally)
+  // =============================
+useEffect(() => {
+  const handler = (data) => {
+    console.log("✅ Call accepted:", data);
+
+    localStorage.setItem("isInCall", "1");
+
+    clearTimeout(callTimeoutRef.current);
+
+    hasCalledRef.current = false;
+    setCalling(false);
+
+    if (!joined) {
+      setJoined(true);
+      startAgoraCall(data.type || "video");
+    }
+  };
+
+  socket.on("callAccepted", handler);
+
+  return () => socket.off("callAccepted", handler);
+}, []);//joined
+
+////CHAT HISTORY API CALL ////
+useEffect(() => {
+  if (!myId || !friendId) {
+
+  console.log(
+    "Invalid IDs",
+    myId,
+    friendId
+  );
+
+  return (
+    <div className="text-white p-4">
+      Invalid chat user
+    </div>
+  );
+}
+  fetch(`${API}/api/chat/${myId}/${friendId}`)
+    .then(res => res.json())
+    .then(data => setMessages(data));
+}, [friendId, myId]);
+
+//next call fails
+/*useEffect(() => {
+  return () => {
+    if (client) {
+      client.leave();
+    }
+  };
+}, [client]); */
+  // =============================
+  // END CALL
+  // =============================
+////main endcall////
+const endCall = async () => {
+
+  const duration = callStartRef.current
+    ? Math.floor((Date.now() - callStartRef.current) / 1000)
+    : 0;
+
+  socket.emit("sendMessage", {
+    from: myId,
+    to: friendId,
+    message: `${callTypeRef.current} call duration ${duration}s`,
+    type: "call_accepted",
+    createdAt: new Date().toISOString(),
+  });
+
+  socket.emit("endCall", {
+    from: myId,
+    to: friendId,
+  });
+
+  await cleanupCall();
+};
+
+const handleImageSelect = (e) => {
+  const file = e.target.files[0];
+
+  if (!file) return;
+
+  setImage(file);
+  setPreview(URL.createObjectURL(file));
+};
+  return (
+    <div className="flex flex-col h-screen bg-black text-white">
+    {calling && !clientRef.current && (
+    <div className="text-center text-yellow-400">
+      ⏳ Calling...
+    </div>
+    )}
+    {clientRef.current && (
+      <div className="text-center text-green-400">
+        🟢 Connected
+      </div>
+    )}
+      {/* HEADER */}
+      <div className="p-3 bg-gray-900 flex justify-between mt-5">
+        <div className="flex items-center gap-3">
+
+  {/* 📷 Profile Pic */}
+  <img
+    src={friend?.pic || "/default-user.png"}
+    alt="user"
+    className="w-10 h-10 rounded-full object-cover border"
+  />
+
+  {/* 👤 Name + Age */}
+  <div>
+    <div className="font-semibold text-white">
+      {friend?.name || "Loading..."}
+    </div>
+
+    <div className="text-xs text-gray-400">
+      {friend?.age ? `${friend.age} yrs` : ""}
+    </div>
+  </div>
+
+    {/* 🟢 ONLINE STATUS */}
+    <div className="text-xs">
+        {isOnline ? (
+          <span className="text-green-400">● Online</span>
+        ) : (
+          <span className="text-gray-400">● Offline</span>
+        )}
+    </div>
+</div>
+      
+  <div className="flex gap-2">
+  {Number(friend?.onst) === 1 && (
+    <>
+      <button
+        onClick={() => startCall("audio")}
+        className="bg-green-500 px-3 py-1 rounded"
+      >
+        📞
+      </button>
+
+      <button
+        onClick={() => startCall("video")}
+        className="bg-purple-500 px-3 py-1 rounded"
+      >
+        🎥
+      </button>
+    </>
+  )}
+        </div>
+       
+      </div>
+
+      {/* VIDEO CONTAINER */}
+   {isOnline && (
+      <div className="grid grid-cols-2 gap-2 p-2 transition-all duration-300">
+        {callLoading && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+            <div className="text-white text-lg animate-pulse">
+              📞 Connecting...
+            </div>
+          </div>
+        )}
+        <div id="local-video" className="h-40 bg-gray-800 rounded"></div>
+        <div id="remote-video" className="h-40 bg-gray-800 rounded"></div>
+        {clientRef.current && ( 
+            <div className="flex gap-2">
+              <button
+                onClick={toggleMute}
+                className="bg-gray-700 px-3 py-2 rounded"
+              >
+                {isMuted ? "🔇 Unmute" : "🎤 Mute"}
+              </button>
+
+              <button
+                onClick={toggleCamera}
+                className="bg-gray-700 px-3 py-2 rounded"
+              >
+                {isCameraOn ? "📷 Off" : "📷 On"}
+              </button>
+            </div>
+          )}
+      </div>
+    )}
+
+
+{/* CHAT */}
+<div className="flex-1 overflow-y-auto p-3 space-y-2">
+  {messages.map((m, i) => {
+    const isMe = m.from == myId;
+
+    // 🛡️ Ensure valid date
+    if (!m.createdAt) return null;
+
+    const msgDate = new Date(m.createdAt);
+    const prevMsg = messages[i - 1];
+    const prevDate = prevMsg?.createdAt
+      ? new Date(prevMsg.createdAt)
+      : null;
+
+    // ✅ Show header ONLY when date changes
+    const showDateHeader =
+      !prevDate ||
+      msgDate.toDateString() !== prevDate.toDateString();
+
+    // 📅 Format date label
+    const today = new Date();
+    const isToday =
+      msgDate.toDateString() === today.toDateString();
+
+    const dateLabel = isToday
+      ? "Today"
+      : msgDate.toLocaleDateString();
+
+    // ⏰ Format time
+    const time = msgDate.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    return (
+      <div key={`${m.id || i}-${m.createdAt}`}>
+
+        {/* 📅 DATE HEADER */}
+        {showDateHeader && (
+          <div className="text-center text-gray-400 text-xs my-2">
+            {dateLabel}
+          </div>
+        )}
+
+        {/* 💬 MESSAGE */}
+        <div className={isMe ? "text-right" : "text-left"}>
+
+          {/* 🖼 IMAGE */}
+          {m.media_url && (
+            <img
+              src={`${m.media_url}?t=${m.id}`}
+              className="w-40 rounded-lg mb-1 inline-block"
+            />
+          )}
+
+          {/* 💬 TEXT */}
+          {m.message && (
+            <div
+              className={`px-3 py-1 rounded inline-block ${
+                isMe ? "bg-blue-500" : "bg-gray-700"
+              }`}
+            >
+              {m.message}
+            </div>
+          )}
+
+          {/* ⏰ TIME */}
+          <div className="text-[10px] text-gray-400 mt-1">
+            {time}
+          </div>
+
+        </div>
+      </div>
+    );
+  })}
+</div>
+
+   {/* CHAT INPUT BAR */}
+<div
+  className="
+    fixed
+    bottom-20
+    left-0
+    right-0
+    z-50
+    bg-gray-900
+    border-t
+    border-gray-800
+    p-3
+  "
+>
+
+  {/* IMAGE PREVIEW */}
+  {preview && (
+    <div className="mb-2 bg-gray-800 p-2 rounded-xl flex items-center gap-2">
+
+      <img
+        src={preview}
+        className="w-16 h-16 rounded-lg object-cover"
+      />
+
+      <button
+        onClick={() => {
+          setImage(null);
+          setPreview(null);
+        }}
+        className="text-red-400 text-sm"
+      >
+        ❌ Remove
+      </button>
+
+    </div>
+  )}
+
+  {/* INPUT ROW */}
+  <div className="flex items-center gap-2">
+
+    {/* ATTACH */}
+    <label className="cursor-pointer text-white bg-gray-700 p-3 rounded-full hover:bg-gray-600 shrink-0">
+
+      📎
+
+      <input
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={handleImageSelect}
+      />
+
+    </label>
+
+    {/* TEXT INPUT */}
+    <input
+      value={message}
+      onChange={(e) => setMessage(e.target.value)}
+      placeholder="Type a message..."
+      className="
+        flex-1
+        px-4
+        py-3
+        bg-gray-800
+        rounded-full
+        text-white
+        outline-none
+      "
+    />
+
+    {/* SEND */}
+    <button
+      onClick={sendMessage}
+      className="
+        bg-blue-500
+        px-5
+        py-3
+        rounded-full
+        text-white
+        hover:bg-blue-600
+        shrink-0
+      "
+    >
+      Send
+    </button>
+
+  </div>
+
+</div>
+
+      {/* END CALL */}
+      {clientRef.current && (
+            <><GiftBar
+                    myId={myId}
+                    hostId={friendId}
+                    roomId={[myId, friendId].sort().join("_")}
+                    socket={socket}
+              />
+        <button
+          onClick={endCall}
+          className="absolute bottom-20 right-5 bg-red-600 px-4 py-2 rounded-full"
+        > End Call
+        </button>
+        </>
+      )}
+    </div>
+  );
+}

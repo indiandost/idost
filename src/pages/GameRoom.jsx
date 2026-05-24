@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -13,7 +13,7 @@ export default function GameRoom() {
   const navigate = useNavigate();
 
   const { roomId } = useParams();
-
+  const joinedRef = useRef(false);
   const user = JSON.parse(
     localStorage.getItem("user")
   );
@@ -31,7 +31,7 @@ export default function GameRoom() {
     useState("gray");
 
   const [gameTime, setGameTime] =
-    useState(60);
+    useState(45);
 
   const [winner, setWinner] =
     useState(null);
@@ -68,241 +68,111 @@ export default function GameRoom() {
   // JOIN ROOM
   // =========================
 useEffect(() => {
+  if (!roomId || !user) return;
 
+  if (joinedRef.current) return;
+  joinedRef.current = true;
+
+  socket.emit("join_room", {
+    roomId,
+    userId: user.srno,
+    name: user.name || "Player",
+  });
+
+  return () => {
+    socket.emit("leave_room", {
+      roomId,
+      userId: user.srno,
+    });
+
+    joinedRef.current = false;
+  };
+}, [roomId]);
+
+
+//////
+const handleGameStarted = () => {
+  setGameTime(45);
+  //setGameStarted(true);
+  setWinner(null);
+};
+
+useEffect(() => {
   if (!roomId || !user) return;
 
   socket.emit("join_room", {
     roomId,
-    userId: user?.srno,
-    name: user?.name || "Player",
+    userId: user.srno,
+    name: user.name || "Player",
   });
 
+  const handleRoomUpdate = (data) => {
+    setRoom(data);
+    setPlayers(data.players || []);
+    setLoading(false);
+  };
+
+  const handleNewColor = (data) => {
+    setCurrentColor(data.color || "gray");
+
+    setGameTime((prev) =>
+      typeof data.gameTime === "number" ? data.gameTime : prev
+    );
+
+    setGameStarted(true);
+  };
+
+  const handleScoreUpdate = (data) => {
+    if (Array.isArray(data)) setPlayers(data);
+  };
+
+  const handleMessage = (msg) => {
+    setMessages((prev) => {
+      if (prev.some((m) => m.id === msg.id)) return prev;
+      return [...prev, msg];
+    });
+  };
+
+  const handleGameStarted = () => {
+    setGameStarted(true);
+    setWinner(null);
+  };
+
+  const handleGameEnd = (data) => {
+    setWinner(data?.winner || null);
+    setGameStarted(false);
+    setCurrentColor("gray");
+  };
+
+  const handleError = (msg) => {
+    setError(msg);
+  };
+
+  socket.off(); // 🔥 IMPORTANT: clears old duplicates
+
+  socket.on("room_update", handleRoomUpdate);
+  socket.on("new_color", handleNewColor);
+  socket.on("score_update", handleScoreUpdate);
+  socket.on("color:receive_message", handleMessage);
+  socket.on("game_started", handleGameStarted);
+  socket.on("game_ended", handleGameEnd);
+  socket.on("error_message", handleError);
+
   return () => {
+    socket.off("room_update", handleRoomUpdate);
+    socket.off("new_color", handleNewColor);
+    socket.off("score_update", handleScoreUpdate);
+    socket.off("color:receive_message", handleMessage);
+    socket.off("game_started", handleGameStarted);
+    socket.off("game_ended", handleGameEnd);
+    socket.off("error_message", handleError);
 
     socket.emit("leave_room", {
       roomId,
-      userId: user?.srno,
+      userId: user.srno,
     });
-
   };
-
-}, [roomId, user]);
-
-  // =========================
-  // SOCKET EVENTS
-  // =========================
-  useEffect(() => {
-
-    // ROOM UPDATE
-    const handleRoomUpdate =
-      (data) => {
-
-        console.log(
-          "📦 ROOM UPDATE:",
-          data
-        );
-
-        setRoom(data);
-
-        setPlayers(
-          data?.players || []
-        );
-
-        setLoading(false);
-      };
-
-
-    // NEW COLOR
-    const handleNewColor =
-      (data) => {
-
-        console.log(
-          "🎨 NEW COLOR:",
-          data
-        );
-
-        setCurrentColor(
-          data?.color ||
-          "gray"
-        );
-
-        setGameTime(
-          data?.gameTime || 0
-        );
-
-        setGameStarted(true);
-      };
-
-
-    // SCORE UPDATE
-    const handleScoreUpdate =
-      (data) => {
-
-        console.log(
-          "🏆 SCORE UPDATE:",
-          data
-        );
-
-        setPlayers(
-          [...data]
-        );
-      };
-
-
-    // CHAT
-    const handleMessage =
-      (msg) => {
-
-        console.log(
-          "💬 MESSAGE:",
-          msg
-        );
-
-        setMessages((prev) => {
-
-          const already =
-            prev.find(
-              (m) =>
-                m.id === msg.id
-            );
-
-          if (already) {
-            return prev;
-          }
-
-          return [
-            ...prev,
-            msg,
-          ];
-        });
-      };
-
-
-    // GAME STARTED
-    const handleGameStarted =
-      () => {
-
-        console.log(
-          "🚀 GAME STARTED"
-        );
-
-        setWinner(null);
-
-        setGameStarted(true);
-      };
-
-
-    // GAME END
-    const handleGameEnd =
-      (data) => {
-
-        console.log(
-          "🏁 GAME ENDED:",
-          data
-        );
-
-        setWinner(
-          data?.winner
-        );
-
-        setGameStarted(false);
-
-        setCurrentColor(
-          "gray"
-        );
-      };
-
-
-    // ERROR
-    const handleError =
-      (msg) => {
-
-        console.log(
-          "❌ ERROR:",
-          msg
-        );
-
-        setError(msg);
-
-        alert(msg);
-      };
-
-
-    socket.on(
-      "room_update",
-      handleRoomUpdate
-    );
-
-    socket.on(
-      "new_color",
-      handleNewColor
-    );
-
-    socket.on(
-      "score_update",
-      handleScoreUpdate
-    );
-
-    socket.on(
-      "receive_message",
-      handleMessage
-    );
-
-    socket.on(
-      "game_started",
-      handleGameStarted
-    );
-
-    socket.on(
-      "game_ended",
-      handleGameEnd
-    );
-
-    socket.on(
-      "error_message",
-      handleError
-    );
-
-
-    return () => {
-
-      socket.off(
-        "room_update",
-        handleRoomUpdate
-      );
-
-      socket.off(
-        "new_color",
-        handleNewColor
-      );
-
-      socket.off(
-        "score_update",
-        handleScoreUpdate
-      );
-
-      socket.off(
-        "receive_message",
-        handleMessage
-      );
-
-      socket.off(
-        "game_started",
-        handleGameStarted
-      );
-
-      socket.off(
-        "game_ended",
-        handleGameEnd
-      );
-
-      socket.off(
-        "error_message",
-        handleError
-      );
-    };
-
-  }, []);
+}, [roomId]);
 
 
   // =========================

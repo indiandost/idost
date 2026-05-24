@@ -476,34 +476,58 @@ export default function App() {
   useEffect(() => {
     incomingCallRef.current = incomingCall;
   }, [incomingCall]);
-///ask one time permissions
-  useEffect(() => {
-
-    const askPermissions = async () => {
-
-      try {
-
-        // LOCATION
+useEffect(() => {
+  const askPermissions = async () => {
+    try {
+      // =========================
+      // 1. LOCATION (CAPACITOR + WEB SAFE)
+      // =========================
+      if (window.Capacitor) {
         await Geolocation.requestPermissions();
-
-        // CAMERA
-        await Camera.requestPermissions();
-
-        // MIC
-        await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: true
-        });
-
-      } catch (err) {
-        console.log(err);
+      } else if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          () => console.log("Location allowed"),
+          (err) => console.log("Location denied", err)
+        );
       }
 
-    };
+      // =========================
+      // 2. CAMERA (ONLY MOBILE / CAPACITOR)
+      // =========================
+      if (window.Capacitor) {
+        await Camera.requestPermissions();
+      }
 
-    askPermissions();
+      // =========================
+      // 3. MICROPHONE + CAMERA (WEB + MOBILE SAFE)
+      // =========================
+      if (navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: true,
+        });
 
-  }, []);
+        // IMPORTANT:
+        // We stop tracks immediately after permission grant
+        stream.getTracks().forEach((track) => track.stop());
+
+        console.log("Mic + Camera permission granted");
+      }
+
+    } catch (err) {
+      console.log("Permission error:", err);
+    }
+  };
+
+  askPermissions();
+}, []);
+
+const permissionAsked = localStorage.getItem("perm_done");
+
+if (!permissionAsked) {
+  // ask permissions
+  localStorage.setItem("perm_done", "1");
+}
   //check meeting
   /*useEffect(() => {
 
