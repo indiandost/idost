@@ -1,5 +1,9 @@
 import express from "express";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { verifyToken } from "../middlewares/auth.js";
+
+const JWT_SECRET = "my_super_secret_key";
 
 const router = express.Router();
 
@@ -115,12 +119,22 @@ router.post("/login", (req, res) => {
       ]
     );
 
+      // CREATE JWT TOKEN
+      const token = jwt.sign(
+        {
+          id: userData.srno,
+          email: userData.email,
+          name: userData.name
+        },
+        JWT_SECRET,
+        { expiresIn: "7d" }
+      );
     // =========================
     // LOGIN SUCCESS
     // =========================
     return res.json({
       success: true,
-
+      token,
       user: {
         srno: userData.srno,
         name: userData.name,
@@ -131,12 +145,12 @@ router.post("/login", (req, res) => {
 });
 
 // LOGOUT
-router.post("/logout", (req, res) => {
-
+ router.post("/logout", verifyToken, (req, res) => {
+  console.log('logout with token');
   const db = req.app.get("db");
 
-  const { userId } = req.body;
-
+  //const { userId } = req.body;
+const userId = req.user.id;
   db.query(
     "UPDATE users SET onst='0' WHERE srno=?",
     [userId],

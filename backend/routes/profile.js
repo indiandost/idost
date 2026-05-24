@@ -7,13 +7,14 @@ import dotenv from "dotenv";
 import upload from "../middlewares/upload.js";
 import cloudinary from "../config/cloudinary.js";
 import streamifier from "streamifier";
+import { verifyToken } from "../middlewares/auth.js";
 dotenv.config();
 
 const router = express.Router();
 // =============================
 // 📥 Upload SINGLE profile pic
 // =============================
-router.post("/upload/:id", upload.single("photo"), async (req, res) => {
+router.post("/upload/:id", verifyToken, upload.single("photo"), async (req, res) => {
 
   const db = req.app.get("db");
   const userId = req.params.id;
@@ -130,7 +131,7 @@ router.post("/upload/:id", upload.single("photo"), async (req, res) => {
 // 📥 Upload MULTIPLE PHOTOS
 // =============================
 router.post(
-  "/upload-multiple/:id",
+  "/upload-multiple/:id", verifyToken,
   upload.array("photos", 5),
   async (req, res) => {
 
@@ -337,7 +338,7 @@ router.post(
 // =============================
 // 👤 Get My Profile
 // =============================
-router.get("/me/:id", (req, res) => {
+router.get("/me/:id", verifyToken, (req, res) => {
   const db = req.app.get("db");
   const id = req.params.id;
 
@@ -395,7 +396,7 @@ router.get("/photos/:id", (req, res) => {
 // =============================
 // ⭐ Set main profile pic
 // =============================
-router.post("/set-main/:id", (req, res) => {
+router.post("/set-main/:id", verifyToken, (req, res) => {
   const db = req.app.get("db");
   const { url } = req.body;
 
@@ -492,7 +493,7 @@ router.delete("/delete-photo/:photoId", async (req, res) => {
 
 });
 
-router.post("/update/:id", async (req, res) => {
+router.post("/update/:id", verifyToken, async (req, res) => {
     const db = req.app.get("db");
     const {
       name,

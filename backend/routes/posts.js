@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import streamifier from "streamifier";
+import { verifyToken } from "../middlewares/auth.js";
 
 dotenv.config();
 
@@ -112,7 +113,7 @@ router.post( "/create-post", upload.single("media"), (req, res) => {
 */
 ///post media on claudy server 
 router.post(
-  "/create-post",
+  "/create-post", verifyToken,
   upload.single("media"),
   async (req, res) => {
 
@@ -315,7 +316,7 @@ console.log(result);
 // =============================
 // DELETE POST
 // =============================
-router.delete("/delete-post/:id/:user", (req, res) => {
+router.delete("/delete-post/:id/:user", verifyToken, (req, res) => {
 
     const db = req.app.get("db");
 
@@ -436,7 +437,7 @@ router.delete("/delete-post/:id/:user", (req, res) => {
 // =============================
 // GET FEED
 // =============================
-router.get("/feed", (req, res) => {
+router.get("/feed", verifyToken, (req, res) => {
 
   const db = req.app.get("db");
 
@@ -500,7 +501,7 @@ router.get("/feed", (req, res) => {
 // =============================
 // REACT POST
 // =============================
-router.post("/react-post", (req, res) => {
+router.post("/react-post", verifyToken, (req, res) => {
 
   const db = req.app.get("db");
 
@@ -548,7 +549,7 @@ router.post("/react-post", (req, res) => {
 // =============================
 // GET POST LIKES
 // =============================
-router.get("/post-likes/:postId", (req, res) => {
+router.get("/post-likes/:postId", verifyToken, (req, res) => {
 
   const db = req.app.get("db");
 
@@ -672,8 +673,8 @@ router.get("/post/:id", (req, res) => {
 // =============================
 // COMMENT POST
 // =============================
-router.post("/comment-post", (req, res) => {
-
+router.post("/comment-post", verifyToken, (req, res) => {
+console.log('comment post');
   const db = req.app.get("db");
 
   const { post_id,  user_id,  comment, } = req.body;
@@ -719,7 +720,7 @@ router.post("/comment-post", (req, res) => {
   );
 });
 //comment view
-router.get("/comments/:post_id", (req, res) => {
+router.get("/comments/:post_id", verifyToken, (req, res) => {
 
   const db = req.app.get("db");
 
@@ -761,7 +762,7 @@ ORDER BY pc.id DESC
 // CREATE STORY
 // =============================
 router.post(
-  "/create-story",
+  "/create-story", verifyToken,
   upload.single("media"),
   async (req, res) => {
 
@@ -952,7 +953,7 @@ router.post(
 // =============================
 // GET STORIES
 // =============================
-router.get("/stories", (req, res) => {
+router.get("/stories", verifyToken, (req, res) => {
 
   const db = req.app.get("db");
 

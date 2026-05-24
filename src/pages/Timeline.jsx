@@ -5,6 +5,7 @@ import StoryBar from "../components/StoryBar";
 import CreatePost from "../components/CreatePost";
 import PostCard from "../components/PostCard";
 import { useParams } from "react-router-dom";
+const token = localStorage.getItem("token"); 
 
 export default function Timeline() {
 
@@ -57,7 +58,12 @@ export default function Timeline() {
       setLoading(true);
 
       const res = await axios.get(
-        `${API}/api/feed?viewer=${user.srno}&page=${pageNo}`
+        `${API}/api/feed?viewer=${user.srno}&page=${pageNo}`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
       );
 
       const newPosts = res.data.posts || [];

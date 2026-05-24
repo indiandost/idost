@@ -80,14 +80,9 @@ export default function Login() {
       setLoading(false);
 
       if (data.success) {
-
+        localStorage.setItem("token", data.token); //for token
+        localStorage.setItem("user", JSON.stringify(data.user));
         socket.connect();
-
-        localStorage.setItem(
-          "user",
-          JSON.stringify(data.user)
-        );
-
         navigate("/");
 
       } else {

@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { API } from "../config";
+const token = localStorage.getItem("token"); 
 
 export default function PostCard({ post, refresh}) {
 
@@ -92,7 +93,12 @@ const loadLikes = async () => {
   try {
 
     const res = await axios.get(
-      `${API}/api/post-likes/${post.id}`
+      `${API}/api/post-likes/${post.id}`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
     );
 
     setLikesUsers(res.data.likes);
@@ -121,7 +127,12 @@ const deletePost = async () => {
   try {
 
     await axios.delete(
-      `${API}/api/delete-post/${post.id}/${user.srno}`
+      `${API}/api/delete-post/${post.id}/${user.srno}`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
     );
 
     if (refresh) {
@@ -142,7 +153,12 @@ const deletePost = async () => {
     try {
 
       const res = await axios.get(
-        `${API}/api/comments/${post.id}`
+        `${API}/api/comments/${post.id}`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
       );
 
       if (res.data.success) {
@@ -169,6 +185,11 @@ const deletePost = async () => {
 
       await axios.post(
         `${API}/api/react-post`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  },
         {
           post_id: post.id,
           user_id: user.srno,
@@ -196,20 +217,22 @@ const deletePost = async () => {
   // COMMENT POST
   // =============================
   const commentPost = async () => {
-
+        console.log('comment post');
     if (!commentText.trim()) return;
 
     try {
-
-      const res = await axios.post(
-        `${API}/api/comment-post`,
-        {
-          post_id: post.id,
-          user_id: user.srno,
-          comment: commentText,
-        }
-      );
-
+  const res = await axios.post( `${API}/api/comment-post`,
+  {
+    post_id: post.id,
+    user_id: user.srno,
+    comment: commentText,
+  },
+  {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
+);
       if (res.data.success) {
 
         // INSTANT COMMENT COUNT

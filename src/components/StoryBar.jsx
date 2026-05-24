@@ -20,6 +20,7 @@ export default function StoryBar() {
 
   const user =
     JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token"); 
 
   // =========================
   // LOAD STORIES
@@ -35,7 +36,12 @@ export default function StoryBar() {
     try {
 
       const res = await axios.get(
-        `${API}/api/stories`
+        `${API}/api/stories`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
       );
 
       setStories(res.data.data || []);
@@ -77,8 +83,7 @@ export default function StoryBar() {
         {
 
           headers: {
-            "Content-Type":
-              "multipart/form-data",
+               Authorization: `Bearer ${token}`,
           },
 
           onUploadProgress: (evt) => {

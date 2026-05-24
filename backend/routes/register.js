@@ -1,7 +1,6 @@
 import express from "express";
 import bcrypt from "bcrypt";
 const router = express.Router();
-
 router.post("/register", async (req, res) => {
   const db = req.app.get("db");
 

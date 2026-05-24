@@ -106,14 +106,16 @@ function Navbar() {
   }, [search]);
 
   const logout = () => {
-    const u = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token");
+      const u = JSON.parse(localStorage.getItem("user"));
     fetch(`${API}/api/logout`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ userId: u.srno }),
     }).then(() => {
       socket.disconnect();
       localStorage.removeItem("user");
+      localStorage.removeItem("token");
       navigate("/login");
     });
   };

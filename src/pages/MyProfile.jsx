@@ -16,7 +16,8 @@ export default function MyProfile() {
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [uploading, setUploading] = useState(false);
 const [uploadProgress, setUploadProgress] = useState(0);
-  const [form, setForm] = useState({
+const token = localStorage.getItem("token"); 
+const [form, setForm] = useState({
   name: "",
   dob: "",
   city: "",
@@ -31,7 +32,414 @@ const [uploadProgress, setUploadProgress] = useState(0);
 });
 const API = import.meta.env.VITE_API_URL;
 const navigate = useNavigate();
+const indiaCities = [
+  "Adilabad",
+  "Agartala",
+  "Agra",
+  "Ahmedabad",
+  "Ahmednagar",
+  "Aizawl",
+  "Ajmer",
+  "Akola",
+  "Alappuzha",
+  "Aligarh",
+  "Alipurduar",
+  "Allahabad",
+  "Almora",
+  "Alwar",
+  "Ambala",
+  "Ambikapur",
+  "Amravati",
+  "Amreli",
+  "Amritsar",
+  "Anand",
+  "Anantapur",
+  "Angul",
+  "Arrah",
+  "Asansol",
+  "Aurangabad",
+  "Azamgarh",
 
+  "Badlapur",
+  "Bagalkot",
+  "Bahadurgarh",
+  "Bahraich",
+  "Balasore",
+  "Ballia",
+  "Balrampur",
+  "Banda",
+  "Bangalore",
+  "Bankura",
+  "Barabanki",
+  "Baramati",
+  "Baran",
+  "Barasat",
+  "Bareilly",
+  "Bargarh",
+  "Barmer",
+  "Barnala",
+  "Baroda",
+  "Barpeta",
+  "Barwani",
+  "Basti",
+  "Batala",
+  "Bathinda",
+  "Beawar",
+  "Begusarai",
+  "Belgaum",
+  "Bellary",
+  "Berhampore",
+  "Berhampur",
+  "Betul",
+  "Bhadrak",
+  "Bhagalpur",
+  "Bharatpur",
+  "Bharuch",
+  "Bhatinda",
+  "Bhavnagar",
+  "Bhilai",
+  "Bhilwara",
+  "Bhimavaram",
+  "Bhind",
+  "Bhiwadi",
+  "Bhiwani",
+  "Bhopal",
+  "Bhubaneswar",
+  "Bhuj",
+  "Bidar",
+  "Bijapur",
+  "Bijnor",
+  "Bikaner",
+  "Bilaspur",
+  "Bokaro",
+  "Botad",
+  "Budaun",
+  "Bulandshahr",
+  "Buldhana",
+  "Bundi",
+  "Burhanpur",
+
+  "Calicut",
+  "Chandigarh",
+  "Chandrapur",
+  "Chennai",
+  "Chhapra",
+  "Chhindwara",
+  "Chikmagalur",
+  "Chitradurga",
+  "Chittoor",
+  "Coimbatore",
+  "Cooch Behar",
+  "Cuddalore",
+  "Cuttack",
+
+  "Dahod",
+  "Damoh",
+  "Darbhanga",
+  "Darjeeling",
+  "Datia",
+  "Dausa",
+  "Davangere",
+  "Dehradun",
+  "Deoghar",
+  "Deoria",
+  "Dewas",
+  "Dhanbad",
+  "Dhar",
+  "Dharmapuri",
+  "Dharwad",
+  "Dhenkanal",
+  "Dholpur",
+  "Dhule",
+  "Dibrugarh",
+  "Dimapur",
+  "Dindigul",
+  "Dispur",
+  "Diu",
+  "Durg",
+  "Durgapur",
+
+  "Eluru",
+  "Ernakulam",
+  "Erode",
+  "Etah",
+  "Etawah",
+
+  "Faizabad",
+  "Faridabad",
+  "Farrukhabad",
+  "Fatehabad",
+  "Fatehpur",
+  "Fazilka",
+  "Firozabad",
+  "Firozpur",
+
+  "Gadag",
+  "Gandhidham",
+  "Gandhinagar",
+  "Gangtok",
+  "Gaya",
+  "Ghaziabad",
+  "Ghazipur",
+  "Giridih",
+  "Goa",
+  "Godhra",
+  "Gonda",
+  "Gondia",
+  "Gopalganj",
+  "Gorakhpur",
+  "Greater Noida",
+  "Gulbarga",
+  "Guna",
+  "Guntur",
+  "Gurgaon",
+  "Guwahati",
+  "Gwalior",
+
+  "Hajipur",
+  "Haldwani",
+  "Hamirpur",
+  "Hanumangarh",
+  "Hapur",
+  "Hardoi",
+  "Haridwar",
+  "Hassan",
+  "Hathras",
+  "Hazaribagh",
+  "Himatnagar",
+  "Hisar",
+  "Hoshiarpur",
+  "Hospet",
+  "Howrah",
+  "Hubli",
+  "Hyderabad",
+
+  "Ichalkaranji",
+  "Imphal",
+  "Indore",
+  "Itanagar",
+
+  "Jabalpur",
+  "Jagdalpur",
+  "Jaipur",
+  "Jaisalmer",
+  "Jalandhar",
+  "Jalgaon",
+  "Jalna",
+  "Jalpaiguri",
+  "Jammu",
+  "Jamnagar",
+  "Jamshedpur",
+  "Jaunpur",
+  "Jehanabad",
+  "Jhansi",
+  "Jhunjhunu",
+  "Jind",
+  "Jodhpur",
+  "Jorhat",
+  "Junagadh",
+
+  "Kaithal",
+  "Kakinada",
+  "Kalimpong",
+  "Kalyan",
+  "Kanchipuram",
+  "Kannur",
+  "Kanpur",
+  "Kanyakumari",
+  "Kapurthala",
+  "Karaikudi",
+  "Karimnagar",
+  "Karnal",
+  "Karur",
+  "Kasaragod",
+  "Katihar",
+  "Katni",
+  "Kharagpur",
+  "Khargone",
+  "Kochi",
+  "Kohima",
+  "Kolhapur",
+  "Kolkata",
+  "Kollam",
+  "Korba",
+  "Kota",
+  "Kottayam",
+  "Kozhikode",
+  "Krishnanagar",
+  "Kurnool",
+  "Kurukshetra",
+
+  "Lakhimpur",
+  "Lalitpur",
+  "Latur",
+  "Leh",
+  "Lucknow",
+  "Ludhiana",
+
+  "Madurai",
+  "Mahbubnagar",
+  "Malappuram",
+  "Malegaon",
+  "Mandi",
+  "Mandya",
+  "Mangalore",
+  "Mathura",
+  "Meerut",
+  "Mehsana",
+  "Mirzapur",
+  "Modinagar",
+  "Moga",
+  "Mohali",
+  "Moradabad",
+  "Morbi",
+  "Motihari",
+  "Mumbai",
+  "Munger",
+  "Murshidabad",
+  "Muzaffarnagar",
+  "Muzaffarpur",
+  "Mysore",
+
+  "Nadiad",
+  "Nagaon",
+  "Nagapattinam",
+  "Nagaur",
+  "Nagercoil",
+  "Nagpur",
+  "Nainital",
+  "Nalanda",
+  "Nalgonda",
+  "Namakkal",
+  "Nanded",
+  "Nandurbar",
+  "Narasaraopet",
+  "Nashik",
+  "Navsari",
+  "Neemuch",
+  "Nellore",
+  "New Delhi",
+  "Nizamabad",
+  "Noida",
+
+  "Ongole",
+
+  "Palakkad",
+  "Palanpur",
+  "Pali",
+  "Panaji",
+  "Panchkula",
+  "Panipat",
+  "Parbhani",
+  "Pathanamthitta",
+  "Pathankot",
+  "Patiala",
+  "Patna",
+  "Perambalur",
+  "Phagwara",
+  "Pilibhit",
+  "Pondicherry",
+  "Porbandar",
+  "Port Blair",
+  "Pratapgarh",
+  "Prayagraj",
+  "Pudukkottai",
+  "Pune",
+  "Puri",
+
+  "Raebareli",
+  "Raichur",
+  "Raigarh",
+  "Raipur",
+  "Rajahmundry",
+  "Rajkot",
+  "Rajnandgaon",
+  "Rajsamand",
+  "Ramagundam",
+  "Rameswaram",
+  "Rampur",
+  "Ranchi",
+  "Ratlam",
+  "Ratnagiri",
+  "Rewa",
+  "Rohtak",
+  "Roorkee",
+  "Rourkela",
+  "Rudrapur",
+
+  "Sagar",
+  "Saharanpur",
+  "Salem",
+  "Sambalpur",
+  "Sambhal",
+  "Sangli",
+  "Satara",
+  "Satna",
+  "Secunderabad",
+  "Shahjahanpur",
+  "Shillong",
+  "Shimla",
+  "Shivpuri",
+  "Sikar",
+  "Silchar",
+  "Siliguri",
+  "Silvassa",
+  "Sindhudurg",
+  "Sirohi",
+  "Sirsa",
+  "Sitamarhi",
+  "Sitapur",
+  "Solapur",
+  "Sonipat",
+  "Sri Ganganagar",
+  "Srinagar",
+  "Surat",
+  "Surendranagar",
+
+  "Tadepalligudem",
+  "Tamluk",
+  "Tenkasi",
+  "Tezpur",
+  "Thane",
+  "Thanjavur",
+  "Thiruvananthapuram",
+  "Thoothukudi",
+  "Thrissur",
+  "Tinsukia",
+  "Tiruchirappalli",
+  "Tirunelveli",
+  "Tirupati",
+  "Tiruppur",
+  "Tonk",
+  "Tumkur",
+
+  "Udaipur",
+  "Udhampur",
+  "Udupi",
+  "Ujjain",
+  "Ulhasnagar",
+  "Unnao",
+
+  "Vadodara",
+  "Valsad",
+  "Varanasi",
+  "Vasco da Gama",
+  "Vellore",
+  "Veraval",
+  "Vidisha",
+  "Vijayawada",
+  "Viluppuram",
+  "Virar",
+  "Visakhapatnam",
+  "Vizianagaram",
+
+  "Warangal",
+  "Wardha",
+
+  "Yamunanagar",
+
+  "Zirakpur"
+];
 const startLiveMeeting = () => {
 
  const roomId =  Math.random().toString(36).substring(2, 8);
@@ -87,7 +495,11 @@ const createCroppedImage = (imageSrc, croppedAreaPixels) => {
   // FETCH
   // =============================
   const fetchProfile = () => {
-    fetch(`${API}/api/profile/me/${storedUser.srno}`)
+    fetch(`${API}/api/profile/me/${storedUser.srno}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
       .then(res => res.json())
       .then((data) => {
          setUser(data);
@@ -134,7 +546,8 @@ const saveProfile = async () => {
   const res = await fetch(`${API}/api/profile/update/${storedUser.srno}`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
     },
     body: JSON.stringify(form)
   });
@@ -177,7 +590,7 @@ const saveProfile = async () => {
   const setAsProfile = (url) => {
     fetch(`${API}/api/profile/set-main/${storedUser.srno}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ url })
     })
       .then(res => res.json())
@@ -209,6 +622,9 @@ const handleUpload = async () => {
 
   fetch(`${API}/api/profile/upload/${storedUser.srno}`, {
     method: "POST",
+    headers: {
+    Authorization: `Bearer ${token}`
+  },
     body: formData,
   })
     .then(res => res.json())
@@ -263,6 +679,7 @@ const handleMultiUpload = async (e) => {
       {
         headers: {
           "Content-Type": "multipart/form-data",
+           Authorization: `Bearer ${token}`
         },
 
         // 🔥 THIS IS THE MAGIC PART
@@ -461,6 +878,13 @@ const handleMultiUpload = async (e) => {
   name="dob"
   value={form.dob}
   onChange={handleChange}
+  max={
+    new Date(
+      new Date().setFullYear(
+        new Date().getFullYear() - 16
+      )
+    ).toISOString().split("T")[0]
+  }
   className="w-full p-3 rounded bg-gray-700 text-white"
 />
 <select
@@ -531,14 +955,30 @@ const handleMultiUpload = async (e) => {
   <option value="Other">Other</option>
 
 </select>
-  <input
-    name="city"
-    value={form.city}
-    onChange={handleChange}
-    placeholder="City"
-    className="w-full p-3 rounded bg-gray-700"
-  />
+ <select
+  name="city"
+  value={form.city}
+  onChange={handleChange}
+  className="w-full p-3 rounded bg-gray-700 text-white"
+>
 
+  {/* Default selected current city */}
+  <option value="">
+    Select City
+  </option>
+
+  {indiaCities.map((city, index) => (
+
+    <option
+      key={index}
+      value={city}
+    >
+      {city}
+    </option>
+
+  ))}
+
+</select>
   <input
     name="doingnow"
     value={form.doingnow}

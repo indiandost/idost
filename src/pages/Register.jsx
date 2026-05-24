@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect  } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
 export default function Register() {
@@ -14,6 +14,414 @@ export default function Register() {
     email: "",
     telephone: ""
   });
+const indiaCities = [
+  "Adilabad",
+  "Agartala",
+  "Agra",
+  "Ahmedabad",
+  "Ahmednagar",
+  "Aizawl",
+  "Ajmer",
+  "Akola",
+  "Alappuzha",
+  "Aligarh",
+  "Alipurduar",
+  "Allahabad",
+  "Almora",
+  "Alwar",
+  "Ambala",
+  "Ambikapur",
+  "Amravati",
+  "Amreli",
+  "Amritsar",
+  "Anand",
+  "Anantapur",
+  "Angul",
+  "Arrah",
+  "Asansol",
+  "Aurangabad",
+  "Azamgarh",
+
+  "Badlapur",
+  "Bagalkot",
+  "Bahadurgarh",
+  "Bahraich",
+  "Balasore",
+  "Ballia",
+  "Balrampur",
+  "Banda",
+  "Bangalore",
+  "Bankura",
+  "Barabanki",
+  "Baramati",
+  "Baran",
+  "Barasat",
+  "Bareilly",
+  "Bargarh",
+  "Barmer",
+  "Barnala",
+  "Baroda",
+  "Barpeta",
+  "Barwani",
+  "Basti",
+  "Batala",
+  "Bathinda",
+  "Beawar",
+  "Begusarai",
+  "Belgaum",
+  "Bellary",
+  "Berhampore",
+  "Berhampur",
+  "Betul",
+  "Bhadrak",
+  "Bhagalpur",
+  "Bharatpur",
+  "Bharuch",
+  "Bhatinda",
+  "Bhavnagar",
+  "Bhilai",
+  "Bhilwara",
+  "Bhimavaram",
+  "Bhind",
+  "Bhiwadi",
+  "Bhiwani",
+  "Bhopal",
+  "Bhubaneswar",
+  "Bhuj",
+  "Bidar",
+  "Bijapur",
+  "Bijnor",
+  "Bikaner",
+  "Bilaspur",
+  "Bokaro",
+  "Botad",
+  "Budaun",
+  "Bulandshahr",
+  "Buldhana",
+  "Bundi",
+  "Burhanpur",
+
+  "Calicut",
+  "Chandigarh",
+  "Chandrapur",
+  "Chennai",
+  "Chhapra",
+  "Chhindwara",
+  "Chikmagalur",
+  "Chitradurga",
+  "Chittoor",
+  "Coimbatore",
+  "Cooch Behar",
+  "Cuddalore",
+  "Cuttack",
+
+  "Dahod",
+  "Damoh",
+  "Darbhanga",
+  "Darjeeling",
+  "Datia",
+  "Dausa",
+  "Davangere",
+  "Dehradun",
+  "Deoghar",
+  "Deoria",
+  "Dewas",
+  "Dhanbad",
+  "Dhar",
+  "Dharmapuri",
+  "Dharwad",
+  "Dhenkanal",
+  "Dholpur",
+  "Dhule",
+  "Dibrugarh",
+  "Dimapur",
+  "Dindigul",
+  "Dispur",
+  "Diu",
+  "Durg",
+  "Durgapur",
+
+  "Eluru",
+  "Ernakulam",
+  "Erode",
+  "Etah",
+  "Etawah",
+
+  "Faizabad",
+  "Faridabad",
+  "Farrukhabad",
+  "Fatehabad",
+  "Fatehpur",
+  "Fazilka",
+  "Firozabad",
+  "Firozpur",
+
+  "Gadag",
+  "Gandhidham",
+  "Gandhinagar",
+  "Gangtok",
+  "Gaya",
+  "Ghaziabad",
+  "Ghazipur",
+  "Giridih",
+  "Goa",
+  "Godhra",
+  "Gonda",
+  "Gondia",
+  "Gopalganj",
+  "Gorakhpur",
+  "Greater Noida",
+  "Gulbarga",
+  "Guna",
+  "Guntur",
+  "Gurgaon",
+  "Guwahati",
+  "Gwalior",
+
+  "Hajipur",
+  "Haldwani",
+  "Hamirpur",
+  "Hanumangarh",
+  "Hapur",
+  "Hardoi",
+  "Haridwar",
+  "Hassan",
+  "Hathras",
+  "Hazaribagh",
+  "Himatnagar",
+  "Hisar",
+  "Hoshiarpur",
+  "Hospet",
+  "Howrah",
+  "Hubli",
+  "Hyderabad",
+
+  "Ichalkaranji",
+  "Imphal",
+  "Indore",
+  "Itanagar",
+
+  "Jabalpur",
+  "Jagdalpur",
+  "Jaipur",
+  "Jaisalmer",
+  "Jalandhar",
+  "Jalgaon",
+  "Jalna",
+  "Jalpaiguri",
+  "Jammu",
+  "Jamnagar",
+  "Jamshedpur",
+  "Jaunpur",
+  "Jehanabad",
+  "Jhansi",
+  "Jhunjhunu",
+  "Jind",
+  "Jodhpur",
+  "Jorhat",
+  "Junagadh",
+
+  "Kaithal",
+  "Kakinada",
+  "Kalimpong",
+  "Kalyan",
+  "Kanchipuram",
+  "Kannur",
+  "Kanpur",
+  "Kanyakumari",
+  "Kapurthala",
+  "Karaikudi",
+  "Karimnagar",
+  "Karnal",
+  "Karur",
+  "Kasaragod",
+  "Katihar",
+  "Katni",
+  "Kharagpur",
+  "Khargone",
+  "Kochi",
+  "Kohima",
+  "Kolhapur",
+  "Kolkata",
+  "Kollam",
+  "Korba",
+  "Kota",
+  "Kottayam",
+  "Kozhikode",
+  "Krishnanagar",
+  "Kurnool",
+  "Kurukshetra",
+
+  "Lakhimpur",
+  "Lalitpur",
+  "Latur",
+  "Leh",
+  "Lucknow",
+  "Ludhiana",
+
+  "Madurai",
+  "Mahbubnagar",
+  "Malappuram",
+  "Malegaon",
+  "Mandi",
+  "Mandya",
+  "Mangalore",
+  "Mathura",
+  "Meerut",
+  "Mehsana",
+  "Mirzapur",
+  "Modinagar",
+  "Moga",
+  "Mohali",
+  "Moradabad",
+  "Morbi",
+  "Motihari",
+  "Mumbai",
+  "Munger",
+  "Murshidabad",
+  "Muzaffarnagar",
+  "Muzaffarpur",
+  "Mysore",
+
+  "Nadiad",
+  "Nagaon",
+  "Nagapattinam",
+  "Nagaur",
+  "Nagercoil",
+  "Nagpur",
+  "Nainital",
+  "Nalanda",
+  "Nalgonda",
+  "Namakkal",
+  "Nanded",
+  "Nandurbar",
+  "Narasaraopet",
+  "Nashik",
+  "Navsari",
+  "Neemuch",
+  "Nellore",
+  "New Delhi",
+  "Nizamabad",
+  "Noida",
+
+  "Ongole",
+
+  "Palakkad",
+  "Palanpur",
+  "Pali",
+  "Panaji",
+  "Panchkula",
+  "Panipat",
+  "Parbhani",
+  "Pathanamthitta",
+  "Pathankot",
+  "Patiala",
+  "Patna",
+  "Perambalur",
+  "Phagwara",
+  "Pilibhit",
+  "Pondicherry",
+  "Porbandar",
+  "Port Blair",
+  "Pratapgarh",
+  "Prayagraj",
+  "Pudukkottai",
+  "Pune",
+  "Puri",
+
+  "Raebareli",
+  "Raichur",
+  "Raigarh",
+  "Raipur",
+  "Rajahmundry",
+  "Rajkot",
+  "Rajnandgaon",
+  "Rajsamand",
+  "Ramagundam",
+  "Rameswaram",
+  "Rampur",
+  "Ranchi",
+  "Ratlam",
+  "Ratnagiri",
+  "Rewa",
+  "Rohtak",
+  "Roorkee",
+  "Rourkela",
+  "Rudrapur",
+
+  "Sagar",
+  "Saharanpur",
+  "Salem",
+  "Sambalpur",
+  "Sambhal",
+  "Sangli",
+  "Satara",
+  "Satna",
+  "Secunderabad",
+  "Shahjahanpur",
+  "Shillong",
+  "Shimla",
+  "Shivpuri",
+  "Sikar",
+  "Silchar",
+  "Siliguri",
+  "Silvassa",
+  "Sindhudurg",
+  "Sirohi",
+  "Sirsa",
+  "Sitamarhi",
+  "Sitapur",
+  "Solapur",
+  "Sonipat",
+  "Sri Ganganagar",
+  "Srinagar",
+  "Surat",
+  "Surendranagar",
+
+  "Tadepalligudem",
+  "Tamluk",
+  "Tenkasi",
+  "Tezpur",
+  "Thane",
+  "Thanjavur",
+  "Thiruvananthapuram",
+  "Thoothukudi",
+  "Thrissur",
+  "Tinsukia",
+  "Tiruchirappalli",
+  "Tirunelveli",
+  "Tirupati",
+  "Tiruppur",
+  "Tonk",
+  "Tumkur",
+
+  "Udaipur",
+  "Udhampur",
+  "Udupi",
+  "Ujjain",
+  "Ulhasnagar",
+  "Unnao",
+
+  "Vadodara",
+  "Valsad",
+  "Varanasi",
+  "Vasco da Gama",
+  "Vellore",
+  "Veraval",
+  "Vidisha",
+  "Vijayawada",
+  "Viluppuram",
+  "Virar",
+  "Visakhapatnam",
+  "Vizianagaram",
+
+  "Warangal",
+  "Wardha",
+
+  "Yamunanagar",
+
+  "Zirakpur"
+];
 
   const [errors, setErrors] = useState({});
 
@@ -24,6 +432,45 @@ export default function Register() {
   const [checkingEmail, setCheckingEmail] = useState(false);
 
   const [loading, setLoading] = useState(false);
+useEffect(() => {
+
+  if (!navigator.geolocation) return;
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+
+      try {
+
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+        );
+
+        const data = await res.json();
+
+        const city =
+          data.address.city ||
+          data.address.town ||
+          data.address.state_district ||
+          "";
+
+        if (city) {
+          setForm((prev) => ({
+            ...prev,
+            city,
+          }));
+        }
+
+      } catch (err) {
+        console.log(err);
+      }
+
+    }
+  );
+
+}, []);
 
   // ✅ Notice State
   const [notice, setNotice] = useState({
@@ -194,11 +641,14 @@ export default function Register() {
       newErrors.email = "Invalid email";
     }
 
-    if (!form.telephone.trim()) {
-      newErrors.telephone = "Phone required";
-    } else if (!/^\d{10}$/.test(form.telephone)) {
-      newErrors.telephone = "Must be exactly 10 digits";
-    }
+// Phone optional
+if (
+  form.telephone.trim() &&
+  !/^\d{10}$/.test(form.telephone)
+) {
+  newErrors.telephone =
+    "Must be exactly 10 digits";
+}
 
     if (userExists) {
       newErrors.user = "Username already exists";
@@ -333,9 +783,9 @@ export default function Register() {
           e.preventDefault();
           handleRegister();
         }}
-        className="w-full max-w-sm bg-gray-800 p-6 rounded-2xl shadow-xl space-y-4"
+        className="w-full max-w-sm bg-gray-800 p-4 rounded-2xl shadow-xl space-y-2"
       >
-        <h2 className="text-2xl font-bold text-center">
+        <h2 className="text-2xl font-bold text-center text-white">
           Register
         </h2>
 
@@ -487,19 +937,30 @@ export default function Register() {
 
         {/* DOB */}
         <div>
-          <input
-            type="date"
-            name="dob"
-            value={form.dob}
-            onChange={handleChange}
-            className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white
-              ${
-                errors.dob
-                  ? "border-red-500"
-                  : "border-gray-600 focus:border-green-500"
-              }`}
-          />
-
+<label className="text-sm text-gray-300 mb-1 block">
+  Date of Birth (16+ only)
+</label>
+      <input
+        type="date"
+        name="dob"
+        value={form.dob}
+        onChange={handleChange}
+        max={
+          new Date(
+            new Date().setFullYear(
+              new Date().getFullYear() - 16
+            )
+          )
+            .toISOString()
+            .split("T")[0]
+        }
+        className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white
+          ${
+            errors.dob
+              ? "border-red-500"
+              : "border-gray-600 focus:border-green-500"
+          }`}
+      />
           {errors.dob && (
             <p className="text-red-400 text-sm mt-1">
               {errors.dob}
@@ -509,26 +970,41 @@ export default function Register() {
 
         {/* City */}
         <div>
-          <input
-            type="text"
-            name="city"
-            placeholder="City"
-            value={form.city}
-            onChange={handleChange}
-            className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white
-              ${
-                errors.city
-                  ? "border-red-500"
-                  : "border-gray-600 focus:border-green-500"
-              }`}
-          />
 
-          {errors.city && (
-            <p className="text-red-400 text-sm mt-1">
-              {errors.city}
-            </p>
-          )}
-        </div>
+  <select
+    name="city"
+    value={form.city}
+    onChange={handleChange}
+    className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white
+      ${
+        errors.city
+          ? "border-red-500"
+          : "border-gray-600 focus:border-green-500"
+      }`}
+  >
+
+    <option value="">
+      Select City
+    </option>
+
+    {indiaCities.map((city) => (
+      <option
+        key={city}
+        value={city}
+      >
+        {city}
+      </option>
+    ))}
+
+  </select>
+
+  {errors.city && (
+    <p className="text-red-400 text-sm mt-1">
+      {errors.city}
+    </p>
+  )}
+
+</div>
 
         {/* Submit */}
         <button

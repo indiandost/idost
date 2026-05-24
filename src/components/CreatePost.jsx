@@ -10,6 +10,7 @@ export default function CreatePost({ refresh }) {
   const [loading, setLoading] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user"));
+  const token = localStorage.getItem("token"); 
   const createPost = async () => {
 
     if (!content && !media) return;
@@ -31,7 +32,7 @@ export default function CreatePost({ refresh }) {
           formData,
           {
             headers: {
-              "Content-Type": "multipart/form-data",
+               Authorization: `Bearer ${token}`,
             },
           }
         );
