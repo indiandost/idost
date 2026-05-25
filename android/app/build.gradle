@@ -16,17 +16,17 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-      /*signingConfigs {
-            release {
-                storeFile file("upload-keystore.jks")
-                storePassword "YOUR_STORE_PASSWORD"
-                keyAlias "upload"
-                keyPassword "YOUR_KEY_PASSWORD"
-            }
-        }*/
+      signingConfigs {
+    release {
+        storeFile file("upload-keystore.jks")
+        storePassword System.getenv("KEYSTORE_PASSWORD")
+        keyAlias System.getenv("KEY_ALIAS")
+        keyPassword System.getenv("KEY_PASSWORD")
+    }
+}
     buildTypes {
         release {
-           // signingConfig signingConfigs.release
+            signingConfig signingConfigs.release
             minifyEnabled false    
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
