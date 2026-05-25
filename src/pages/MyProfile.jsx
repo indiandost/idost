@@ -709,6 +709,62 @@ const handleMultiUpload = async (e) => {
     e.target.value = "";
   }
 };
+const deleteProfile = async () => {
+
+  const confirmDelete =
+    window.confirm(
+      "Are you sure you want to permanently delete your profile?"
+    );
+
+  if (!confirmDelete) return;
+
+  try {
+
+    const res = await fetch(
+      `${API}/api/profile/delete-profile`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization:
+            `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data =
+      await res.json();
+
+    if (data.success) {
+
+      alert(
+        "Profile deleted successfully"
+      );
+
+      localStorage.clear();
+
+      window.location.href =
+        "/";
+
+    } else {
+
+      alert(
+        data.message ||
+        "Delete failed"
+      );
+
+    }
+
+  } catch (err) {
+
+    console.log(err);
+
+    alert(
+      "Server error"
+    );
+
+  }
+
+};
 
   if (!user) return <div className="text-white p-4">Loading...</div>;
 
@@ -1033,6 +1089,27 @@ const handleMultiUpload = async (e) => {
   </button>
 
 </div>
+
+{/* DELETE PROFILE */}
+
+<button
+  onClick={deleteProfile}
+  className="
+    w-full
+    mt-4
+    border
+    border-red-500
+    text-red-400
+    py-3
+    rounded-xl
+    font-bold
+    hover:bg-red-500
+    hover:text-white
+    transition
+  "
+>
+  Delete Profile
+</button>
 
     </div>
   );

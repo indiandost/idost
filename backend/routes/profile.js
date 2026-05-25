@@ -335,6 +335,222 @@ router.post(
   }
 );
 */
+//delete profile 
+router.delete(
+  "/delete-profile",
+  verifyToken,
+  async (req, res) => {
+    const userId = req.user.id;
+    try {
+       const db = req.app.get("db");
+      // =========================
+      // GET USER CLOUDINARY DATA
+      // =========================
+      const [posts] = await db.promise().query(
+          `SELECT media as image 
+          FROM posts
+          WHERE user_id=?
+          `,
+          [userId]
+        );
+
+      const [stories] =
+        await db.promise().query(
+          `
+          SELECT media as image
+          FROM stories
+          WHERE user_id=?
+          `,
+          [userId]
+        );
+
+      const [users] =
+        await db.promise().query(
+          `
+          SELECT pic 
+          FROM users
+          WHERE srno=?
+          `,
+          [userId]
+        );
+
+      // =========================
+      // DELETE CLOUDINARY FILES
+      // =========================
+
+      const allImages = [
+
+        ...posts.map(
+          p => p.image
+        ),
+
+        ...stories.map(
+          s => s.image
+        ),
+
+        users[0]?.profile_pic,
+
+      ].filter(Boolean);
+
+      for (const img of allImages) {
+
+        try {
+
+          const parts =
+            img.split("/");
+
+          const file =
+            parts[
+              parts.length - 1
+            ];
+
+          const publicId =
+            file.split(".")[0];
+
+          await cloudinary.uploader.destroy(
+            publicId
+          );
+
+        } catch (e) {
+
+          console.log(
+            "Cloudinary delete error",
+            e
+          );
+
+        }
+
+      }
+
+      // =========================
+      // DELETE CHAT
+      // =========================
+      await db.promise().query(
+        `
+        DELETE FROM  chat_messages
+        WHERE sender_id=?
+        OR receiver_id=?
+        `,
+        [userId, userId]
+      );
+      // =========================
+      // DELETE FRIENDS
+      // =========================
+
+      await db.promise().query(
+        `
+        DELETE FROM myfriends
+        WHERE user=?
+        OR user2=?
+        `,
+        [userId, userId]
+      );
+
+      // =========================
+      // DELETE BLOCK LIST
+      // =========================
+
+      await db.promise().query(
+        `
+        DELETE FROM  ignorelist
+        WHERE user=?
+        OR user2=?
+        `,
+        [userId, userId]
+      );
+//visitors
+    await db.promise().query(
+        `
+        DELETE FROM  myvisitor
+        WHERE user=?
+        OR visitor=?
+        `,
+        [userId, userId]
+      );
+// delete gifts game
+  
+     await db.promise().query(
+        `
+        DELETE FROM  rewards_history
+        WHERE user_id=?
+        `,
+        [userId]
+      );
+
+       await db.promise().query(
+        `
+        DELETE FROM  gifts_live
+        WHERE receiver_id=?
+        `,
+        [userId]
+      );
+       await db.promise().query(
+        `
+        DELETE FROM  live_gifts
+        WHERE receiver_id=?
+        `,
+        [userId]
+      );
+       await db.promise().query(
+        `
+        DELETE FROM jam_gifts
+        WHERE receiver_id=?
+        `,
+        [userId]
+      );
+      // =========================
+      // DELETE POSTS/STORIES
+      // =========================
+
+      await db.promise().query(
+        `
+        DELETE FROM posts
+        WHERE user_id=?
+        `,
+        [userId]
+      );
+
+      await db.promise().query(
+        `
+        DELETE FROM stories
+        WHERE user_id=?
+        `,
+        [userId]
+      );
+
+      // =========================
+      // DELETE USER
+      // =========================
+
+      await db.promise().query(
+        `
+        DELETE FROM users
+        WHERE srno=?
+        `,
+        [userId]
+      );
+
+      res.json({
+        success: true,
+      });
+
+    }
+
+    catch (err) {
+
+      console.log(err);
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Delete failed",
+      });
+
+    }
+
+  }
+);
+
 // =============================
 // 👤 Get My Profile
 // =============================

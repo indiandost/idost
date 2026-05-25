@@ -56,7 +56,7 @@ export default function Timeline() {
     try {
 
       setLoading(true);
-
+console.log('Bearer  ${token}');
       const res = await axios.get(
         `${API}/api/feed?viewer=${user.srno}&page=${pageNo}`,
   {
