@@ -1,10 +1,5 @@
 {
   "appId": "com.indiandost.app",
   "appName": "indiandost",
-  "webDir": "dist",
-    "server": {
-    "url": "https://indiandost.com/idost",
-    "cleartext": true,
-    "androidScheme": "https"
-  }
+  "webDir": "dist"
 }
