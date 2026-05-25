@@ -4,7 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 export default function Register() {
   const navigate = useNavigate();
   const API = import.meta.env.VITE_API_URL;
-
+const [acceptedPolicy, setAcceptedPolicy] = useState(false);
   const [form, setForm] = useState({
     user: "",
     pass: "",
@@ -610,7 +610,9 @@ useEffect(() => {
   // -----------------------------
   const validate = () => {
     const newErrors = {};
-
+      if (!acceptedPolicy) {
+        newErrors.policy = "Please accept Privacy Policy";
+      }
     if (!form.user.trim()) {
       newErrors.user = "Username required";
     } else if (form.user.trim().length < 3) {
@@ -1005,7 +1007,39 @@ if (
   )}
 
 </div>
+{/* Privacy Policy */}
+<div className="flex items-start gap-2 text-sm text-gray-300">
 
+  <input
+    type="checkbox"
+    id="policy"
+    checked={acceptedPolicy}
+    onChange={(e) =>
+      setAcceptedPolicy(e.target.checked)
+    }
+    className="mt-1 accent-pink-500"
+  />
+
+  <label htmlFor="policy">
+    I agree to the{" "}
+    
+    <Link
+      to="/privacy-policy"
+      target="_blank"
+      className="text-pink-400 hover:text-pink-300 underline"
+    >
+      Privacy Policy
+    </Link>
+
+  </label>
+
+</div>
+
+{errors.policy && (
+  <p className="text-red-400 text-sm">
+    {errors.policy}
+  </p>
+)}
         {/* Submit */}
         <button
           type="submit"
@@ -1014,7 +1048,8 @@ if (
             checkingUser ||
             checkingEmail ||
             userExists ||
-            emailExists
+            emailExists ||
+           !acceptedPolicy
           }
           className={`w-full py-3 rounded-lg font-semibold transition
             ${

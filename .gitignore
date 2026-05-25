@@ -12,6 +12,7 @@ dist
 backend/node_modules
 backend/upload
 android/app/build
+android/app/upload-keystore.jks
 uploads
 dist-ssr
 *.local

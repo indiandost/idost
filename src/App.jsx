@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, lazy } from "react";
 import {
   Routes,
   Route,
@@ -35,6 +35,7 @@ import GameRoom from "./pages/GameRoom";
 import GameHome from "./pages/GameHome";
 import JamRoom from "./pages/JamRoom";
 import CreateJamRoom from "./pages/CreateJamRoom";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 import socket from "./socket";
 import {
@@ -58,10 +59,9 @@ function PrivateRoute({ children }) {
   return user ? children : <Navigate to="/login" />;
 }
 // 🔝 Navbar
-function Navbar() {
+function Navbar({ menuOpen, setMenuOpen }) {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
-  const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -359,7 +359,7 @@ function Navbar() {
     </div>
   );
 }*/
-function BottomNav() {
+function BottomNav({ setMenuOpen }) {
   const location = useLocation();
   const navItems = [
     {
@@ -430,8 +430,9 @@ function BottomNav() {
               return (
                 <Link
                   key={item.name}
-                  to={item.path}
-                  className={`flex flex-col items-center min-w-[65px] transition-all duration-300 ${
+                  to={item.path} 
+                   onClick={() => setMenuOpen(false)}
+                   className={`flex flex-col items-center min-w-[65px] transition-all duration-300 ${
                     active ? "text-pink-400" : "text-gray-400 hover:text-white"
                   }`}
                 >
@@ -460,6 +461,7 @@ function BottomNav() {
 
 export default function App() {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
   const [chatNotice, setChatNotice] = useState(null);
   const user = JSON.parse(localStorage.getItem("user"));
   const [incomingCall, setIncomingCall] = useState(null);
@@ -823,12 +825,13 @@ if (!permissionAsked) {
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col">
       {/* search function */}
-      {!shouldHideLayout && <Navbar />}
+      {!shouldHideLayout && <Navbar menuOpen={menuOpen} setMenuOpen={setMenuOpen}/>}
 
       <div className="flex-grow">
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/post/:id" element={<Timeline />} />
@@ -977,7 +980,7 @@ if (!permissionAsked) {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
-      {!shouldHideLayout && <BottomNav />}
+      {!shouldHideLayout && <BottomNav  setMenuOpen={setMenuOpen} />}
 
       {/* 📞 GLOBAL CALL POPUP (FIXED POSITION) */}
 

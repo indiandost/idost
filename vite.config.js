@@ -16,7 +16,8 @@ export default defineConfig({
     host: true,
     https: false   // ❌ disable
   },
-  base: '/idost/', 
+  //base: '/idost/', 
+    base: '/', 
     plugins: [
     react(),
     VitePWA({
