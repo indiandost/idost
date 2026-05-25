@@ -22,7 +22,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     {/* ✅ PROVIDER WRAP ADDED HERE */}
     <CoinProvider>
 
-      <BrowserRouter >
+      <BrowserRouter basename="/idost">
         <App />
       </BrowserRouter>
 
