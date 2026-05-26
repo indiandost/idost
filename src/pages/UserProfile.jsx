@@ -14,11 +14,16 @@ const myId = JSON.parse(localStorage.getItem("user"))?.srno;
   const [blocked, setBlocked] = useState(false);
 const API = import.meta.env.VITE_API_URL;
 const navigate = useNavigate();
+const token = localStorage.getItem("token"); 
 useEffect(() => {
   // ✅ 1. Fetch user
  // JSON.parse(localStorage.getItem("user"));
 
-fetch( `${API}/users/${id}?viewer=${myId}`) .then(res => res.json())
+fetch( `${API}/users/${id}?viewer=${myId}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }) .then(res => res.json())
   .then(data => {
     // 🚫 blocked
     if (data.blocked) {
@@ -29,14 +34,22 @@ fetch( `${API}/users/${id}?viewer=${myId}`) .then(res => res.json())
   });
 
   // ✅ 2. Fetch album (FIXED URL)
-  fetch(`${API}/users/photogallery/${id}`)
+  fetch(`${API}/users/photogallery/${id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
     .then(res => res.json())
     .then(data => {
       const imgs = data.map(p => p.url); // ✅ already full URL
       setAlbum(imgs);
     });
 
-  fetch(`${API}/friends/status/${myId}/${id}`)
+  fetch(`${API}/friends/status/${myId}/${id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
     .then(res => res.json())
     .then(data => {
       console.log(data.status);
@@ -49,7 +62,7 @@ fetch( `${API}/users/${id}?viewer=${myId}`) .then(res => res.json())
 const sendRequest = () => {
   fetch(`${API}/friends/send`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ user: myId, user2: id })
   })
   .then(res => res.json())
@@ -59,7 +72,7 @@ const sendRequest = () => {
 const acceptRequest = () => {
   fetch(`${API}/friends/accept`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json" , Authorization: `Bearer ${token}`},
     body: JSON.stringify({ id: friendReqId })
   })
   .then(() => setFriendStatus("friends"));
@@ -67,7 +80,7 @@ const acceptRequest = () => {
 const rejectRequest = () => {
   fetch(`${API}/friends/delete`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json" , Authorization: `Bearer ${token}`},
     body: JSON.stringify({ id: friendReqId })
   })
   .then(() => setFriendStatus("➕ Add Friend"));
@@ -81,7 +94,7 @@ const blockUser = async () => {
   const res = await fetch(`${API}/api/block`,  {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "application/json", Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
         user: myId,

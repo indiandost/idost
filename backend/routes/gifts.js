@@ -1,11 +1,11 @@
 import express from "express";
-
+import { verifyToken } from "../middlewares/auth.js";
 const router = express.Router();
 
 // ============================
 // GET GIFT LIST
 // ============================
-router.get("/get-gift", (req, res) => {
+router.get("/get-gift", verifyToken, (req, res) => {
   const db = req.app.get("db");
 
   db.query("SELECT * FROM gifts", (err, rows) => {
@@ -27,7 +27,7 @@ router.get("/get-gift", (req, res) => {
 // ============================
 // SEND LIVE GIFT
 // ============================
-router.post("/send-gift", (req, res) => {
+router.post("/send-gift", verifyToken, (req, res) => {
   const db = req.app.get("db");
   const io = req.app.get("io");
 

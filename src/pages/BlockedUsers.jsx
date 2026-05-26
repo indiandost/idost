@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 const API = import.meta.env.VITE_API_URL;
 
 export default function BlockedUsers() {
-
+  const token = localStorage.getItem("token"); 
   const me =
     JSON.parse(localStorage.getItem("user"));
 
@@ -15,7 +15,11 @@ export default function BlockedUsers() {
   const loadBlockedUsers = () => {
 
     fetch(
-      `${API}/api/block-list/${me.srno}`
+      `${API}/api/block-list/${me.srno}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
     )
       .then((res) => res.json())
       .then((data) => {

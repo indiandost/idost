@@ -1025,7 +1025,6 @@ if (
     
     <Link
       to="/privacy-policy"
-      target="_blank"
       className="text-pink-400 hover:text-pink-300 underline"
     >
       Privacy Policy
@@ -1048,8 +1047,7 @@ if (
             checkingUser ||
             checkingEmail ||
             userExists ||
-            emailExists ||
-           !acceptedPolicy
+            emailExists
           }
           className={`w-full py-3 rounded-lg font-semibold transition
             ${

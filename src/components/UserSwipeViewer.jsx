@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function UserSwipeViewer({
+  token,
   users = [],
   startIndex = 0,
   onClose,
@@ -85,7 +86,7 @@ export default function UserSwipeViewer({
           />
 
           {/* NAME */}
-          <h2 className="text-2xl font-bold mt-4">
+          <h2 className="text-2xl font-bold mt-4 text-white">
             {user.name}
           </h2>
 

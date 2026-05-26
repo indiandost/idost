@@ -16,7 +16,7 @@ export default function MyVisitors() {
   const API = import.meta.env.VITE_API_URL;
 
   const userId = JSON.parse(localStorage.getItem("user"))?.srno;
-
+  const token = localStorage.getItem("token"); 
   const LIMIT = 10;
 
   useEffect(() => {
@@ -30,7 +30,11 @@ export default function MyVisitors() {
       setLoading(true);
 
       const res = await axios.get(
-        `${API}/users/my-visitors/${userId}?page=${pageNo}&limit=${LIMIT}`
+        `${API}/users/my-visitors/${userId}?page=${pageNo}&limit=${LIMIT}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
       );
 
       const newVisitors = res.data.visitors || [];

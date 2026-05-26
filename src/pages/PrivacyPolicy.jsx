@@ -1,8 +1,16 @@
+import { useNavigate } from "react-router-dom";
 export default function PrivacyPolicy() {
+   const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-black text-white p-5">
-      
-      <h1 className="text-3xl font-bold mb-6">
+       <br/>
+       <button
+        onClick={() => navigate(-1)}
+        className="mb-6 bg-gray-700 px-4 py-2 rounded"
+      >
+        ← Back
+      </button>
+      <h1 className="text-3xl font-bold mb-4 text-white">
         Privacy Policy
       </h1>
 

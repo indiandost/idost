@@ -1,68 +1,206 @@
 import React, { useEffect, useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-import UserSwipeViewer from "../components/UserSwipeViewer";
 
 export default function Home() {
   const navigate = useNavigate();
-  const [users, setUsers] = useState([]);
   const [liveUsers, setLiveUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pageNum, setPageNum] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState("");
   const [viewerOpen, setViewerOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
   const API = import.meta.env.VITE_API_URL;
   const UserSwipeViewer = lazy(() => import("../components/UserSwipeViewer"));
+  const BirthdayUsers = lazy(() => import("../components/BirthdayUsers"));
+  const NewUsers = lazy(() => import("../components/NewUsers"));
   const myId = JSON.parse(localStorage.getItem("user"))?.srno;
-  useEffect(() => {
-    // 🔥 instant load first
-    fetchDefaultUsers();
+  const token = localStorage.getItem("token"); 
+ // ======================
+// LOAD USERS
+// ======================
+useEffect(() => {
 
-    // 🔥 then try location
-    if (!navigator.geolocation) return;
+  // 🔥 instant load first
+  fetchDefaultUsers(pageNum);
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
+  // 🔥 then try location
+  if (!navigator.geolocation) return;
 
-          const res = await fetch(
-            `${API}/users?lat=${lat}&lng=${lng}&myId=${myId}`
-          );
+  navigator.geolocation.getCurrentPosition(
 
-          const data = await res.json();
+    async (pos) => {
 
-          // update nearby users later
-          setUsers(data);
-        } catch (err) {
-          console.log(err);
+      try {
+
+        setLoading(true);
+
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+
+        const res = await fetch(
+
+          `${API}/users?lat=${lat}&lng=${lng}&myId=${myId}&page=${pageNum}&limit=10`,
+
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+
+        );
+
+        const data = await res.json();
+
+        if (!Array.isArray(data)) return;
+
+        // no more records
+        if (data.length < 10) {
+          setHasMore(false);
         }
-      },
-      (err) => {
-        console.log(err);
-      },
-      {
-        timeout: 5000,
-        maximumAge: 60000,
-        enableHighAccuracy: false,
-      }
-    );
-  }, []);
 
-  const fetchDefaultUsers = async () => {
-    try {
-      const res = await fetch(`${API}/users`);
-      const data = await res.json();
-      setUsers(data);
-    } catch (err) {
+        // first page
+        if (pageNum === 1) {
+
+          setUsers(data);
+
+        } else {
+
+          setUsers((prev) => [...prev, ...data]);
+
+        }
+
+      } catch (err) {
+
+        console.log(err);
+
+      } finally {
+
+        setLoading(false);
+
+      }
+
+    },
+
+    (err) => {
+
       console.log(err);
-      setError("Failed to load users");
+
+    },
+
+    {
+      timeout: 5000,
+      maximumAge: 60000,
+      enableHighAccuracy: false,
     }
+
+  );
+
+}, [pageNum]);
+
+
+// ======================
+// DEFAULT USERS
+// ======================
+const fetchDefaultUsers = async (page = 1) => {
+
+  try {
+
+    setLoading(true);
+
+    const res = await fetch(
+
+      `${API}/users?page=${page}&limit=10&myId=${myId}`,
+
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+
+    );
+
+    const data = await res.json();
+
+    if (!Array.isArray(data)) return;
+
+    // no more data
+    if (data.length < 10) {
+      setHasMore(false);
+    }
+
+    // first page
+    if (page === 1) {
+
+      setUsers(data);
+
+    }
+
+    // next pages
+    else {
+
+      setUsers((prev) => [...prev, ...data]);
+
+    }
+
+  } catch (err) {
+
+    console.log(err);
+    setError("Failed to load users");
+
+  } finally {
+
     setLoading(false);
+
+  }
+
+};
+
+
+// ======================
+// INFINITE SCROLL
+// ======================
+useEffect(() => {
+
+  const handleScroll = () => {
+
+    if (
+
+      window.innerHeight + window.scrollY >=
+      document.body.offsetHeight - 300 &&
+
+      !loading &&
+      hasMore
+
+    ) {
+
+      setPageNum((prev) => prev + 1);
+
+    }
+
   };
 
+  window.addEventListener("scroll", handleScroll);
+
+  return () => {
+
+    window.removeEventListener(
+      "scroll",
+      handleScroll
+    );
+
+  };
+
+}, [loading, hasMore]);
+
   useEffect(() => {
-    fetch(`${API}/users/live-users?limit=10`)
+    fetch(`${API}/users/live-users?limit=10`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
       .then((res) => res.json())
       .then((data) => {
         setLiveUsers(data);
@@ -168,18 +306,24 @@ export default function Home() {
           ))}
         </div>
       </div>
+<Suspense fallback={null}>
+  <BirthdayUsers />
+</Suspense>
+
+<Suspense fallback={null}>
+  <NewUsers />
+</Suspense>
       <hr />
 
       <h2 className="text-lg font-semibold text-white">Nearby Users</h2>
-
       {/* USER GRID */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {users.map((u) => (
           <div
-            key={u.id}
+            key={u.srno}
             //onClick={() => navigate(`/profile/${u.id}`)}
             onClick={() => {
-              setStartIndex(users.findIndex((x) => x.id === u.id));
+              setStartIndex(users.findIndex((x) => x.srno === u.srno));
               setViewerOpen(true);
             }}
             className="bg-gray-800 rounded-xl overflow-hidden cursor-pointer hover:scale-[1.02] transition"
@@ -192,14 +336,14 @@ export default function Home() {
                 className="w-full h-40 object-cover"
               />
             ) : (
-              <div className="bg-gray-700 h-64 flex items-center justify-center">
+              <div className="bg-gray-700 h-40 flex items-center justify-center">
                 No Image
               </div>
             )}
 
             <div
               className="p-2 text-white"
-              onClick={() => navigate(`/profile/${u.id}`)}
+              onClick={() => navigate(`/profile/${u.srno}`)}
             >
               <h3 className="text-sm font-semibold">
                 {u.name}, {u.age}
@@ -215,15 +359,29 @@ export default function Home() {
         ))}
       </div>
       {viewerOpen && (
-        <Suspense fallback={null}>
-          <UserSwipeViewer
-            users={users}
-            startIndex={startIndex}
-            onClose={() => setViewerOpen(false)}
-            onOpenProfile={(user) => navigate(`/profile/${user.id}`)}
-          />
-        </Suspense>
+     <Suspense fallback={null}>
+      <UserSwipeViewer
+        token={token}
+        users={users}
+        startIndex={startIndex}
+        onClose={() => setViewerOpen(false)}
+        onOpenProfile={(user) =>
+          navigate(`/profile/${user.srno}`)
+        }
+      />
+    </Suspense>
       )}
+      {loading && (
+        <div className="text-center text-gray-400 py-4">
+          Loading more users...
+        </div>
+      )}
+      {!hasMore && (
+          <div className="text-center text-gray-500 py-4">
+            No more users
+          </div>
+        )}
     </div>
+    
   );
 }

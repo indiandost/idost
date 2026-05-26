@@ -53,6 +53,7 @@ import {
 } from "lucide-react";
 
 const API = import.meta.env.VITE_API_URL;
+const token = localStorage.getItem("token"); 
 // 🔐 Protected Route
 function PrivateRoute({ children }) {
   const user = localStorage.getItem("user");
@@ -67,10 +68,20 @@ function Navbar({ menuOpen, setMenuOpen }) {
   const [searchResults, setSearchResults] = useState([]);
 
   const { coins, setCoins } = useCoins();
-  useLoadCoins(user?.srno);
-  socket.on("coinUpdate", (data) => {
-    setCoins(data.coins);
-  });
+// ✅ custom hook
+useLoadCoins(user?.srno);
+// ✅ socket listener
+useEffect(() => {
+  const handleCoinUpdate = (data) => {
+    if (typeof data?.coins !== "undefined") {
+      setCoins(data.coins);
+    }
+  };
+  socket.on("coinUpdate", handleCoinUpdate);
+  return () => {
+    socket.off("coinUpdate", handleCoinUpdate);
+  };
+}, [setCoins]);
   //reward popup
   useEffect(() => {
     socket.on("rewardReceived", (data) => {
@@ -89,7 +100,11 @@ function Navbar({ menuOpen, setMenuOpen }) {
       return;
     }
     const delay = setTimeout(() => {
-      fetch(`${API}/users/search?q=${search}&viewer=${user?.srno}`)
+      fetch(`${API}/users/search?q=${search}&viewer=${user?.srno}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
         .then((res) => res.json())
         .then((data) => {
           console.log(data);
@@ -106,7 +121,6 @@ function Navbar({ menuOpen, setMenuOpen }) {
   }, [search]);
 
   const logout = () => {
-    const token = localStorage.getItem("token");
       const u = JSON.parse(localStorage.getItem("user"));
     fetch(`${API}/api/logout`, {
       method: "POST",
@@ -602,7 +616,11 @@ if (!permissionAsked) {
       audio.play().catch(() => {});
 
       try {
-        const res = await fetch(`${API}/users/${data.from}`);
+        const res = await fetch(`${API}/users/${data.from}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
 
         const user = await res.json();
 

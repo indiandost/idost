@@ -37,7 +37,7 @@ import rewardsRoutes from "./routes/rewards.js";
 
 
 import multer from "multer";
-
+import { verifyToken } from "./middlewares/auth.js";
 import dns from "dns";
 
 import gameRoutes from "./routes/gameRoutes.js";
@@ -222,7 +222,7 @@ app.post("/api/upload", upload.single("image"), (req, res) => {
 
 // =============================
 
-app.get("/api/conversations/:userId", (req, res) => {
+app.get("/api/conversations/:userId", verifyToken, (req, res) => {
 
   const userId = req.params.userId;
 
@@ -290,7 +290,7 @@ app.get("/api/conversations/:userId", (req, res) => {
 
 // =============================
 
-app.post("/api/chat/delete", (req, res) => {
+app.post("/api/chat/delete", verifyToken, (req, res) => {
 
   const { user1, user2 } = req.body;
 

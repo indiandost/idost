@@ -9,7 +9,7 @@ export default function GiftBar({
   roomId,
   socket,
 }) {
-
+  const token = localStorage.getItem("token"); 
   const [loading, setLoading] =
     useState(false);
 
@@ -68,7 +68,11 @@ export default function GiftBar({
 
           const res =
             await fetch(
-              `${API}/api/gifts/get-gift`
+              `${API}/api/gifts/get-gift`, {
+    headers: {
+       "Content-Type": "application/json", Authorization:  `Bearer ${token}`,
+    }
+  }
             );
 
           const data =
@@ -177,10 +181,8 @@ export default function GiftBar({
           `${API}/api/gifts/send-gift`,
           {
             method: "POST",
-
             headers: {
-              "Content-Type":
-                "application/json",
+              Authorization:  `Bearer ${token}`,  "Content-Type": "application/json",
             },
 
             body: JSON.stringify({

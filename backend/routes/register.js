@@ -15,16 +15,17 @@ router.post("/register", async (req, res) => {
     latitude,
     longitude
   } = req.body;
-
+const today = new Date();
+const created_at = String(today.getMonth() + 1).padStart(2, "0") +  "-" +  String(today.getDate()).padStart(2, "0") +  "-" +  String(today.getFullYear()).slice(-2);
   const sql = `
     INSERT INTO users 
-    (user, pass, name, email, telephone, dob, city, latitude, longitude, status)
+    (user, pass, name, email, telephone, date, dob, city, latitude, longitude, status)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'A')
   `;
   const hashedPassword = await bcrypt.hash(pass, 10);
   db.query(
     sql,
-    [user, hashedPassword, name, email, telephone, dob, city, latitude, longitude],
+    [user, hashedPassword, name, email, telephone, created_at, dob, city, latitude, longitude],
     (err, result) => {
       if (err) {
         console.log(err);

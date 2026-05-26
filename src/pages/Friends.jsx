@@ -15,7 +15,7 @@ const [hasMore, setHasMore] = useState(true);
 
   const myId = JSON.parse(localStorage.getItem("user"))?.srno;
   const navigate = useNavigate();
-
+const token = localStorage.getItem("token"); 
   // =============================
   // 🔄 Load Data (Friends / Requests)
   // =============================
@@ -41,7 +41,11 @@ const loadFriends = async (pageNum = 1, reset = false) => {
 
   try {
     const res = await fetch(
-      `${API}/friends/list/${myId}?page=${pageNum}&limit=10`
+      `${API}/friends/list/${myId}?page=${pageNum}&limit=10`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
     );
 
     const data = await res.json();
@@ -70,7 +74,11 @@ const loadRequests = async (pageNum = 1, reset = false) => {
 
   try {
     const res = await fetch(
-      `${API}/friends/received/${myId}?page=${pageNum}&limit=10`
+      `${API}/friends/received/${myId}?page=${pageNum}&limit=10`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
     );
 
     const data = await res.json();
@@ -101,7 +109,7 @@ const loadRequests = async (pageNum = 1, reset = false) => {
     fetch(`${API}/friends/remove`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json", Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
         user: myId,
@@ -125,7 +133,7 @@ const loadRequests = async (pageNum = 1, reset = false) => {
     fetch(`${API}/friends/accept`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json", Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({ id: reqId })
     })
@@ -141,7 +149,7 @@ const loadRequests = async (pageNum = 1, reset = false) => {
     fetch(`${API}/friends/delete`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json", Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({ id: reqId })
     })

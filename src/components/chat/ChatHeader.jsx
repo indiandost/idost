@@ -6,6 +6,7 @@ const API =
   import.meta.env.VITE_API_URL;
 
 export default function ChatHeader({
+  token,
   onAudioCall,
   onVideoCall,
   }) {
@@ -32,8 +33,10 @@ export default function ChatHeader({
     if (!friendId) return;
 
     fetch(
-      `${API}/users/${friendId}?viewer=${currentUser?.srno}`
-    )
+      `${API}/users/${friendId}?viewer=${currentUser?.srno}`, { headers: {
+      Authorization: `Bearer ${token}`
+    }
+  } )
       .then((res) => res.json())
       .then((data) => {
 
@@ -171,7 +174,7 @@ export default function ChatHeader({
       <div className="flex items-center gap-2">
 
         {/* AUDIO */}
-        <button
+       {/* <button
           onClick={onAudioCall}
           className="
             w-11 h-11
@@ -185,7 +188,7 @@ export default function ChatHeader({
           <span className="text-lg">
             📞
           </span>
-        </button>
+        </button>*/}
 
         {/* VIDEO */}
         <button

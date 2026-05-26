@@ -1,12 +1,12 @@
 import express from "express";
-
+import { verifyToken } from "../middlewares/auth.js";
 const router = express.Router();
 
 
 // =============================
 // ➕ SEND FRIEND REQUEST
 // =============================
-router.post("/send", (req, res) => {
+router.post("/send",  verifyToken,(req, res) => {
   const db = req.app.get("db");
 //console.log('block-api /send   friend req');
   const { user, user2 } = req.body;
@@ -41,7 +41,7 @@ router.post("/send", (req, res) => {
 // =============================
 // 📥 GET RECEIVED REQUESTS
 // =============================
-router.get("/received/:user_id", (req, res) => {
+router.get("/received/:user_id",  verifyToken, (req, res) => {
   const db = req.app.get("db");
   const user_id = req.params.user_id;
   const page = Number(req.query.page || 1);
@@ -68,7 +68,7 @@ router.get("/received/:user_id", (req, res) => {
 // =============================
 // 📤 GET SENT REQUESTS
 // =============================
-router.get("/sent/:user_id", (req, res) => {
+router.get("/sent/:user_id", verifyToken, (req, res) => {
   const db = req.app.get("db");
   const user_id = req.params.user_id;
 
@@ -89,7 +89,7 @@ router.get("/sent/:user_id", (req, res) => {
 // =============================
 // ✅ ACCEPT REQUEST
 // =============================
-router.post("/accept", (req, res) => {
+router.post("/accept", verifyToken, (req, res) => {
   const db = req.app.get("db");
 
   const { id } = req.body;
@@ -111,7 +111,7 @@ router.post("/accept", (req, res) => {
 // =============================
 // ❌ DELETE / REJECT REQUEST
 // =============================
-router.post("/delete", (req, res) => {
+router.post("/delete",  verifyToken, (req, res) => {
   const db = req.app.get("db");
 
   const { id } = req.body;
@@ -131,7 +131,7 @@ router.post("/delete", (req, res) => {
 // =============================
 // ❌ REMOVE FRIEND (by users)
 // =============================
-router.post("/remove", (req, res) => {
+router.post("/remove", verifyToken,  (req, res) => {
   const db = req.app.get("db");
 
   const { user, user2 } = req.body;
@@ -152,7 +152,7 @@ router.post("/remove", (req, res) => {
 // =============================
 // 👥 GET FRIEND LIST
 // =============================
-router.get("/list/:user_id", (req, res) => {
+router.get("/list/:user_id", verifyToken, (req, res) => {
   const db = req.app.get("db");
   const user_id = req.params.user_id;
   const page = Number(req.query.page || 1);
@@ -178,7 +178,7 @@ router.get("/list/:user_id", (req, res) => {
   });
 });
 
-router.get("/status/:me/:other", (req, res) => {
+router.get("/status/:me/:other", verifyToken, (req, res) => {
   const db = req.app.get("db");
   const { me, other } = req.params;
  // console.log(me +'-status of me n other-'+other);

@@ -25,7 +25,7 @@ export default function Chat() {
   const location = useLocation();
 
   const myId = JSON.parse(localStorage.getItem("user"))?.srno;
-
+  const token = localStorage.getItem("token"); 
   // =========================
   // MESSAGES
   // =========================
@@ -132,6 +132,7 @@ export default function Chat() {
       text-white
       overflow-hidden*/}
       <ChatHeader
+        token={token}
         onAudioCall={() => startCall("audio")}
         onVideoCall={() => startCall("video")}
       />

@@ -1,7 +1,7 @@
-import express from 'express';
+import express from "express";
 
-import fetch from 'node-fetch';
-
+import fetch from "node-fetch";
+import { verifyToken } from "../middlewares/auth.js";
 const router = express.Router();
 
 // ✅ Default location (Delhi)
@@ -12,8 +12,8 @@ const DEFAULT_LNG = 77.209;
 
 //API for push lat long value in db
 
-router.get('/lati', async (req, res) => {
-  const db = req.app.get('db');
+router.get("/lati", async (req, res) => {
+  const db = req.app.get("db");
 
   // =========================
 
@@ -107,16 +107,16 @@ router.get('/lati', async (req, res) => {
         try {
           response = await fetch(url, {
             headers: {
-              'User-Agent': 'indiandost-app',
+              "User-Agent": "indiandost-app",
             },
 
             signal: controller.signal,
           });
         } catch (err) {
-          if (err.name === 'AbortError') {
-            console.log('Request timeout');
+          if (err.name === "AbortError") {
+            console.log("Request timeout");
           } else {
-            console.log('Fetch Error:', err);
+            console.log("Fetch Error:", err);
           }
 
           return null;
@@ -127,18 +127,18 @@ router.get('/lati', async (req, res) => {
         // response check
 
         if (response.status === 429) {
-          console.log('Rate limit hit');
+          console.log("Rate limit hit");
 
-          await new Promise(r => setTimeout(r, 15000));
+          await new Promise((r) => setTimeout(r, 15000));
 
           return null;
         }
 
         if (!response.ok) {
           console.log(
-            'Geocode HTTP Error:',
+            "Geocode HTTP Error:",
 
-            response.status
+            response.status,
           );
 
           return null;
@@ -148,11 +148,11 @@ router.get('/lati', async (req, res) => {
 
         // invalid response check
 
-        if (text.startsWith('<')) {
+        if (text.startsWith("<")) {
           console.log(
-            'Non JSON Response:',
+            "Non JSON Response:",
 
-            text.substring(0, 200)
+            text.substring(0, 200),
           );
 
           return null;
@@ -170,7 +170,7 @@ router.get('/lati', async (req, res) => {
           lng: data[0].lon,
         };
       } catch (e) {
-        console.log('Geocode Error:', e);
+        console.log("Geocode Error:", e);
 
         return null;
       }
@@ -187,13 +187,13 @@ router.get('/lati', async (req, res) => {
 
         .filter(Boolean)
 
-        .join(', ');
+        .join(", ");
 
       if (!fullAddress) {
         continue;
       }
 
-      console.log('Checking:', fullAddress);
+      console.log("Checking:", fullAddress);
 
       const loc = await getLatLng(fullAddress);
 
@@ -283,27 +283,27 @@ router.get('/lati', async (req, res) => {
                 });
 
                 console.log(
-                  'Updated:',
+                  "Updated:",
 
                   fullAddress,
 
-                  'Rows:',
+                  "Rows:",
 
-                  r.affectedRows
+                  r.affectedRows,
                 );
 
                 resolve();
-              }
+              },
             );
           });
         } catch (e) {
-          console.log('Update Error:', e);
+          console.log("Update Error:", e);
         }
       }
 
       // Nominatim rate limit safety
 
-      await new Promise(r => setTimeout(r, 1200));
+      await new Promise((r) => setTimeout(r, 1200));
     }
 
     return res.json({
@@ -316,313 +316,12 @@ router.get('/lati', async (req, res) => {
   });
 });
 
-/*router.get("/lati", async (req, res) => {
-
+router.get("/", verifyToken, (req, res) => {
   const db = req.app.get("db");
-
-
-
-  const sql = `
-
-    SELECT srno, city, address, state, country 
-
-    FROM users where city !='' 
-
-    LIMIT 2302, 2000
-
-  `;
-
-
-
-  db.query(sql, async (err, result) => {
-
-    if (err) return res.status(500).json(err);
-
-
-
-    let updated = [];
-
-
-
-    // helper function (geocoding)
-
-    async function getLatLng(address) {
-
-      try {
-
-        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
-
-
-
-        const response = await fetch(url, {
-
-          headers: {
-
-            "User-Agent": "your-app-name"
-
-          }
-
-        });
-
-
-
-        const data = await response.json();
-
-
-
-        if (!data.length) return null;
-
-
-
-        return {
-
-          lat: data[0].lat,
-
-          lng: data[0].lon
-
-        };
-
-      } catch (e) {
-
-        return null;
-
-      }
-
-    }
-
-
-
-    // process sequentially (VERY IMPORTANT for free API)
-
-    for (const u of result) {
-
-
-
-      const fullAddress = [
-
-        u.address,
-
-        u.city,
-
-        u.state,
-
-        u.country
-
-      ]
-
-        .filter(Boolean)
-
-        .join(", ");
-
-
-
-      if (!fullAddress || fullAddress === ", , ,") continue;
-
-
-
-      const loc = await getLatLng(fullAddress);
-
-
-
-      if (loc) {
-
-        await new Promise((resolve) => {
-
-          db.query(
-
-            "UPDATE users SET latitude=?, longitude=? WHERE srno=?",
-
-            [loc.lat, loc.lng, u.srno],
-
-            () => resolve()
-
-          );
-
-        });
-
-
-
-        updated.push({
-
-          srno: u.srno,
-
-          address: fullAddress,
-
-          latitude: loc.lat,
-
-          longitude: loc.lng
-
-        });
-
-      }
-
-
-
-      // IMPORTANT: avoid rate limit (1 sec delay)
-
-      await new Promise(r => setTimeout(r, 1000));
-
-    }
-
-
-
-    res.json({
-
-      success: true,
-
-      updated: updated.length,
-
-      data: updated
-
-    });
-
-  });
-
-});
-
-*/
-
-// =============================
-
-// ✅ GET USERS WITH DISTANCE
-
-// =============================
-
-/*router.get("/", (req, res) => {
-
-  const db = req.app.get("db");
-
-
-
-  const userLat = req.query.lat || DEFAULT_LAT;
-
-  const userLng = req.query.lng || DEFAULT_LNG;
-
-  const myId = req.query.myId || 0;
-
-  const sql = `
-
-  SELECT 
-
-    srno,
-
-    name,
-
-    TIMESTAMPDIFF(YEAR, dob, CURDATE()) AS age,
-
-    city,
-
-    pic,
-
-    online,
-
-    onst,
-
-    live_status,
-
-    live_room,
-
-    (
-
-      6371 * acos(
-
-        cos(radians(?)) * cos(radians(latitude)) *
-
-        cos(radians(longitude) - radians(?)) +
-
-        sin(radians(?)) * sin(radians(latitude))
-
-      )
-
-    ) AS distance
-
-
-
-  FROM users
-
-
-
-  WHERE status = 'A'
-
-
-
-    AND srno != ?
-
-
-
-    AND NOT EXISTS (
-
-      SELECT 1
-
-      FROM ignorelist
-
-      WHERE 
-
-        (\`user\` = ? AND user2 = users.srno)
-
-        OR
-
-        (\`user\` = users.srno AND user2 = ?)
-
-    )
-
-
-
-  ORDER BY distance ASC
-
-  LIMIT 50
-
-`;
-
-
-
-db.query( sql, [userLat, userLng, userLat, myId, myId, myId],  (err, result) => {
-
-    if (err) return res.json(err);
-
-
-
-      const users = result.map(u => ({
-
-      id: u.srno,
-
-      name: u.name,
-
-      age: u.age,
-
-      city: u.city,
-
-      pic: u.pic,
-
-      online: u.online,
-
-      onst: u.onst,
-
-      live_status: u.live_status,
-
-      live_room: u.live_room,
-
-      distance: u.distance
-
-        ? u.distance.toFixed(1) + " km"
-
-        : "N/A"
-
-    }));
-
-
-
-    res.json(users);
-
-  });
-
-});
-
-*/
-
-router.get('/', (req, res) => {
-  const db = req.app.get('db');
-
+    const page = Number(req.query.page) || 1;
+    //const limit = Number(req.query.limit) || 10;
+    const limit = Math.min( Number(req.query.limit) || 10,  60);
+    const offset = (page - 1) * limit;
   const myId = req.query.myId || 0;
 
   const hasLocation =
@@ -689,7 +388,7 @@ router.get('/', (req, res) => {
       onst DESC,       -- 🔥 online users first
       distance ASC     -- then nearest users
 
-    LIMIT 30
+    LIMIT ? OFFSET ?
 
 `;
 
@@ -739,7 +438,7 @@ router.get('/', (req, res) => {
 
       )
 
-    LIMIT 50
+    LIMIT ? OFFSET ?
 
   `;
 
@@ -749,12 +448,12 @@ router.get('/', (req, res) => {
     db.query(
       sqlWithDistance,
 
-      [lat, lng, lat, myId, myId],
+      [lat, lng, lat, myId, myId, limit, offset],
 
       (err, result) => {
         if (err) return res.json(err);
 
-        const users = result.map(u => ({
+        const users = result.map((u) => ({
           id: u.srno,
 
           name: u.name,
@@ -763,7 +462,7 @@ router.get('/', (req, res) => {
 
           city: u.city,
 
-          pic: u.status === 'N' ? '' : u.pic,
+          pic: u.status === "N" ? "" : u.pic,
 
           online: u.online,
 
@@ -773,23 +472,23 @@ router.get('/', (req, res) => {
 
           live_room: u.live_room,
 
-          distance: u.distance ? u.distance.toFixed(1) + ' km' : 'N/A',
+          distance: u.distance ? u.distance.toFixed(1) + " km" : "N/A",
         }));
 
         res.json(users);
-      }
+      },
     );
   } else {
     db.query(
       sqlWithoutDistance,
 
-      [myId, myId],
+      [myId, myId, limit, offset],
 
       (err, result) => {
         if (err) return res.json(err);
 
         res.json(result);
-      }
+      },
     );
   }
 });
@@ -800,8 +499,8 @@ router.get('/', (req, res) => {
 
 // =============================
 
-router.get('/live-users', (req, res) => {
-  const db = req.app.get('db');
+router.get("/live-users", verifyToken, (req, res) => {
+  const db = req.app.get("db");
 
   const sql = `
 
@@ -824,8 +523,8 @@ router.get('/live-users', (req, res) => {
 
 // =============================
 
-router.get('/city/:city', (req, res) => {
-  const db = req.app.get('db');
+router.get("/city/:city", verifyToken, (req, res) => {
+  const db = req.app.get("db");
 
   const city = req.params.city;
 
@@ -850,28 +549,28 @@ router.get('/city/:city', (req, res) => {
 
 //update location
 
-router.post('/update-location', (req, res) => {
-  const db = req.app.get('db');
+router.post("/update-location", (req, res) => {
+  const db = req.app.get("db");
 
   const { userId, lat, lng } = req.body;
 
   db.query(
-    'UPDATE users SET latitude=?, longitude=? WHERE srno=?',
+    "UPDATE users SET latitude=?, longitude=? WHERE srno=?",
 
     [lat, lng, userId],
 
-    () => res.json({ success: true })
+    () => res.json({ success: true }),
   );
 });
 //=======================
 //get coin api
 //=========================
-router.get('/coins/:id', (req, res) => {
-  const db = req.app.get('db');
+router.get("/coins/:id", (req, res) => {
+  const db = req.app.get("db");
 
   const userId = req.params.id;
 
-  db.query('SELECT coins FROM users WHERE srno=?', [userId], (err, rows) => {
+  db.query("SELECT coins FROM users WHERE srno=?", [userId], (err, rows) => {
     if (err) {
       return res.status(500).json({
         success: false,
@@ -896,10 +595,10 @@ router.get('/coins/:id', (req, res) => {
 
 //===========================
 
-router.get('/search', (req, res) => {
+router.get("/search", verifyToken, (req, res) => {
   const q = req.query.q?.trim();
 
-  const db = req.app.get('db');
+  const db = req.app.get("db");
 
   if (!q) {
     return res.json({
@@ -942,12 +641,12 @@ router.get('/search', (req, res) => {
 
     (err, rows) => {
       if (err) {
-        console.log('SEARCH ERROR:', err);
+        console.log("SEARCH ERROR:", err);
 
         return res.status(500).json({
           success: false,
 
-          message: 'Server error',
+          message: "Server error",
 
           error: err.message,
         });
@@ -958,8 +657,186 @@ router.get('/search', (req, res) => {
 
         users: rows,
       });
-    }
+    },
   );
+});
+
+// birthday user
+router.get("/birthday-users", async (req, res) => {
+
+  try {
+
+    const db = req.app.get("db");
+
+    const viewerId = req.query.myId;
+
+    const sql = `
+      SELECT 
+        u.srno,
+        u.name,
+        u.pic,
+        u.dob,
+        TIMESTAMPDIFF(YEAR, u.dob, CURDATE()) AS age
+
+      FROM users u
+
+      WHERE
+        MONTH(u.dob) = MONTH(CURDATE())
+        AND DAY(u.dob) = DAY(CURDATE())
+
+        AND NOT EXISTS (
+          SELECT 1
+          FROM ignorelist i
+          WHERE
+            (i.user = ? AND i.user2 = u.srno)
+            OR
+            (i.user = u.srno AND i.user2 = ?)
+        )
+
+      ORDER BY RAND()
+
+      LIMIT 10
+    `;
+
+    db.query(
+      sql,
+      [viewerId, viewerId],
+      (err, result) => {
+
+        if (err) {
+
+          console.log(err);
+
+          return res.status(500).json([]);
+
+        }
+
+        res.json(result);
+
+      }
+    );
+
+  } catch (err) {
+
+    console.log(err);
+
+    res.status(500).json([]);
+
+  }
+
+});
+
+// new user list with in 50KM Only
+router.get("/new-users", async (req, res) => {
+
+  try {
+
+    const db = req.app.get("db");
+
+    const viewerId = req.query.myId;
+
+    // 🔥 get viewer location
+    const userSql = `
+      SELECT latitude, longitude
+      FROM users
+      WHERE srno = ?
+      LIMIT 1
+    `;
+
+    db.query(userSql, [viewerId], (err, userResult) => {
+
+      if (err || !userResult.length) {
+
+        console.log(err);
+
+        return res.status(500).json([]);
+
+      }
+
+      const myLat = userResult[0].latitude;
+      const myLng = userResult[0].longitude;
+
+      const sql = `
+
+        SELECT
+          u.srno,
+          u.name,
+          u.pic,
+          u.dob,
+          u.date,
+
+          TIMESTAMPDIFF(YEAR, u.dob, CURDATE()) AS age,
+
+          (
+            6371 * ACOS(
+              COS(RADIANS(?))
+              * COS(RADIANS(u.latitude))
+              * COS(RADIANS(u.longitude) - RADIANS(?))
+              + SIN(RADIANS(?))
+              * SIN(RADIANS(u.latitude))
+            )
+          ) AS distance
+
+        FROM users u
+
+        WHERE
+
+          u.srno != ?
+
+          AND u.latitude IS NOT NULL
+          AND u.longitude IS NOT NULL
+
+          AND NOT EXISTS (
+            SELECT 1
+            FROM ignorelist i
+            WHERE
+              (i.user = ? AND i.user2 = u.srno)
+              OR
+              (i.user = u.srno AND i.user2 = ?)
+          )
+
+        HAVING distance <= 50
+
+        ORDER BY u.srno DESC
+
+        LIMIT 10
+      `;
+
+      db.query(
+        sql,
+        [
+          myLat,
+          myLng,
+          myLat,
+          viewerId,
+          viewerId,
+          viewerId
+        ],
+        (err, result) => {
+
+          if (err) {
+
+            console.log(err);
+
+            return res.status(500).json([]);
+
+          }
+
+          res.json(result);
+
+        }
+      );
+
+    });
+
+  } catch (err) {
+
+    console.log(err);
+
+    res.status(500).json([]);
+
+  }
+
 });
 
 // =============================
@@ -968,10 +845,10 @@ router.get('/search', (req, res) => {
 
 // =============================
 
-router.get('/:id', (req, res) => {
+router.get("/:id", verifyToken, (req, res) => {
   //console.log("PROFILE API CALLED");
 
-  const db = req.app.get('db');
+  const db = req.app.get("db");
 
   const profileId = parseInt(req.params.id) || 0;
 
@@ -996,7 +873,7 @@ router.get('/:id', (req, res) => {
 
   `;
 
-    db.query(sql, [profileId, viewerId], err => {
+    db.query(sql, [profileId, viewerId], (err) => {
       if (err) console.log(err);
     });
   }
@@ -1007,7 +884,7 @@ router.get('/:id', (req, res) => {
     return res.json({
       success: false,
 
-      message: 'Invalid viewer',
+      message: "Invalid viewer",
     });
   }
 
@@ -1122,7 +999,7 @@ router.get('/:id', (req, res) => {
           return res.json({
             success: false,
 
-            message: 'User not found',
+            message: "User not found",
           });
         }
 
@@ -1130,14 +1007,13 @@ router.get('/:id', (req, res) => {
 
         res.json(result[0]);
       });
-    }
+    },
   );
 });
-
 // visitor List
 
-router.get('/my-visitors/:id', (req, res) => {
-  const db = req.app.get('db');
+router.get("/my-visitors/:id", verifyToken, (req, res) => {
+  const db = req.app.get("db");
   const userId = req.params.id;
   const page = Number(req.query.page || 1);
   const limit = Number(req.query.limit || 10);
@@ -1201,11 +1077,11 @@ router.get('/my-visitors/:id', (req, res) => {
 
 // =============================
 
-router.get('/photogallery/:id', (req, res) => {
-  const db = req.app.get('db');
+router.get("/photogallery/:id", verifyToken, (req, res) => {
+  const db = req.app.get("db");
 
   db.query(
-    'SELECT id, url FROM user_photos WHERE user_id=?',
+    "SELECT id, url FROM user_photos WHERE user_id=?",
 
     [req.params.id],
 
@@ -1213,8 +1089,10 @@ router.get('/photogallery/:id', (req, res) => {
       if (err) return res.json(err);
 
       res.json(result);
-    }
+    },
   );
 });
+
+
 
 export default router;
