@@ -7,13 +7,14 @@ import {
   endJamRoom,
   getTopPerformers,
 } from "../controllers/jamRoomController.js";
+import { verifyToken } from "../middlewares/auth.js";
 
 const router = express.Router();
 // ==============================
 // CREATE JAM ROOM
 // ==============================
 router.post(
-  "/create",
+  "/create",verifyToken,
   createJamRoom
 );
 
@@ -22,14 +23,14 @@ router.post(
 // LIVE ROOMS
 // ==============================
 router.get(
-  "/live",
+  "/live", verifyToken,
   getLiveJamRooms
 );
 // ==============================
 // ROOM DETAILS
 // ==============================
 router.get(
-  "/:roomId",
+  "/:roomId", verifyToken, 
   getJamRoomDetails
 );
 // ==============================

@@ -11,7 +11,9 @@ export default function UserSwipeViewer({
 
   const [index, setIndex] = useState(startIndex);
   const user = users[index];
-
+useEffect(() => {
+  setIndex(startIndex);
+}, [startIndex]);
   // =========================
   // SWIPE LOGIC
   // =========================
@@ -39,7 +41,6 @@ export default function UserSwipeViewer({
   }, [users.length]);
 
   if (!user) return null;
-
   return (
     <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
 
@@ -101,12 +102,21 @@ export default function UserSwipeViewer({
           {/* BUTTONS */}
           <div className="flex gap-3 justify-center mt-6">
 
-            <button
-              onClick={() => onOpenProfile(user)}
-              className="bg-blue-500 px-4 py-2 rounded"
-            >
-              Open Profile
-            </button>
+             <button
+    onClick={() => onOpenProfile(user.id)}
+    className="
+      bg-blue-500
+      hover:bg-blue-600
+      transition
+      px-4
+      py-2
+      rounded-xl
+      text-sm
+      font-medium
+    "
+  >
+    Open Profile
+  </button>
 
             <button
               onClick={onClose}

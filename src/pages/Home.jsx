@@ -18,6 +18,7 @@ export default function Home() {
   const NewUsers = lazy(() => import("../components/NewUsers"));
   const myId = JSON.parse(localStorage.getItem("user"))?.srno;
   const token = localStorage.getItem("token"); 
+  const limit=9;
  // ======================
 // LOAD USERS
 // ======================
@@ -42,7 +43,7 @@ useEffect(() => {
 
         const res = await fetch(
 
-          `${API}/users?lat=${lat}&lng=${lng}&myId=${myId}&page=${pageNum}&limit=10`,
+          `${API}/users?lat=${lat}&lng=${lng}&myId=${myId}&page=${pageNum}&limit=${limit}`,
 
           {
             headers: {
@@ -57,7 +58,7 @@ useEffect(() => {
         if (!Array.isArray(data)) return;
 
         // no more records
-        if (data.length < 10) {
+        if (data.length < limit) {
           setHasMore(false);
         }
 
@@ -112,7 +113,7 @@ const fetchDefaultUsers = async (page = 1) => {
 
     const res = await fetch(
 
-      `${API}/users?page=${page}&limit=10&myId=${myId}`,
+      `${API}/users?page=${page}&limit=${limit}&myId=${myId}`,
 
       {
         headers: {
@@ -127,7 +128,7 @@ const fetchDefaultUsers = async (page = 1) => {
     if (!Array.isArray(data)) return;
 
     // no more data
-    if (data.length < 10) {
+    if (data.length < limit) {
       setHasMore(false);
     }
 
@@ -333,10 +334,10 @@ useEffect(() => {
                 loading="lazy"
                 src={u.pic}
                 alt=""
-                className="w-full h-40 object-cover"
+                className="w-full h-24 object-cover"
               />
             ) : (
-              <div className="bg-gray-700 h-40 flex items-center justify-center">
+              <div className="bg-gray-700 h-24 flex items-center justify-center">
                 No Image
               </div>
             )}
@@ -365,8 +366,8 @@ useEffect(() => {
         users={users}
         startIndex={startIndex}
         onClose={() => setViewerOpen(false)}
-        onOpenProfile={(user) =>
-          navigate(`/profile/${user.srno}`)
+        onOpenProfile={(id) =>
+          navigate(`/profile/${id}`)
         }
       />
     </Suspense>

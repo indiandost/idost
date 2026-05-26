@@ -52,7 +52,7 @@ export default function CreateJamRoom() {
 
   const [loadingRooms, setLoadingRooms] =
     useState(true);
-
+const token = localStorage.getItem("token"); 
   // ==========================================
   // FETCH LIVE ROOMS
   // ==========================================
@@ -66,7 +66,11 @@ export default function CreateJamRoom() {
 
         const res =
           await fetch(
-            `${API}/api/jam-room/live`
+            `${API}/api/jam-room/live`,{
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
           );
 
         const data =
@@ -168,10 +172,9 @@ export default function CreateJamRoom() {
 
             {
               method: "POST",
-
               headers: {
-                "Content-Type":
-                  "application/json",
+                "Content-Type": "application/json",
+                 Authorization: `Bearer ${token}`,
               },
 
               body:
@@ -282,7 +285,7 @@ export default function CreateJamRoom() {
 
           {/* TITLE */}
 
-          <h1 className="text-3xl font-bold mb-2">
+          <h1 className="text-3xl font-bold mb-2 text-white">
 
             🎤 Create Jam Room
 
@@ -319,7 +322,7 @@ export default function CreateJamRoom() {
 
           {/* DESCRIPTION */}
 
-          <div className="mb-4">
+          <div className="hidden mb-4">
 
             <label className="block mb-2 text-sm text-gray-300">
 

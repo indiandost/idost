@@ -17,6 +17,7 @@ const APP_ID = import.meta.env.VITE_AGORA_APP_ID;
 const API = import.meta.env.VITE_API_URL;
 
 export default function JamRoom() {
+  const token = localStorage.getItem("token"); 
   // ==========================================
   // PARAMS
   // ==========================================
@@ -85,7 +86,11 @@ export default function JamRoom() {
     try {
       setLoading(true);
 
-      const res = await fetch(`${API}/api/jam-room/${roomId}`);
+      const res = await fetch(`${API}/api/jam-room/${roomId}`,{
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
 
       const data = await res.json();
 

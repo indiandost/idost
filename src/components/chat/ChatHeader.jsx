@@ -40,9 +40,7 @@ export default function ChatHeader({
       .then((res) => res.json())
       .then((data) => {
 
-        console.log(data);
-
-        setFriendData(data);
+          setFriendData(data);
 
       })
       .catch((err) =>

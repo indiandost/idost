@@ -92,12 +92,9 @@ app.use("/api", postRoutes);
 
 //chat history
 
-app.get("/api/chat/:user1/:user2", (req, res) => {
+app.get("/api/chat/:user1/:user2", verifyToken, (req, res) => {
 
   const { user1, user2 } = req.params;
-
-
-
   const sql = `
 
     SELECT 
@@ -190,7 +187,7 @@ app.use("/uploads", express.static(UPLOAD_DIR));
 
 // 🚀 UPLOAD API
 
-app.post("/api/upload", upload.single("image"), (req, res) => {
+app.post("/api/upload",  verifyToken, upload.single("image"), (req, res) => {
 
   if (!req.file) {
 

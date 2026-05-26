@@ -5,6 +5,7 @@ const API = import.meta.env.VITE_API_URL;
 
 export default function useChatMessages(friendId) {
   const myId = JSON.parse(localStorage.getItem("user"))?.srno;
+  const token = localStorage.getItem("token");
 
   const [messages, setMessages] = useState([]);
 
@@ -16,7 +17,11 @@ export default function useChatMessages(friendId) {
 
     const loadChat = async () => {
       try {
-        const res = await fetch(`${API}/api/chat/${myId}/${friendId}`);
+        const res = await fetch(`${API}/api/chat/${myId}/${friendId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
 
         const data = await res.json();
 
@@ -65,10 +70,13 @@ export default function useChatMessages(friendId) {
         const formData = new FormData();
         formData.append("image", image);
 
-        const res = await fetch(`${API}/api/upload`, {
-          method: "POST",
-          body: formData,
-        });
+       const res = await fetch(`${API}/api/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
 
         const data = await res.json();
         imageUrl = data.url;
