@@ -497,40 +497,91 @@ export default function App() {
 useEffect(() => {
   const askPermissions = async () => {
     try {
+      // Prevent asking again
+      const permissionAsked = localStorage.getItem("perm_done");
+
+      if (permissionAsked) {
+        return;
+      }
+
+      const isNative =
+        Capacitor.isNativePlatform &&
+        Capacitor.isNativePlatform();
+
       // =========================
-      // 1. LOCATION (CAPACITOR + WEB SAFE)
+      // 1. LOCATION
       // =========================
-      if (window.Capacitor) {
-        await Geolocation.requestPermissions();
-      } else if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          () => console.log("Location allowed"),
-          (err) => console.log("Location denied", err)
-        );
+      try {
+        if (isNative) {
+          // Android / iOS
+          await Geolocation.requestPermissions();
+
+          await Geolocation.getCurrentPosition({
+            enableHighAccuracy: true,
+          });
+
+          console.log("Native location permission granted");
+        } else if (navigator.geolocation) {
+          // Web browser
+          navigator.geolocation.getCurrentPosition(
+            () => {
+              console.log("Web location permission granted");
+            },
+            (err) => {
+              console.log("Web location denied", err);
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 10000,
+            }
+          );
+        }
+      } catch (err) {
+        console.log("Location permission error:", err);
       }
 
       // =========================
-      // 2. CAMERA (ONLY MOBILE / CAPACITOR)
+      // 2. CAMERA (NATIVE ONLY)
       // =========================
-      if (window.Capacitor) {
-        await Camera.requestPermissions();
+      try {
+        if (isNative) {
+          await Camera.requestPermissions({
+            permissions: ["camera"],
+          });
+
+          console.log("Native camera permission granted");
+        }
+      } catch (err) {
+        console.log("Camera permission error:", err);
       }
 
       // =========================
-      // 3. MICROPHONE + CAMERA (WEB + MOBILE SAFE)
+      // 3. MIC + CAMERA (WEB SAFE)
       // =========================
-      if (navigator.mediaDevices?.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: true,
-        });
+      try {
+        if (
+          navigator.mediaDevices &&
+          navigator.mediaDevices.getUserMedia
+        ) {
+          const stream =
+            await navigator.mediaDevices.getUserMedia({
+              audio: true,
+              video: true,
+            });
 
-        // IMPORTANT:
-        // We stop tracks immediately after permission grant
-        stream.getTracks().forEach((track) => track.stop());
+          // Stop immediately after permission granted
+          stream.getTracks().forEach((track) => {
+            track.stop();
+          });
 
-        console.log("Mic + Camera permission granted");
+          console.log("Mic + Camera permission granted");
+        }
+      } catch (err) {
+        console.log("Media permission denied:", err);
       }
+
+      // Save flag
+      localStorage.setItem("perm_done", "1");
 
     } catch (err) {
       console.log("Permission error:", err);
@@ -1009,7 +1060,6 @@ if (!permissionAsked) {
           </h2>
 
           <div className="flex gap-4 mt-5">
-            {/* ================= ACCEPT ================= */}
             {/* ================= ACCEPT ================= */}
             <button
               className="

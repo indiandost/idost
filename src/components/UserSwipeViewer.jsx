@@ -46,18 +46,18 @@ useEffect(() => {
 
       {/* BACKDROP CLICK CLOSE */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 z-0"
         onClick={onClose}
       />
 
       {/* LEFT / RIGHT TAP ZONES */}
       <div
         onClick={() => changeUser("prev")}
-        className="absolute left-0 top-0 h-full w-1/3"
+        className="absolute left-0 top-0 h-full w-1/3 z-10"
       />
       <div
         onClick={() => changeUser("next")}
-        className="absolute right-0 top-0 h-full w-1/3"
+        className="absolute right-0 top-0 h-full w-1/3 z-10"
       />
 
       {/* SWIPE CARD */}
@@ -77,7 +77,7 @@ useEffect(() => {
           animate={{ opacity: 1, scale: 1, x: 0 }}
           exit={{ opacity: 0, scale: 0.9, x: -50 }}
           transition={{ duration: 0.25 }}
-          className="text-center text-white z-10"
+          className="text-center text-white z-20 pointer-events-auto"
         >
 
           {/* PROFILE IMAGE */}
@@ -103,7 +103,10 @@ useEffect(() => {
           <div className="flex gap-3 justify-center mt-6">
 
              <button
-    onClick={() => onOpenProfile(user.id)}
+   onClick={(e) => {
+  e.stopPropagation();
+  onOpenProfile(user.srno);
+}}
     className="
       bg-blue-500
       hover:bg-blue-600

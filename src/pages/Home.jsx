@@ -6,7 +6,8 @@ export default function Home() {
   const [liveUsers, setLiveUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
-  const [page, setPage] = useState(1);
+  const [moodUsers, setMoodUsers] = useState([]);
+  //const [page, setPage] = useState(1);
   const [pageNum, setPageNum] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState("");
@@ -16,9 +17,13 @@ export default function Home() {
   const UserSwipeViewer = lazy(() => import("../components/UserSwipeViewer"));
   const BirthdayUsers = lazy(() => import("../components/BirthdayUsers"));
   const NewUsers = lazy(() => import("../components/NewUsers"));
+  const MoodBar = lazy(() => import("../components/MoodBar"));
   const myId = JSON.parse(localStorage.getItem("user"))?.srno;
   const token = localStorage.getItem("token"); 
+  const [selectedMood, setSelectedMood] = useState("");
   const limit=9;
+const [currentMood, setCurrentMood] = useState( JSON.parse(localStorage.getItem("user"))?.mood || "");
+const [exploreOpen, setExploreOpen] = useState(false);
  // ======================
 // LOAD USERS
 // ======================
@@ -176,7 +181,7 @@ useEffect(() => {
       hasMore
 
     ) {
-
+      if (selectedMood) return;
       setPageNum((prev) => prev + 1);
 
     }
@@ -196,17 +201,76 @@ useEffect(() => {
 
 }, [loading, hasMore]);
 
-  useEffect(() => {
-    fetch(`${API}/users/live-users?limit=10`,{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  })
-      .then((res) => res.json())
-      .then((data) => {
+useEffect(() => {
+  const fetchLiveUsers = async () => {
+    try {
+      const res = await fetch(
+        `${API}/users/live-users?limit=10`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      // ✅ prevent HTML/error response crash
+      const text = await res.text();
+      let data = [];
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.log("Invalid JSON:", text);
+        data = [];
+      }
+      // ✅ ensure always array
+      if (Array.isArray(data)) {
         setLiveUsers(data);
-      });
-  }, []);
+      } else {
+        setLiveUsers([]);
+      }
+    } catch (err) {
+      console.log("Live users fetch error:", err);
+      setLiveUsers([]);
+    }
+  };
+  fetchLiveUsers();
+}, []);
+
+// same mood users
+useEffect(() => {
+
+  if (!selectedMood) return;
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      try {
+
+        const res = await fetch(
+          `${API}/users/mood-users?myId=${myId}&lat=${lat}&lng=${lng}&mood=${encodeURIComponent(selectedMood)}`,
+          {
+            headers: {
+              Authorization:
+                `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data =
+          await res.json();
+
+      setMoodUsers(Array.isArray(data) ? data : []);
+
+      } catch (err) {
+        console.log(err);
+      }
+
+    }
+  );
+
+}, [selectedMood]);
 
   // 🔄 Loading state
   /* if (loading) {
@@ -307,6 +371,90 @@ useEffect(() => {
           ))}
         </div>
       </div>
+      <Suspense fallback={null}>
+<MoodBar
+  myId={myId}
+  token={token}
+  currentMood={currentMood}
+  onMoodChange={(mood) => {
+  setSelectedMood(mood);
+  setCurrentMood(mood);
+}}
+/></Suspense>
+
+{selectedMood && moodUsers.length > 0 && (
+
+  <div className="mb-5">
+
+    <h2 className="text-lg font-semibold text-white mb-3">
+      {selectedMood} Nearby
+    </h2>
+
+    <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+
+      {moodUsers.map((u) => (
+
+        <div
+          key={u.srno}
+
+          onClick={() => {
+            setStartIndex(
+              moodUsers.findIndex(
+                (x) => x.srno === u.srno
+              )
+            );
+
+            setViewerOpen(true);
+          }}
+
+          className="
+            min-w-[140px]
+            bg-gray-800
+            rounded-2xl
+            overflow-hidden
+            cursor-pointer
+            border border-gray-700
+          "
+        >
+
+          <img
+            src={u.pic || "/default-user.png"}
+            className="
+              w-full
+              h-36
+              object-cover
+            "
+          />
+
+          <div className="p-2">
+
+            <div className="text-white font-semibold text-sm">
+              {u.name}, {u.age}
+            </div>
+
+            <div className="text-xs text-gray-400">
+              📍 {u.distance}
+            </div>
+
+            <div className="text-xs mt-1">
+              {Number(u.onst) === 1
+                ? "🟢 Online"
+                : "⚪ Offline"}
+            </div>
+
+          </div>
+
+        </div>
+
+      ))}
+
+    </div>
+
+  </div>
+
+)}
+
+{/*
 <Suspense fallback={null}>
   <BirthdayUsers />
 </Suspense>
@@ -314,6 +462,7 @@ useEffect(() => {
 <Suspense fallback={null}>
   <NewUsers />
 </Suspense>
+*/}
       <hr />
 
       <h2 className="text-lg font-semibold text-white">Nearby Users</h2>
@@ -342,10 +491,7 @@ useEffect(() => {
               </div>
             )}
 
-            <div
-              className="p-2 text-white"
-              onClick={() => navigate(`/profile/${u.srno}`)}
-            >
+            <div className="p-2 text-white"  onClick={(e) => { e.stopPropagation(); navigate(`/profile/${u.srno}`);  }}>
               <h3 className="text-sm font-semibold">
                 {u.name}, {u.age}
               </h3>
@@ -382,6 +528,136 @@ useEffect(() => {
             No more users
           </div>
         )}
+
+        {/* EXPLORE FLOAT BUTTON */}
+
+<button
+  onClick={() => setExploreOpen(true)}
+  className="
+    fixed
+    bottom-24
+    right-4
+    z-40
+
+    w-14
+    h-14
+
+    rounded-full
+
+    bg-gradient-to-br
+    from-pink-500
+    to-purple-600
+
+    shadow-2xl
+
+    flex
+    items-center
+    justify-center
+
+    text-2xl
+
+    active:scale-95
+    transition-all
+  "
+>
+  ✨
+</button>
+{/* EXPLORE POPUP */}
+
+{exploreOpen && (
+
+  <div
+    className="
+      fixed
+      inset-0
+      z-50
+      bg-black/70
+      backdrop-blur-sm
+
+      flex
+      items-end
+    "
+  >
+
+    {/* BACKDROP */}
+    <div
+      className="absolute inset-0"
+      onClick={() => setExploreOpen(false)}
+    />
+
+    {/* SHEET */}
+    <div
+      className="
+        relative
+        w-full
+
+        bg-[#111]
+
+        rounded-t-3xl
+
+        p-4
+
+        max-h-[80vh]
+        overflow-y-auto
+
+        animate-in
+        slide-in-from-bottom
+      "
+    >
+
+      {/* HANDLE */}
+      <div
+        className="
+          w-14
+          h-1.5
+          bg-gray-600
+          rounded-full
+          mx-auto
+          mb-4
+        "
+      />
+
+      {/* HEADER */}
+      <div className="flex items-center justify-between mb-4">
+
+        <h2 className="text-xl font-bold text-white">
+          Explore
+        </h2>
+
+        <button
+          onClick={() => setExploreOpen(false)}
+          className="
+            text-gray-400
+            text-xl
+          "
+        >
+          ✕
+        </button>
+
+      </div>
+
+      {/* BIRTHDAY */}
+      <div className="mb-6">      
+        <Suspense fallback={null}>
+          <BirthdayUsers />
+        </Suspense>
+
+      </div>
+
+      {/* NEW USERS */}
+      <div>
+
+       <Suspense fallback={null}>
+          <NewUsers />
+        </Suspense>
+
+      </div>
+
+    </div>
+
+  </div>
+
+)}
     </div>
     
   );

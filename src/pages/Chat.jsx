@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef  } from "react";
 
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import ChatHeader from "../components/chat/ChatHeader";
@@ -26,6 +26,10 @@ export default function Chat() {
 
   const myId = JSON.parse(localStorage.getItem("user"))?.srno;
   const token = localStorage.getItem("token"); 
+  const callStartRef = useRef(null);
+  const callTypeRef = useRef("audio");
+  const billingIntervalRef = useRef(null);
+  const isCallerRef = useRef(false);  //for only caller's coins reduce
   // =========================
   // MESSAGES
   // =========================
@@ -113,6 +117,99 @@ export default function Chat() {
     };
   }, []);
 
+//billing effect
+useEffect(() => {
+ // if (inCall) {
+  if (inCall && isCallerRef.current) {
+    console.log("📞 Call connected");
+    startCallBilling();
+  } else {
+    // stop if call ended
+    if (billingIntervalRef.current) {
+      clearInterval(billingIntervalRef.current);
+      billingIntervalRef.current = null;
+    }
+  }
+
+  return () => {
+    if (billingIntervalRef.current) {
+      clearInterval(billingIntervalRef.current);
+      billingIntervalRef.current = null;
+    }
+  };
+}, [inCall]);
+
+//endcall new function
+const handleEndCall = async () => {
+  const duration = callStartRef.current
+    ? Math.floor((Date.now() - callStartRef.current) / 1000)
+    : 0;
+    console.log(`call ending save duration ${duration}s `);
+  // save call message
+  socket.emit("sendMessage", {
+    from: Number(myId),
+    to: Number(friendId),
+    message: `${callTypeRef.current} call duration ${duration}s`,
+    type: "call_accepted",
+    createdAt: new Date().toISOString(),
+  });
+  //for call billing stop
+  if (billingIntervalRef.current) {
+    clearInterval(billingIntervalRef.current);
+    billingIntervalRef.current = null;
+  }
+  // original agora cleanup
+  await endCall();
+};
+
+//call limitation 
+const startCallBilling = () => {
+  // prevent duplicate interval
+  if (billingIntervalRef.current) {
+    clearInterval(billingIntervalRef.current);
+  }
+  billingIntervalRef.current = setInterval(async () => {
+    try {
+      console.log("💰 deducting call coins...");
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/call/add-time`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            userId: myId,
+            seconds: 5,
+          }),
+        }
+      );
+      const data = await res.json();
+      console.log("CALL BILLING:", data);
+      // ❌ LIMIT REACHED
+      if (!data.success) {
+        alert(data.message);
+        clearInterval(billingIntervalRef.current);
+        billingIntervalRef.current = null;
+        socket.emit("endCall", {
+          from: myId,
+          to: friendId,
+        });
+        await endCall();
+        navigate("/chats");
+        return;
+      }
+      // optional live coin update
+     /* socket.emit("coinUpdateRequest", {
+        userId: myId,
+      });*/
+    } catch (err) {
+      console.log("Billing error:", err);
+    }
+  }, 5000);
+};
+
   // =========================
   // UI
   // =========================
@@ -133,8 +230,18 @@ export default function Chat() {
       overflow-hidden*/}
       <ChatHeader
         token={token}
-        onAudioCall={() => startCall("audio")}
-        onVideoCall={() => startCall("video")}
+         onAudioCall={() => {
+          callStartRef.current = Date.now();
+          callTypeRef.current = "audio";
+          isCallerRef.current = true;
+          startCall("audio");
+        }}
+        onVideoCall={() => {
+          callStartRef.current = Date.now();
+          callTypeRef.current = "video";
+          isCallerRef.current = true;
+          startCall("video");
+        }}
       />
 
       {/* VIDEO */}
@@ -144,7 +251,7 @@ export default function Chat() {
         inCall={inCall}
         calling={calling}
         callStatus={callStatus}
-        onEnd={endCall}
+       onEnd={handleEndCall}
       />
 
       {/* MESSAGES */}
@@ -171,7 +278,7 @@ export default function Chat() {
           onMute={toggleMute}
           onCamera={toggleCamera}
           onFlip={flipCamera}
-          onEnd={endCall}
+          onEnd={handleEndCall}
         />
       )}
     </div>

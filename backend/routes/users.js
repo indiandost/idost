@@ -336,6 +336,7 @@ router.get("/", verifyToken, (req, res) => {
       name,
 
       TIMESTAMPDIFF(YEAR, dob, CURDATE()) AS age,
+      mood,
 
       city,
 
@@ -405,7 +406,7 @@ router.get("/", verifyToken, (req, res) => {
       TIMESTAMPDIFF(YEAR, dob, CURDATE()) AS age,
 
       city,
-
+      mood, 
       pic,
 
       status,
@@ -562,6 +563,112 @@ router.post("/update-location", (req, res) => {
     () => res.json({ success: true }),
   );
 });
+//===========================
+//update moods
+//////////////////////////////
+router.post("/update-mood", verifyToken, (req, res) => {
+
+  const db = req.app.get("db");
+
+  const { userId, mood } = req.body;
+  if (!userId || !mood) {
+    return res.json({
+      success: false
+    });
+  }
+
+  db.query(
+    `
+    UPDATE users
+    SET mood=?, mood_updated_at=NOW()
+    WHERE srno=?
+    `,
+    [mood, userId],
+    (err) => {
+
+      if (err) {
+        console.log(err);
+
+        return res.json({
+          success: false
+        });
+      }
+
+      res.json({
+        success: true
+      });
+
+    }
+  );
+});
+
+//==========================
+//get nearwise same mood users
+//==========================
+router.get("/mood-users", verifyToken, (req, res) => {
+
+  const db = req.app.get("db");
+
+  const {
+    myId,
+    lat,
+    lng,
+    mood
+  } = req.query;
+
+  const sql = `
+  
+  SELECT
+    srno,
+    name,
+    TIMESTAMPDIFF(YEAR, dob, CURDATE()) AS age,
+    city,
+    pic,
+    mood,
+    onst,
+
+    (
+      6371 * acos(
+        cos(radians(?)) *
+        cos(radians(latitude)) *
+        cos(radians(longitude) - radians(?)) +
+        sin(radians(?)) *
+        sin(radians(latitude))
+      )
+    ) AS distance
+
+  FROM users
+
+  WHERE
+
+    srno != ?
+    AND mood = ?
+    AND status='A'
+
+  HAVING distance <= 50
+
+  ORDER BY onst DESC, distance ASC
+
+  LIMIT 50
+  `;
+
+  db.query(
+    sql,
+    [lat, lng, lat, myId, mood],
+    (err, result) => {
+
+      if (err) {
+        console.log(err);
+        return res.json([]);
+      }
+
+      res.json(result);
+
+    }
+  );
+
+});
+
 //=======================
 //get coin api
 //=========================

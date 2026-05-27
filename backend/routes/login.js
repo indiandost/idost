@@ -138,6 +138,7 @@ router.post("/login", (req, res) => {
       user: {
         srno: userData.srno,
         name: userData.name,
+        name: userData.mood,
         email: userData.email
       }
     });
