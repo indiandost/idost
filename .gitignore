@@ -13,9 +13,6 @@ backend/node_modules
 backend/upload
 android/app/build
 android/app/upload-keystore.jks
-capacitor.config.json
-vite.config.js
-src/main.jsx
 uploads
 dist-ssr
 *.local
