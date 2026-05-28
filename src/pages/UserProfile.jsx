@@ -128,7 +128,15 @@ if (blocked) {
 
       {/* PROFILE HEADER */}
       <div className="relative">
-        <img src={user.pic} className="w-full h-72 object-cover" />
+        <img
+          src={
+            user.pic
+              ? user.pic.startsWith("http://") ||
+                user.pic.startsWith("https://")
+                ? user.pic
+                : `https://indiandost.com/${user.pic}`
+              : "/default-user.png"
+          } className="w-full h-72 object-cover" />
 
         <div className="absolute inset-0 bg-gradient-to-t from-black"></div>
 

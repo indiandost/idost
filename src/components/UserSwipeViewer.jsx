@@ -77,7 +77,7 @@ useEffect(() => {
           animate={{ opacity: 1, scale: 1, x: 0 }}
           exit={{ opacity: 0, scale: 0.9, x: -50 }}
           transition={{ duration: 0.25 }}
-          className="text-center text-white z-20 pointer-events-auto"
+          className="relative text-center text-white z-50"
         >
 
           {/* PROFILE IMAGE */}
@@ -105,7 +105,7 @@ useEffect(() => {
              <button
    onClick={(e) => {
   e.stopPropagation();
-  onOpenProfile(user.srno);
+  onOpenProfile(user.srno || user.id);
 }}
     className="
       bg-blue-500

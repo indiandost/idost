@@ -240,7 +240,7 @@ useEffect(() => {
       {/* ================= OVERLAY ================= */}
       {menuOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-50"
+          className="fixed inset-0 bg-black/50 z-40"
           onClick={() => setMenuOpen(false)}
         />
       )}
@@ -494,6 +494,11 @@ export default function App() {
   useEffect(() => {
     incomingCallRef.current = incomingCall;
   }, [incomingCall]);
+
+  useEffect(() => {
+  setMenuOpen(false);
+}, []);
+
 useEffect(() => {
   const askPermissions = async () => {
     try {

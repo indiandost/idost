@@ -791,7 +791,14 @@ const deleteProfile = async () => {
         )}
         <div className="relative">
           <img
-            src={user.pic || "./default-user.png"}
+            src={
+              user.pic
+                ? user.pic.startsWith("http://") ||
+                  user.pic.startsWith("https://")
+                  ? user.pic
+                  : `https://indiandost.com/${user.pic}`
+                : "/default-user.png"
+            }
             className="w-full h-72 object-cover"
             alt=""
           />

@@ -23,6 +23,11 @@ export default function Home() {
   const [selectedMood, setSelectedMood] = useState("");
   const limit=9;
 const [currentMood, setCurrentMood] = useState( JSON.parse(localStorage.getItem("user"))?.mood || "");
+useEffect(() => {
+  if (currentMood) {
+    setSelectedMood(currentMood);
+  }
+}, [currentMood]);
 const [exploreOpen, setExploreOpen] = useState(false);
  // ======================
 // LOAD USERS
@@ -181,7 +186,7 @@ useEffect(() => {
       hasMore
 
     ) {
-      if (selectedMood) return;
+     if (selectedMood?.trim() && moodUsers.length > 0) return;
       setPageNum((prev) => prev + 1);
 
     }
@@ -238,7 +243,7 @@ useEffect(() => {
 // same mood users
 useEffect(() => {
 
-  if (!selectedMood) return;
+  if (!selectedMood?.trim()) return;
 
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
@@ -252,19 +257,20 @@ useEffect(() => {
           `${API}/users/mood-users?myId=${myId}&lat=${lat}&lng=${lng}&mood=${encodeURIComponent(selectedMood)}`,
           {
             headers: {
-              Authorization:
-                `Bearer ${token}`,
+              Authorization: `Bearer ${token}`,
             },
           }
         );
 
-        const data =
-          await res.json();
+        const data = await res.json();
 
-      setMoodUsers(Array.isArray(data) ? data : []);
+        setMoodUsers(Array.isArray(data) ? data : []);
 
       } catch (err) {
+
         console.log(err);
+        setMoodUsers([]);
+
       }
 
     }
@@ -294,9 +300,9 @@ useEffect(() => {
 
         {/* LIVE USERS SCROLL */}
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {liveUsers.map((u) => (
+          {liveUsers.map((u, index) => (
             <div
-              key={u.srno}
+              key={`${u.srno}-${index}`}
               onClick={() => navigate(`/meeting/${u.live_room}`)}
               className="
           min-w-[120px]
@@ -330,8 +336,14 @@ useEffect(() => {
 
               {/* USER IMAGE */}
               <img
-                src={u.pic || "/default-user.png"}
-                alt={u.name}
+                src={
+                  u.pic
+                    ? u.pic.startsWith("http://") ||
+                      u.pic.startsWith("https://")
+                      ? u.pic
+                      : `https://indiandost.com/${u.pic}`
+                    : "/default-user.png"
+                }
                 className="
             w-16
             h-16
@@ -392,60 +404,84 @@ useEffect(() => {
 
     <div className="flex gap-3 overflow-x-auto scrollbar-hide">
 
-      {moodUsers.map((u) => (
+      {moodUsers.map((u, index) => (
 
         <div
-          key={u.srno}
+  key={`${u.srno}-${index}`}
+  onClick={() => navigate(`/profile/${u.srno}`)}
+  className="
+    min-w-[90px]
+    flex
+    flex-col
+    items-center
+    cursor-pointer
+    relative
+  "
+>
 
-          onClick={() => {
-            setStartIndex(
-              moodUsers.findIndex(
-                (x) => x.srno === u.srno
-              )
-            );
+  {/* IMAGE */}
+  <div className="relative">
 
-            setViewerOpen(true);
-          }}
+   <img
+        src={
+          u.pic
+            ? u.pic.startsWith("http://") ||
+              u.pic.startsWith("https://")
+              ? u.pic
+              : `https://indiandost.com/${u.pic}`
+            : "/default-user.png"
+        }
+      className="
+        w-20
+        h-20
+        rounded-full
+        object-cover
+        border-2
+        border-pink-500
+        shadow-lg
+      "
+    />
 
-          className="
-            min-w-[140px]
-            bg-gray-800
-            rounded-2xl
-            overflow-hidden
-            cursor-pointer
-            border border-gray-700
-          "
-        >
+    {/* ONLINE DOT */}
+    <div
+      className={`
+        absolute
+        bottom-1
+        right-1
+        w-4
+        h-4
+        rounded-full
+        border-2
+        border-black
+        ${Number(u.onst) === 1
+          ? "bg-green-500"
+          : "bg-gray-400"}
+      `}
+    />
 
-          <img
-            src={u.pic || "/default-user.png"}
-            className="
-              w-full
-              h-36
-              object-cover
-            "
-          />
+  </div>
 
-          <div className="p-2">
+  {/* NAME */}
+  <div
+    className="
+      text-white
+      text-xs
+      font-semibold
+      mt-2
+      text-center
+      truncate
+      w-20
+    "
+  >
+    {u.name}, {u.age}
+  </div>
 
-            <div className="text-white font-semibold text-sm">
-              {u.name}, {u.age}
-            </div>
+  {/* DISTANCE */}
+  <div className="text-[11px] text-gray-400">
+    📍 {Number(u.distance).toFixed(1)} km
+  </div>
 
-            <div className="text-xs text-gray-400">
-              📍 {u.distance}
-            </div>
-
-            <div className="text-xs mt-1">
-              {Number(u.onst) === 1
-                ? "🟢 Online"
-                : "⚪ Offline"}
-            </div>
-
-          </div>
-
-        </div>
-
+</div>
       ))}
 
     </div>
@@ -468,12 +504,12 @@ useEffect(() => {
       <h2 className="text-lg font-semibold text-white">Nearby Users</h2>
       {/* USER GRID */}
       <div className="grid grid-cols-3 gap-3">
-        {users.map((u) => (
+        {users.map((u, index) => (
           <div
-            key={u.srno}
+            key={`${u.srno}-${index}`}
             //onClick={() => navigate(`/profile/${u.id}`)}
-            onClick={() => {
-              setStartIndex(users.findIndex((x) => x.srno === u.srno));
+           onClick={() => {
+              setStartIndex(index);
               setViewerOpen(true);
             }}
             className="bg-gray-800 rounded-xl overflow-hidden cursor-pointer hover:scale-[1.02] transition"
@@ -481,7 +517,14 @@ useEffect(() => {
             {u.pic ? (
               <img
                 loading="lazy"
-                src={u.pic}
+                src={
+                  u.pic
+                    ? u.pic.startsWith("http://") ||
+                      u.pic.startsWith("https://")
+                      ? u.pic
+                      : `https://indiandost.com/${u.pic}`
+                    : "/default-user.png"
+                }
                 alt=""
                 className="w-full h-24 object-cover"
               />
@@ -512,9 +555,10 @@ useEffect(() => {
         users={users}
         startIndex={startIndex}
         onClose={() => setViewerOpen(false)}
-        onOpenProfile={(id) =>
-          navigate(`/profile/${id}`)
-        }
+       onOpenProfile={(id) => {
+        setViewerOpen(false);
+        navigate(`/profile/${id}`);
+      }}
       />
     </Suspense>
       )}

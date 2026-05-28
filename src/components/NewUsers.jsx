@@ -65,10 +65,10 @@ export default function NewUsers() {
       {/* USERS */}
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
 
-        {users2.map((u) => (
+        {users2.map((u, index) => (
 
           <div
-            key={u.srno}
+            key={`${u.srno}-${index}`}
             onClick={() => navigate(`/profile/${u.srno}`)}
             className="
               min-w-[82px]
@@ -97,8 +97,14 @@ export default function NewUsers() {
 
               <img
                 loading="lazy"
-                src={u.pic || "/default-user.png"}
-                alt={u.name}
+                 src={
+                  u.pic
+                    ? u.pic.startsWith("http://") ||
+                      u.pic.startsWith("https://")
+                      ? u.pic
+                      : `https://indiandost.com/${u.pic}`
+                    : "/default-user.png"
+                }
                 className="
                   w-14
                   h-14
