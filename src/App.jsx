@@ -215,7 +215,7 @@ useEffect(() => {
           "
                 >
                   <img
-                    src={u.pic || "/default-user.png"}
+                    src={u.pic || "https://indiandost.com//default-user.png"}
                     className="w-12 h-12 rounded-full object-cover"
                   />
 
@@ -1191,7 +1191,7 @@ if (!permissionAsked) {
               className="flex items-center gap-3 cursor-pointer flex-1"
             >
               <img
-                src={chatNotice.senderPic || "/default-user.png"}
+                src={chatNotice.senderPic || "https://indiandost.com//default-user.png"}
                 className="w-12 h-12 rounded-full object-cover"
               />
 

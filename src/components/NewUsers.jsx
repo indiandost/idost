@@ -103,7 +103,7 @@ export default function NewUsers() {
                       u.pic.startsWith("https://")
                       ? u.pic
                       : `https://indiandost.com/${u.pic}`
-                    : "/default-user.png"
+                    : "https://indiandost.com//default-user.png"
                 }
                 className="
                   w-14

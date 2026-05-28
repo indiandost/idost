@@ -342,7 +342,7 @@ useEffect(() => {
                       u.pic.startsWith("https://")
                       ? u.pic
                       : `https://indiandost.com/${u.pic}`
-                    : "/default-user.png"
+                    : "https://indiandost.com//default-user.png"
                 }
                 className="
             w-16
@@ -429,7 +429,7 @@ useEffect(() => {
               u.pic.startsWith("https://")
               ? u.pic
               : `https://indiandost.com/${u.pic}`
-            : "/default-user.png"
+            : "https://indiandost.com//default-user.png"
         }
       className="
         w-20
@@ -503,49 +503,131 @@ useEffect(() => {
 
       <h2 className="text-lg font-semibold text-white">Nearby Users</h2>
       {/* USER GRID */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         {users.map((u, index) => (
           <div
-            key={`${u.srno}-${index}`}
-            //onClick={() => navigate(`/profile/${u.id}`)}
-           onClick={() => {
-              setStartIndex(index);
-              setViewerOpen(true);
-            }}
-            className="bg-gray-800 rounded-xl overflow-hidden cursor-pointer hover:scale-[1.02] transition"
-          >
-            {u.pic ? (
-              <img
-                loading="lazy"
-                src={
-                  u.pic
-                    ? u.pic.startsWith("http://") ||
-                      u.pic.startsWith("https://")
-                      ? u.pic
-                      : `https://indiandost.com/${u.pic}`
-                    : "/default-user.png"
-                }
-                alt=""
-                className="w-full h-24 object-cover"
-              />
-            ) : (
-              <div className="bg-gray-700 h-24 flex items-center justify-center">
-                No Image
-              </div>
-            )}
+  key={`${u.srno}-${index}`}
+  onClick={() => {
+    setStartIndex(index);
+    setViewerOpen(true);
+  }}
+  className="
+    relative
+    rounded-2xl
+    overflow-hidden
+    cursor-pointer
+    h-44
+    bg-gray-800
+    shadow-lg
+    hover:scale-[1.03]
+    transition-all
+    duration-300
+  "
+>
+  {/* IMAGE */}
+  <img
+    loading="lazy"
+    src={
+      u.pic
+        ? u.pic.startsWith("http://") ||
+          u.pic.startsWith("https://")
+          ? u.pic
+          : `https://indiandost.com/${u.pic}`
+        : "https://indiandost.com//default-user.png"
+    }
+    alt=""
+    className="
+      w-full
+      h-full
+      object-cover
+    "
+  />
 
-            <div className="p-2 text-white"  onClick={(e) => { e.stopPropagation(); navigate(`/profile/${u.srno}`);  }}>
-              <h3 className="text-sm font-semibold">
-                {u.name}, {u.age}
-              </h3>
+  {/* DARK OVERLAY */}
+  <div
+    className="
+      absolute
+      inset-0
+      bg-gradient-to-t
+      from-black/90
+      via-black/20
+      to-transparent
+    "
+  />
 
-              <p className="text-xs text-gray-400">📍 {u.distance}</p>
+  {/* ONLINE DOT */}
+  <div
+    className={`
+      absolute
+      top-2
+      right-2
+      w-3
+      h-3
+      rounded-full
+      border
+      border-white
+      ${Number(u.onst) === 1
+        ? "bg-green-400"
+        : "bg-gray-400"}
+    `}
+  />
 
-              <p className="text-xs">
-                {Number(u.onst) === 1 ? "🟢 Online" : "⚪ Offline"}
-              </p>
-            </div>
-          </div>
+  {/* DISTANCE BADGE */}
+  <div
+    className="
+      absolute
+      top-2
+      left-2
+      px-2
+      py-1
+      rounded-full
+      bg-black/50
+      backdrop-blur-md
+      text-white
+      text-[10px]
+      font-medium
+    "
+  >
+    📍 {Number(u.distance || 0).toFixed(1)} km
+  </div>
+
+  {/* USER INFO */}
+  <div
+    className="
+      absolute
+      bottom-0
+      left-0
+      w-full
+      p-3
+      text-white
+    "
+    onClick={(e) => {
+      e.stopPropagation();
+      navigate(`/profile/${u.srno}`);
+    }}
+  >
+    <div
+      className="
+        font-bold
+        text-sm
+        truncate
+      "
+    >
+      {u.name}, {u.age}
+    </div>
+
+    <div
+      className="
+        text-[11px]
+        text-gray-200
+      "
+    >
+      {Number(u.onst) === 1
+        ? "🟢 Online"
+        : "⚪ Offline"}
+    </div>
+  </div>
+</div>
         ))}
       </div>
       {viewerOpen && (
