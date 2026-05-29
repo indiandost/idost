@@ -31,9 +31,21 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      # =========================
+      # DECODE KEYSTORE
+      # =========================
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+
+      # =========================
+      # VERIFY KEYSTORE
+      # =========================
+      - name: Verify Keystore
+        run: |
+          keytool -list -v \
+          -keystore android/app/upload-keystore.jks \
+          -storepass ${{ secrets.KEYSTORE_PASSWORD }}
 
       - name: Install Dependencies
         run: npm install
@@ -44,18 +56,24 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Build Release APK
+      # =========================
+      # BUILD SIGNED AAB
+      # =========================
+      - name: Build Release AAB
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew bundleRelease
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Upload APK
+      # =========================
+      # UPLOAD AAB
+      # =========================
+      - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
           name: signed-release
-          path: android/app/build/outputs/apk/release/*.apk
+          path: android/app/build/outputs/bundle/release/*.aab
