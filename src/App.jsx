@@ -499,6 +499,7 @@ export default function App() {
   setMenuOpen(false);
 }, []);
 
+
 useEffect(() => {
   const askPermissions = async () => {
     try {

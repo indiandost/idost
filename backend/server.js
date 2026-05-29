@@ -44,6 +44,7 @@ import gameRoutes from "./routes/gameRoutes.js";
 import colorCrashSocket from "./sockets/colorCrashSocket.js";
 import jamRoomSocket from "./sockets/jamRoomSocket.js";
 import jamRoutes from "./routes/jamRoomRoutes.js";
+import notificationRoutes from "./routes/notification.js";
 //import colorCrashSocket from "./sockets/colorCrashSocket.js";
 
 
@@ -337,8 +338,7 @@ app.use("/api/profile", profileRoutes);
 
 app.use("/api/gifts", giftsRoutes);
 app.use("/api/rewards", rewardsRoutes);
-
-
+app.use("/notification", notificationRoutes);
 // serve images
 
 //app.use("/uploads", express.static("uploads"));

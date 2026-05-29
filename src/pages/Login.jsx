@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
 import socket from "./../socket";
 
 export default function Login() {
@@ -78,11 +80,32 @@ export default function Login() {
 
       // STOP LOADING
       setLoading(false);
-
       if (data.success) {
         localStorage.setItem("token", data.token); //for token
         localStorage.setItem("user", JSON.stringify(data.user));
         socket.connect();
+    // 🔥 PUSH NOTIFICATION SETUP (AFTER LOGIN ONLY)
+    if (Capacitor.getPlatform() !== 'web') {
+      PushNotifications.requestPermissions().then(result => {
+
+        if (result.receive === 'granted') {
+          PushNotifications.register();
+        }
+      });
+
+      PushNotifications.addListener('registration', (token) => {
+        console.log("FCM Token:", token.value);
+        fetch(`${API}/notification/save-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: user.id,
+            token: token.value
+          })
+        });
+      });
+    }
+
         navigate("/");
 
       } else {
