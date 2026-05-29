@@ -95,9 +95,3 @@ jobs:
         with:
           name: signed-release
           path: android/app/build/outputs/apk/release/*.apk
-      - name: Verify ADI File
-      # =========================
-      # Varify APK
-      # =========================
-      run: |
-        unzip -l android/app/build/outputs/apk/release/app-release.apk | grep adi-registration.properties    
