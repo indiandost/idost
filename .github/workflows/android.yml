@@ -72,7 +72,7 @@ jobs:
       # =========================
       # UPLOAD AAB
       # =========================
-      - name: Upload AAB
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: signed-release
