@@ -36,7 +36,8 @@ import GameHome from "./pages/GameHome";
 import JamRoom from "./pages/JamRoom";
 import CreateJamRoom from "./pages/CreateJamRoom";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
-
+import { PushNotifications } from '@capacitor/push-notifications';
+import { Capacitor } from '@capacitor/core';
 import socket from "./socket";
 import {
   Home as HomeIcon,
@@ -499,6 +500,40 @@ export default function App() {
   setMenuOpen(false);
 }, []);
 
+//push notification 
+useEffect(() => {
+  PushNotifications.addListener(
+    "pushNotificationReceived",
+    (notification) => {
+      console.log(
+        "🔔 Notification:",
+        notification
+      );
+    }
+  );
+  return () => {
+    PushNotifications.removeAllListeners();
+  };
+}, []);
+
+//open chat onclick from notification
+useEffect(() => {
+  PushNotifications.addListener(
+    "pushNotificationActionPerformed",
+    (event) => {
+      const senderId =
+        event.notification
+          ?.data
+          ?.senderId;
+      if (senderId) {
+        navigate(
+          `/chat/${senderId}`
+        );
+      }
+    }
+  );
+}, [navigate]);
+
 
 useEffect(() => {
   const askPermissions = async () => {
@@ -674,13 +709,10 @@ if (!permissionAsked) {
 
       try {
         const res = await fetch(`${API}/users/${data.from}`,{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
+           headers: {Authorization: `Bearer ${token}`}
+        });
 
         const user = await res.json();
-
         setChatNotice({
           ...data,
           senderName: user.name,

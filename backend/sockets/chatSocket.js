@@ -1,4 +1,5 @@
 import giveReward from "../utils/giveReward.js";
+import admin from "../firebase.js";
 const users = {}; // shared memory
 const meetingRooms = {};
 const activeCalls = {};
@@ -61,14 +62,40 @@ export default function chatSocket(io, socket, db) {
 */
 
 
-    // =========================
+    ///firebase msg notice
+async function sendPushNotification(
+  token,
+  title,
+  body,
+  data = {}
+) {
+
+  await admin.messaging().send({
+
+    token,
+
+    notification: {
+      title,
+      body,
+    },
+
+    data,
+
+    android: {
+      priority: "high",
+    },
+
+  });
+
+}
+// =========================
 
     // 💬 CHAT
 
     // =========================
 
   
-socket.on("sendMessage", (data) => {
+socket.on("sendMessage",  async (data) => {
 
 const toId = Number(data.to);
 
@@ -100,13 +127,50 @@ const sql = `
 
 
 
-db.query(sql, [fromId, toId, message, mediaUrl, type], (err, result) => {
+  db.query(sql, [fromId, toId, message, mediaUrl, type], async (err, result) => {
   if (err) {
     console.log("❌ DB insert error:", err);
     return;
   }
 
   console.log("💾 Saved message ID:", result.insertId);
+     //firebase notification code here
+    try {
+      // receiver token
+      const [tokenRows] =  await db.promise().query(
+          `
+          SELECT
+            fcm_token
+          FROM users
+          WHERE srno=?
+          LIMIT 1
+          `,
+          [toId]
+        );
+
+      if (!tokenRows.length ||  !tokenRows[0].fcm_token) { return; }
+      // sender info
+      const [senderRows] =
+        await db.promise().query(
+          `
+          SELECT
+            name,
+            pic
+          FROM users
+          WHERE srno=?
+          LIMIT 1
+          `,
+          [fromId]
+        );
+
+      const senderName = senderRows[0]?.name || "New Message";  const senderPic = senderRows[0]?.pic || "";
+      await sendPushNotification(tokenRows[0].fcm_token, senderName,  message || "📷 Photo", {
+          senderId: String(fromId), senderName, senderPic,
+        }
+      );
+    } catch (e) {
+      console.log("FCM ERROR:", e );
+    }
 
     // 2️⃣ SEND TO RECEIVER IF ONLINE
 
