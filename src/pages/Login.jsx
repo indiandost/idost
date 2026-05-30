@@ -95,13 +95,14 @@ export default function Login() {
 
       PushNotifications.addListener('registration', (token) => {
         console.log("FCM Token:", token.value);
+        const loggedUser = data.user;
         fetch(`${API}/notification/save-token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            user_id: user.id,
-            token: token.value
-          })
+          user_id: loggedUser.srno,
+          token: token.value
+        })
         });
       });
     }
