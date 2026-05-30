@@ -45,37 +45,53 @@ jobs:
         run: |
           keytool -list -v \
           -keystore android/app/upload-keystore.jks \
-          -storepass ${{ secrets.KEYSTORE_PASSWORD }}
+          -storepass "${{ secrets.KEYSTORE_PASSWORD }}"
 
+      # =========================
+      # INSTALL DEPENDENCIES
+      # =========================
       - name: Install Dependencies
         run: npm install
 
+      # =========================
+      # BUILD VITE
+      # =========================
       - name: Build Vite
         run: npm run build
 
+      # =========================
+      # CAPACITOR SYNC
+      # =========================
       - name: Sync Capacitor
         run: npx cap sync android
 
       # =========================
-      # BUILD SIGNED AAB  - name: Build Release AAB
+      # BUILD SIGNED APK + AAB
       # =========================
-      - name: Build Release APK
+      - name: Build Release APK and AAB
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew bundleRelease
+          ./gradlew assembleRelease bundleRelease
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       # =========================
-      # UPLOAD AAB
+      # UPLOAD APK
       # =========================
-     # - name: Upload AAB
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: signed-release
-          path: android/app/build/outputs/bundle/release/*.apk
-           # path: android/app/build/outputs/bundle/release/*.aab
+          name: signed-release-apk
+          path: android/app/build/outputs/apk/release/*.apk
+
+      # =========================
+      # UPLOAD AAB
+      # =========================
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-release-aab
+          path: android/app/build/outputs/bundle/release/*.aab
