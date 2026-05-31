@@ -1083,11 +1083,35 @@ function emitRoom(io, roomId, room) {
    emitRoom(io, roomId, room);
 
     // delete room if empty
-    if (room.players.length === 0 && room.viewers.length === 0) {
+/*  if (room.players.length === 0 && room.viewers.length === 0) {
       if (room.interval) clearInterval(room.interval);
       delete rooms[roomId];
       console.log("🗑 Room Deleted:", roomId);
-    }
+    } */
+   if (
+  room.players.length === 0 &&
+  room.viewers.length === 0
+) {
+
+  if (room.gameStarted) {
+    console.log(
+      "⏳ Keeping running room:",
+      roomId
+    );
+    continue;
+  }
+
+  if (room.interval) {
+    clearInterval(room.interval);
+  }
+
+  delete rooms[roomId];
+
+  console.log(
+    "🗑 Room Deleted:",
+    roomId
+  );
+}
   }
 });
 

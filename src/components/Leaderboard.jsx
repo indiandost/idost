@@ -3,7 +3,7 @@ export default function Leaderboard({ players }) {
   return (
     <div className="mt-10 bg-zinc-900 rounded-2xl p-5">
 
-      <h2 className="text-2xl font-bold mb-4">
+      <h2 className="text-2xl font-bold mb-4 text-white">
         🏆 Leaderboard
       </h2>
 

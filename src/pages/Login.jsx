@@ -85,7 +85,11 @@ export default function Login() {
         localStorage.setItem("user", JSON.stringify(data.user));
         socket.connect();
     // 🔥 PUSH NOTIFICATION SETUP (AFTER LOGIN ONLY)
-    if (Capacitor.getPlatform() !== 'web') {
+   if (Capacitor.getPlatform()==='web') { 
+        const loggedUser = data.user;
+        console.log( "token going to save -=-="+loggedUser.srno); 
+}
+    if (Capacitor.getPlatform()!== 'web') {    
       PushNotifications.requestPermissions().then(result => {
 
         if (result.receive === 'granted') {
@@ -96,6 +100,7 @@ export default function Login() {
       PushNotifications.addListener('registration', (token) => {
         console.log("FCM Token:", token.value);
         const loggedUser = data.user;
+        console.log( "token going to save -=-="+loggedUser.srno);
         fetch(`${API}/notification/save-token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -133,10 +133,10 @@ useEffect(() => {
     });
   };
 
-  const handleGameStarted = () => {
+  /*nst handleGameStarted = () => {
     setGameStarted(true);
     setWinner(null);
-  };
+  };*/
 
   const handleGameEnd = (data) => {
     setWinner(data?.winner || null);
@@ -179,13 +179,12 @@ useEffect(() => {
   // START GAME
   // =========================
   const startGame = () => {
-
-    if (gameStarted) return;
-
-    console.log(
-      "🚀 START CLICKED"
-    );
-
+    // (gameStarted) return;
+     if (gameStarted) {
+    console.log("Game already started");
+    return;
+  }
+    console.log( "🚀 START CLICKED"+roomId );
     socket.emit(
       "start_game",
       {
@@ -260,15 +259,17 @@ const myScore =
 
   return (
 
-    <div className="
+   <div
+  className="
       min-h-screen
       bg-black
       text-white
       pb-20
-    ">
-
-      {/* HEADER */}
-      <div className="
+    "
+>
+  {/* HEADER */}
+  <div
+    className="
         sticky
         top-0
         z-30
@@ -278,43 +279,40 @@ const myScore =
         border-zinc-800
         px-4
         py-4
-      ">
-
-        <div className="
+      "
+  >
+    <div
+      className="
           flex
           items-center
           justify-between
-        ">
-
-          <div>
-
-            <h1 className="
+        "
+    >
+      <div>
+        <h1
+          className="
               text-2xl
               md:text-4xl
-              font-black
-            ">
+              text-white
+            "
+        >
+          🎮 Color Crash
+        </h1>
 
-              🎮 Color Crash
-
-            </h1>
-
-            <p className="
+        <p
+          className="
               text-zinc-400
               text-sm
               mt-1
-            ">
+            "
+        >
+          Room ID: {roomId}
+        </p>
+      </div>
 
-              Room ID:
-              {" "}
-              {roomId}
-
-            </p>
-
-          </div>
-
-
-          {/* TIMER */}
-          <div className="
+      {/* TIMER */}
+      <div
+        className="
             bg-zinc-900
             border
             border-zinc-700
@@ -323,291 +321,232 @@ const myScore =
             py-3
             text-center
             min-w-[110px]
-          ">
-
-            <p className="
+          "
+      >
+        <p
+          className="
               text-xs
               text-zinc-400
-            ">
-              Time Left
-            </p>
+            "
+        >
+          Time Left
+        </p>
 
-            <h2 className="
+        <h2
+          className="
               text-3xl
               font-black
               text-yellow-400
-            ">
-
-              {gameTime}s
-
-            </h2>
-
-          </div>
-
-        </div>
-
+            "
+        >
+          {gameTime}s
+        </h2>
       </div>
+    </div>
+  </div>
 
-
-      {/* LOADING */}
-      {loading && (
-
-        <div className="
+  {/* LOADING */}
+  {loading && (
+    <div
+      className="
           flex
           items-center
           justify-center
           h-[60vh]
           text-2xl
           font-bold
-        ">
+        "
+    >
+      Loading Room...
+    </div>
+  )}
 
-          Loading Room...
+{!loading && (
 
-        </div>
-      )}
+<div className="max-w-7xl mx-auto p-3">
 
+  {/* TOP SECTION */}
+  <div className="grid grid-cols-2 gap-3">
 
-      {!loading && (
+    {/* COLOR TARGET */}
+    <div
+      className="
+        bg-zinc-900
+        border
+        border-zinc-800
+        rounded-2xl
+        p-3
+        shadow-xl
+      "
+    >
 
-        <div className="
-          max-w-7xl
+      <p className="text-zinc-400 text-xs mb-2">
+        TAP THIS COLOR
+      </p>
+
+      <div
+        className="
+          w-30
+          h-24
+          md:w-32
+          md:h-32
           mx-auto
-          p-4
-          grid
-          grid-cols-1
-          lg:grid-cols-3
-          gap-6
-        ">
+          rounded-2xl
+          border-2
+          border-white
+        "
+        style={{
+          background: currentColor
+        }}
+      />
 
-          {/* LEFT SIDE */}
-          <div className="
-            lg:col-span-2
-          ">
+      <h2
+        className="
+          mt-3
+          text-center
+          text-xl
+          md:text-3xl
+          font-white
+          uppercase
+        "
+      >
+        {currentColor}
+      </h2>
 
-            {/* CURRENT TARGET */}
-            <div className="
-              bg-zinc-900
-              border
-              border-zinc-800
-              rounded-3xl
-              p-6
-              text-center
-              shadow-2xl
-            ">
+      {/* MY SCORE */}
+      <div
+        className="
+          mt-3
+          bg-black/40
+          rounded-xl
+          p-2
+          text-center
+        "
+      >
 
-              <p className="
-                text-zinc-400
-                text-lg
-                tracking-wider
-              ">
+        <p className="text-zinc-400 text-xs text-white">
+          Your Score
+        </p>
 
-                TAP THIS COLOR
+        <h3
+          className="
+            text-2xl
+            font-black
+            text-yellow-400
+          "
+        >
+          {myScore}
+        </h3>
 
-              </p>
+      </div>
 
-              <div
-                className="
-                  w-44
-                  h-44
-                  md:w-56
-                  md:h-56
-                  mx-auto
-                  mt-6
-                  rounded-3xl
-                  border-4
-                  border-white
-                  shadow-2xl
-                  transition-all
-                  duration-300
-                "
-                style={{
-                  background:
-                    currentColor,
-                }}
-              />
-
-              <h2 className="
-                mt-6
-                text-5xl
-                md:text-6xl
-                font-black
-                uppercase
-                tracking-widest
-              ">
-
-                {currentColor}
-
-              </h2>
-
-            </div>
+    </div>
 
 
-            {/* BUTTONS */}
-            <div className="
-              mt-6
-            ">
+    {/* LEADERBOARD */}
+    <div
+      className="
+        bg-zinc-900
+        border
+        border-zinc-800
+        rounded-2xl
+        p-3
+        shadow-xl
+      "
+    >
 
-              <ColorButtons
-                tapColor={
-                  tapColor
-                }
-              />
+      <div className="flex justify-between items-center mb-2">
 
-            </div>
+        <h2
+          className="
+            text-lg
+            text-white          "
+        >
+          🏆 Scores
+        </h2>
 
+        {topPlayer && (
+          <span
+            className="
+              text-yellow-400
+              text-xs
+              font-bold
+            "
+          >
+            👑 {topPlayer.name}
+          </span>
+        )}
 
-            {/* GAME BUTTON */}
-            {!gameStarted && (
+      </div>
 
-              <button
-                onClick={
-                  startGame
-                }
-                className="
-                  w-full
-                  mt-6
-                  bg-green-500
-                  hover:bg-green-600
-                  active:scale-95
-                  transition-all
-                  py-4
-                  rounded-2xl
-                  text-2xl
-                  font-black
-                  shadow-lg
-                "
-              >
+      <Leaderboard players={players} />
 
-                🚀 START GAME
+    </div>
 
-              </button>
-            )}
-
-
-            {/* MY SCORE */}
-            <div className="
-              mt-6
-              bg-zinc-900
-              border
-              border-zinc-800
-              rounded-3xl
-              p-5
-              text-center
-            ">
-
-              <p className="
-                text-zinc-400
-              ">
-
-                Your Score
-
-              </p>
-
-              <h2 className="
-                text-5xl
-                font-black
-                mt-2
-                text-yellow-400
-              ">
-
-                {myScore}
-
-              </h2>
-
-            </div>
-
-          </div>
+  </div>
 
 
-          {/* RIGHT SIDE */}
-          <div className="
-            space-y-6
-          ">
+  {/* COLOR BUTTONS */}
+  <div className="mt-3">
 
-            {/* LEADERBOARD */}
-            <div className="
-              bg-zinc-900
-              border
-              border-zinc-800
-              rounded-3xl
-              p-5
-            ">
+    <ColorButtons
+      tapColor={tapColor}
+    />
 
-              <div className="
-                flex
-                items-center
-                justify-between
-                mb-4
-              ">
-
-                <h2 className="
-                  text-2xl
-                  font-black
-                ">
-
-                  🏆 Leaderboard
-
-                </h2>
-
-                {topPlayer && (
-
-                  <div className="
-                    text-yellow-400
-                    font-bold
-                  ">
-
-                    👑
-                    {" "}
-                    {topPlayer.name}
-
-                  </div>
-                )}
-
-              </div>
-
-              <Leaderboard
-                players={players}
-              />
-
-            </div>
+  </div>
 
 
-            {/* CHAT */}
-            <div className="
-              bg-zinc-900
-              border
-              border-zinc-800
-              rounded-3xl
-              p-5
-            ">
+  {/* START BUTTON */}
+  {!gameStarted && (
 
-              <h2 className="
-                text-2xl
-                font-black
-                mb-4
-              ">
+    <button
+      onClick={startGame}
+      className="
+        w-full
+        mt-3
+        bg-green-500
+        hover:bg-green-600
+        py-3
+        rounded-2xl
+        text-lg
+        font-black
+      "
+    >
 
-                💬 Live Chat
+      🚀 START GAME
 
-              </h2>
+    </button>
 
-              <ChatBox
-                roomId={roomId}
-                messages={messages}
-              />
-
-            </div>
-
-          </div>
-
-        </div>
-      )}
+  )}
 
 
-      {/* WINNER POPUP */}
-      {winner && (
+  {/* CHAT */}
+  <div
+    className="
+      mt-3
+      bg-zinc-900
+      border
+      border-zinc-800
+      rounded-2xl
+      p-3
+    "
+  >
 
-        <div className="
+    <ChatBox
+      roomId={roomId}
+      messages={messages}
+    />
+
+  </div>
+
+</div>
+
+)}
+
+  {/* WINNER POPUP */}
+  {winner && (
+    <div
+      className="
           fixed
           inset-0
           bg-black/90
@@ -616,9 +555,10 @@ const myScore =
           justify-center
           z-50
           p-5
-        ">
-
-          <div className="
+        "
+    >
+      <div
+        className="
             bg-zinc-900
             border
             border-yellow-500
@@ -629,65 +569,61 @@ const myScore =
             max-w-md
             w-full
             animate-pulse
-          ">
-
-            <div className="
+          "
+      >
+        <div
+          className="
               text-8xl
-            ">
+            "
+        >
+          🏆
+        </div>
 
-              🏆
-
-            </div>
-
-            <h1 className="
+        <h1
+          className="
               text-5xl
               font-black
               text-yellow-400
               mt-4
-            ">
+            "
+        >
+          WINNER
+        </h1>
 
-              WINNER
-
-            </h1>
-
-            <h2 className="
+        <h2
+          className="
               mt-6
               text-4xl
               font-bold
-            ">
+            "
+        >
+          {winner?.name}
+        </h2>
 
-              {winner?.name}
-
-            </h2>
-
-            <p className="
+        <p
+          className="
               mt-4
               text-2xl
               text-zinc-300
-            ">
+            "
+        >
+          Score: {winner?.score}
+        </p>
 
-              Score:
-              {" "}
-              {winner?.score}
-
-            </p>
-
-            <p className="
+        <p
+          className="
               mt-3
               text-green-400
               text-xl
               font-bold
-            ">
+            "
+        >
+          +50 Coins Reward
+        </p>
 
-              +50 Coins Reward
-
-            </p>
-
-            <button
-              onClick={() =>
-                navigate("/game")
-              }
-              className="
+        <button
+          onClick={() => navigate("/game")}
+          className="
                 mt-8
                 bg-yellow-500
                 hover:bg-yellow-600
@@ -698,17 +634,13 @@ const myScore =
                 font-black
                 w-full
               "
-            >
-
-              Back To Lobby
-
-            </button>
-
-          </div>
-
-        </div>
-      )}
-
+        >
+          Back To Lobby
+        </button>
+      </div>
     </div>
+  )}
+</div>
+
   );
 }

@@ -16,7 +16,7 @@ export default function ColorButtons({ tapColor }) {
         <button
           key={color}
           onClick={() => tapColor(color)}
-          className="h-24 rounded-2xl font-bold text-white text-2xl"
+          className="h-20 rounded-2xl font-bold text-white text-2xl"
           style={{ background: color }}
         >
           {color}

@@ -502,6 +502,7 @@ export default function App() {
 
 //push notification 
 useEffect(() => {
+   if (Capacitor.getPlatform() === "web") return;
   PushNotifications.addListener(
     "pushNotificationReceived",
     (notification) => {
@@ -518,6 +519,7 @@ useEffect(() => {
 
 //open chat onclick from notification
 useEffect(() => {
+   if (Capacitor.getPlatform() === "web") return;
   PushNotifications.addListener(
     "pushNotificationActionPerformed",
     (event) => {

@@ -91,7 +91,7 @@ export default function ChatBox({
 
         <h2 className="
           text-2xl
-          font-black
+          text-white
         ">
 
           💬 Live Chat

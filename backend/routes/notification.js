@@ -3,6 +3,7 @@ const router = express.Router();
 
 router.post("/save-token", (req, res) => {
   const { user_id, token } = req.body;
+  console.log(user +" ====="+token);
   const db = req.app.get("db");
   db.query(
     "UPDATE users SET fcm_token=? WHERE id=?",
