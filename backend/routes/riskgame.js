@@ -4,9 +4,9 @@ const router = express.Router();
 
 // Risk Tower rewards
 const FLOOR_REWARDS = [
-  15,
   25,
-  40,
+  35,
+  45,
   70,
   120,
   200,
@@ -71,9 +71,10 @@ router.post("/start", async (req, res) => {
             gameId:
               result.insertId
           });
-
+        const gameId = result.insertId;
         const debit=1; const entryfee = 10;
-        try {            
+          const io = req.app.get("io");
+        try {          
             await rewardUser(
                 db,
                 io,
@@ -139,9 +140,28 @@ router.post("/play", (req, res) => {
           Math.random() * 4
         ) + 1;
 
-      const success =
-        box === safeBox;
-
+      const success = box === safeBox;
+// Save move
+db.query(
+  `
+  INSERT INTO risk_moves
+  (
+    game_id,
+    floor_no,
+    chosen_box,
+    safe_box,
+    result
+  )
+  VALUES (?,?,?,?,?)
+  `,
+  [
+    gameId,
+    nextFloor,
+    box,
+    safeBox,
+    success ? "safe" : "lost"
+  ]
+);
       if (!success) {
 
         db.query(
@@ -161,8 +181,7 @@ router.post("/play", (req, res) => {
 
       }
 
-      const reward =
-        FLOOR_REWARDS[
+      const reward =  FLOOR_REWARDS[
           nextFloor - 1
         ];
 
@@ -232,7 +251,6 @@ router.post("/cashout", async (req, res) => {
         ]
       );*/
   try {
-
   await rewardUser(
     db,
     io,
@@ -243,7 +261,6 @@ router.post("/cashout", async (req, res) => {
   );
 
 } catch (err) {
-
   console.log(err);
 
   return res.json({

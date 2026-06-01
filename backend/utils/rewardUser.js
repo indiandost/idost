@@ -9,10 +9,10 @@ export default function rewardUser(db, io, userId, coins, type, value = "",  deb
     query,
     [coins, userId],
     (err) => {
-      if (err) {
-        console.log("Reward Error:", err);
-        return;
-      }
+    if (err) {
+      console.log("Reward Error:", err);
+      return;
+    }
 
       // =========================
       // SAVE HISTORY
@@ -54,11 +54,13 @@ export default function rewardUser(db, io, userId, coins, type, value = "",  deb
           // =========================
           // REWARD POPUP
           // =========================
-          io.to(`user-${userId}`).emit("rewardReceived", {
-            coins,
-            type,
-            value,
-          });
+          if (!debit) {
+            io.to(`user-${userId}`).emit("rewardReceived", {
+              coins,
+              type,
+              value,
+            });
+         }
         }
       );
     }
