@@ -4,11 +4,11 @@ const router = express.Router();
 
 // Risk Tower rewards
 const FLOOR_REWARDS = [
+  15,
   25,
-  35,
   45,
-  70,
-  120,
+  50,
+  100,
   200,
   350,
   600,
@@ -132,15 +132,34 @@ router.post("/play", (req, res) => {
 
       const game = rows[0];
 
-      const nextFloor =
-        game.current_floor + 1;
-
-      const safeBox =
-        Math.floor(
-          Math.random() * 4
-        ) + 1;
-
-      const success = box === safeBox;
+      const nextFloor =  game.current_floor + 1;
+/*Floor 1	25%
+Floor 2	25% × 25% = 6.25%
+Floor 3	25%³ = 1.56%
+Floor 4	25%⁴ = 0.39%
+Floor 5	25%⁵ = 0.098%
+Floor 6	0.024%
+Floor 7	0.006%
+Floor 8	0.0015%
+Floor 9	0.00038%
+Floor 10	0.000095%
+*///only one safe box 
+      //const safeBox = Math.floor(Math.random() * 4) + 1;
+      //const success = box === safeBox;
+/*Floor 1	75%
+Floor 2	56.25%
+Floor 3	42.19%
+Floor 4	31.64%
+Floor 5	23.73%
+Floor 6	17.80%
+Floor 7	13.35%
+Floor 8	10.01%
+Floor 9	7.51%
+Floor 10	5.63%
+*/// only one trap box
+const safeBox = Math.floor(Math.random() * 4) + 1;
+const trapBox = Math.floor(Math.random() * 4) + 1;
+const success = Number(box) !== trapBox;
 // Save move
 db.query(
   `
@@ -172,11 +191,15 @@ db.query(
           `,
           [gameId]
         );
-
+console.log({
+  chosen: Number(box),
+  trapBox,
+  success: Number(box) !== trapBox
+});
         return res.json({
           success: true,
           result: "lost",
-          safeBox
+          trapBox
         });
 
       }
