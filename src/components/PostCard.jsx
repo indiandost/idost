@@ -6,7 +6,8 @@ import {
 
 import {
   useEffect,
-  useState
+  useState,
+  useRef 
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { API } from "../config";
@@ -14,8 +15,9 @@ const token = localStorage.getItem("token");
 
 export default function PostCard({ post, refresh}) {
 
-  const user =  JSON.parse(localStorage.getItem("user") );
+const user = JSON.parse(localStorage.getItem("user") || "null");
   const navigate = useNavigate();
+  const postRef = useRef(null);
 // =============================
 // TIME FORMAT
 // =============================
@@ -85,11 +87,52 @@ const [likesUsers, setLikesUsers] =  useState([]);
 
   const [showComments, setShowComments] =
     useState(false);
+
+  useEffect(() => {
+          let viewed = false;
+          const observer = new IntersectionObserver(
+            async ([entry]) => {
+              if (!entry.isIntersecting || viewed) return;
+              viewed = true;
+              let guestId = localStorage.getItem("guestId");
+
+              if (!guestId) {
+                guestId = crypto.randomUUID();
+                localStorage.setItem(
+                  "guestId",
+                  guestId
+                );
+              }
+              try {                 
+                await axios.post(
+                  `${API}/api/post-view`,
+                  {
+                    post_id: post.id,
+                    user_id: user?.srno || null,
+                    guest_id: guestId
+                  }
+                );
+              } catch (err) {
+                console.log(err);
+              }
+            },
+            {   threshold: 0.5     }
+          );
+
+          if (postRef.current) {
+            observer.observe(postRef.current);
+          }
+          return () => observer.disconnect();
+  }, [post.id]);
+
 // =============================
 // LOAD LIKES
 // =============================
 const loadLikes = async () => {
-
+if (!user) {
+  navigate("/login");
+  return;
+}
   try {
 
     const res = await axios.get(
@@ -116,7 +159,7 @@ const loadLikes = async () => {
 // DELETE POST
 // =============================
 const deletePost = async () => {
-
+if (!user) return;
   const ok =
     window.confirm(
       "Delete this post?"
@@ -180,23 +223,25 @@ const deletePost = async () => {
   // LIKE POST
   // =============================
   const reactPost = async () => {
-
+if (!user) {
+  navigate("/login");
+  return;
+}
     try {
 
-      await axios.post(
+      const res = await axios.post(
         `${API}/api/react-post`,
-  {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  },
-        {
+         {
           post_id: post.id,
           user_id: user.srno,
           reaction: "like",
-        }
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+       }       
       );
-
       // LIVE UPDATE
       if (!liked) {
 
@@ -217,6 +262,10 @@ const deletePost = async () => {
   // COMMENT POST
   // =============================
   const commentPost = async () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
         console.log('comment post');
     if (!commentText.trim()) return;
 
@@ -293,7 +342,7 @@ const deletePost = async () => {
 
   return (
 
-    <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden shadow-lg">
+    <div  ref={postRef} className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden shadow-lg">
 
       {/* HEADER */}
       <div className="flex items-center gap-3 p-4">
@@ -479,6 +528,9 @@ const deletePost = async () => {
           Like
 
         </button>
+        <button className="hover:text-blue-400">
+          👁️ {post.total_views || 0} Views
+        </button>
 
         <button
           onClick={toggleComments}
@@ -489,7 +541,7 @@ const deletePost = async () => {
           Comment
 
         </button> 
-      {Number(post.user_id) === Number(user.srno) && (
+      {user && Number(post.user_id) === Number(user.srno) && (
         <button
           onClick={deletePost}
           className="ml-auto text-red-400 hover:text-red-500 text-sm"

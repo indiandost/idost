@@ -792,7 +792,7 @@ io.to(roomId).emit("game_tick", {
                         roomId
                       );
 
-                      await saveRewardHistory({
+                     /* await saveRewardHistory({
                         userId: winner.userId,
                         type: "GAME_WIN",
                         coins: rewardCoins,
@@ -800,7 +800,7 @@ io.to(roomId).emit("game_tick", {
                         message:"Game winner reward",
                         debit: "0",
                       });
-
+*/
                       await updateUserCoinsRealtime(io, winner.userId);
 
                       await db.promise().query(

@@ -1,9 +1,12 @@
-export default function rewardUser(db, io, userId, coins, type, value = "") {
+export default function rewardUser(db, io, userId, coins, type, value = "",  debit = 0) {
   // =========================
   // ADD COINS
   // =========================
+ const query = debit
+  ? "UPDATE users SET coins = coins - ? WHERE srno=?"
+  : "UPDATE users SET coins = coins + ? WHERE srno=?";
   db.query(
-    "UPDATE users SET coins = coins + ? WHERE srno=?",
+    query,
     [coins, userId],
     (err) => {
       if (err) {

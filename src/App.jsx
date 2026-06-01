@@ -36,6 +36,7 @@ import GameHome from "./pages/GameHome";
 import JamRoom from "./pages/JamRoom";
 import CreateJamRoom from "./pages/CreateJamRoom";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import RiskTower from "./pages/RiskTower";
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import socket from "./socket";
@@ -60,6 +61,9 @@ function PrivateRoute({ children }) {
   const user = localStorage.getItem("user");
   return user ? children : <Navigate to="/login" />;
 }
+
+const user = JSON.parse(localStorage.getItem("user") || "null");
+const viewer = user?.srno || 0;
 // 🔝 Navbar
 function Navbar({ menuOpen, setMenuOpen }) {
   const navigate = useNavigate();
@@ -95,13 +99,13 @@ useEffect(() => {
 
   //search api call
   useEffect(() => {
-    console.log("viewer", user?.srno);
+    console.log("viewer", viewer);
     if (!search.trim()) {
       setSearchResults([]);
       return;
     }
     const delay = setTimeout(() => {
-      fetch(`${API}/users/search?q=${search}&viewer=${user?.srno}`,{
+      fetch(`${API}/users/search?q=${search}&viewer=${viewer}`,{
     headers: {
       Authorization: `Bearer ${token}`
     }
@@ -478,7 +482,7 @@ export default function App() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [chatNotice, setChatNotice] = useState(null);
-  const user = JSON.parse(localStorage.getItem("user"));
+
   const [incomingCall, setIncomingCall] = useState(null);
   const [loading, setLoading] = useState(true);
   const incomingCallRef = useRef(null);
@@ -1084,7 +1088,15 @@ if (!permissionAsked) {
               </PrivateRoute>
             }
           />
-
+          <Route
+            path="/risk-tower"
+            element={
+              <PrivateRoute>
+                {" "}
+                <RiskTower />
+              </PrivateRoute>
+            }
+          />
           <Route path="/timeline" element={<Timeline />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

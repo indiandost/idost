@@ -17,7 +17,7 @@ export default function GameRoom() {
   const user = JSON.parse(
     localStorage.getItem("user")
   );
-
+const [rewardCoins, setRewardCoins] =  useState(0);
   const [room, setRoom] =
     useState(null);
 
@@ -138,11 +138,12 @@ useEffect(() => {
     setWinner(null);
   };*/
 
-  const handleGameEnd = (data) => {
-    setWinner(data?.winner || null);
-    setGameStarted(false);
-    setCurrentColor("gray");
-  };
+const handleGameEnd = (data) => {
+  setWinner(data?.winner || null);
+  setRewardCoins(data?.rewardCoins || 0);
+  setGameStarted(false);
+  setCurrentColor("gray");
+};
 
   const handleError = (msg) => {
     setError(msg);
@@ -595,6 +596,7 @@ const myScore =
               mt-6
               text-4xl
               font-bold
+              text-white
             "
         >
           {winner?.name}
@@ -618,7 +620,7 @@ const myScore =
               font-bold
             "
         >
-          +50 Coins Reward
+        +{winner?.rewardCoins || 0} Coins Reward
         </p>
 
         <button

@@ -437,7 +437,7 @@ router.delete("/delete-post/:id/:user", verifyToken, (req, res) => {
 // =============================
 // GET FEED
 // =============================
-router.get("/feed", verifyToken, (req, res) => {
+router.get("/feed",  (req, res) => {
 
   const db = req.app.get("db");
 
@@ -463,7 +463,11 @@ router.get("/feed", verifyToken, (req, res) => {
        FROM post_comments pc
        WHERE pc.post_id = p.id
       ) AS comments,
-
+      (
+          SELECT COUNT(*)
+          FROM post_views pv
+          WHERE pv.post_id = p.id
+        ) AS total_views,
       EXISTS (
         SELECT 1
         FROM post_reactions pr2
@@ -498,6 +502,162 @@ router.get("/feed", verifyToken, (req, res) => {
     });
   });
 });
+
+// =============================
+// ADD POST VIEW
+// =============================
+router.post("/post-view", (req, res) => {
+
+  const db = req.app.get("db");
+
+  const {
+    post_id,
+    user_id,
+    guest_id
+  } = req.body;
+
+  if (!post_id) {
+    return res.status(400).json({
+      success: false,
+      message: "post_id required"
+    });
+  }
+
+  // =============================
+  // LOGGED IN USER
+  // =============================
+  if (user_id) {
+
+    db.query(
+      `
+      SELECT id
+      FROM post_views
+      WHERE post_id = ?
+      AND user_id = ?
+      LIMIT 1
+      `,
+      [post_id, user_id],
+      (err, rows) => {
+
+        if (err) {
+          console.log(err);
+          return res.status(500).json({
+            success: false,
+            message: "Server error"
+          });
+        }
+
+        // Already viewed
+        if (rows.length > 0) {
+          return res.json({
+            success: true,
+            viewed: true,
+            message: "Already counted"
+          });
+        }
+
+        db.query(
+          `
+          INSERT INTO post_views
+          (post_id, user_id, guest_id)
+          VALUES (?, ?, NULL)
+          `,
+          [post_id, user_id],
+          (err2) => {
+
+            if (err2) {
+              console.log(err2);
+              return res.status(500).json({
+                success: false,
+                message: "Insert failed"
+              });
+            }
+
+            return res.json({
+              success: true,
+              viewed: true
+            });
+          }
+        );
+      }
+    );
+
+    return;
+  }
+
+  // =============================
+  // GUEST USER
+  // =============================
+  if (guest_id) {
+
+    db.query(
+      `
+      SELECT id
+      FROM post_views
+      WHERE post_id = ?
+      AND guest_id = ?
+      LIMIT 1
+      `,
+      [post_id, guest_id],
+      (err, rows) => {
+
+        if (err) {
+          console.log(err);
+          return res.status(500).json({
+            success: false,
+            message: "Server error"
+          });
+        }
+
+        // Already viewed
+        if (rows.length > 0) {
+          return res.json({
+            success: true,
+            viewed: true,
+            message: "Already counted"
+          });
+        }
+
+        db.query(
+          `
+          INSERT INTO post_views
+          (post_id, user_id, guest_id)
+          VALUES (?, NULL, ?)
+          `,
+          [post_id, guest_id],
+          (err2) => {
+
+            if (err2) {
+              console.log(err2);
+              return res.status(500).json({
+                success: false,
+                message: "Insert failed"
+              });
+            }
+
+            return res.json({
+              success: true,
+              viewed: true
+            });
+          }
+        );
+      }
+    );
+
+    return;
+  }
+
+  // =============================
+  // NO USER / NO GUEST
+  // =============================
+  return res.status(400).json({
+    success: false,
+    message: "user_id or guest_id required"
+  });
+
+});
+
+
 // =============================
 // REACT POST
 // =============================
@@ -623,7 +783,11 @@ router.get("/post/:id", (req, res) => {
         FROM post_comments pc
         WHERE pc.post_id = p.id
       ) AS comments,
-
+      (
+          SELECT COUNT(*)
+          FROM post_views pv
+          WHERE pv.post_id = p.id
+        ) AS total_views,
       EXISTS (
         SELECT 1
         FROM post_reactions pr2

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { Image, Video } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { API } from "../config";
 
 export default function CreatePost({ refresh }) {
@@ -8,11 +9,14 @@ export default function CreatePost({ refresh }) {
   const [content, setContent] = useState("");
   const [media, setMedia] = useState(null);
   const [loading, setLoading] = useState(false);
-
+  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
   const token = localStorage.getItem("token"); 
   const createPost = async () => {
-
+    if (!user) {
+      navigate("/login");
+      return;
+    }
     if (!content && !media) return;
 
     try {
