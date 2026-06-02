@@ -161,7 +161,13 @@ export default function Home() {
   return (
 
     <div className="min-h-screen bg-black text-white p-5">
-
+   {/* Back Button */}
+      <button
+        onClick={() => navigate("/games")}
+        className="mb-4 flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+      >
+        ← Back to Games
+      </button>
       {/* HEADER */}
       <div className="flex items-center gap-3 mb-8">
 
@@ -171,7 +177,7 @@ export default function Home() {
 
         <div>
 
-          <h1 className="text-4xl font-bold">
+          <h1 className="text-4xl font-bold text-white">
             Color Crash
           </h1>
 
@@ -294,7 +300,85 @@ export default function Home() {
         ))}
 
       </div>
+<div className="bg-gray-900 text-white rounded-xl p-4 mb-4 border border-gray-700">
+  <h2 className="text-xl font-bold mb-3 text-white">
+    🎨 Color Crash - Rules & Prize Distribution
+  </h2>
 
+  <ul className="space-y-2 text-sm text-gray-300">
+    <li>
+      ✅ Tap your chosen color while the round is active.
+    </li>
+
+    <li>
+      ✅ Each tap costs <strong>10 Coins</strong> and is recorded as one entry.
+    </li>
+
+    <li>
+      ✅ You may tap multiple times to create multiple entries before the round ends.
+    </li>
+
+    <li>
+      ✅ After the timer ends, the winning color is revealed automatically.
+    </li>
+
+    <li>
+      ✅ Entries placed on the winning color qualify for rewards.
+    </li>
+
+    <li>
+      ✅ The total coin pool is created from all player entries in the round.
+    </li>
+
+    <li>
+      ✅ A platform fee of <strong>20%</strong> is deducted from the total pool.
+    </li>
+
+    <li>
+      ✅ The remaining pool is distributed equally among all winning entries.
+    </li>
+
+    <li>
+      💰 Rewards are credited automatically to winners.
+    </li>
+  </ul>
+
+  <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+    <h3 className="font-semibold text-green-300 mb-2">
+      Example
+    </h3>
+
+    <div className="text-sm text-gray-300 space-y-1">
+      <p>• 100 total entries are placed.</p>
+      <p>• Entry fee = 10 Coins each.</p>
+      <p>• Total pool = 1000 Coins.</p>
+      <p>• Platform fee (20%) = 200 Coins.</p>
+      <p>• Reward pool = 800 Coins.</p>
+      <p>• If there are 20 winning entries, each winning entry receives 40 Coins.</p>
+    </div>
+  </div>
+
+  <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+    <p className="text-yellow-300 font-semibold mb-1">
+      ⚠️ Important Notice
+    </p>
+
+    <p className="text-xs text-gray-300">
+      Results are generated independently for each round. Previous results
+      do not influence future results. Entry fees are non-refundable once
+      a tap is submitted. Play responsibly and only spend coins you are
+      willing to risk.
+    </p>
+  </div>
+
+  <div className="mt-4 text-xs text-gray-400 border-t border-gray-700 pt-3">
+    By participating in Color Crash, you agree to the game rules and
+    platform policies. Any attempt to exploit bugs, automate gameplay,
+    manipulate results, abuse multiple accounts, or engage in fraudulent
+    activity may result in reward cancellation, withdrawal restrictions,
+    or account suspension.
+  </div>
+</div>
     </div>
   );
 }

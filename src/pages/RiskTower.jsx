@@ -1,9 +1,10 @@
 import { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { API } from "../config";
 
 export default function RiskTower() {
-
+  const navigate = useNavigate();
   const user = JSON.parse(
     localStorage.getItem("user")
   );
@@ -120,7 +121,7 @@ export default function RiskTower() {
           );
 
           setMessage(
-            `💥 Trap Found! Safe Box was ${res.data.safeBox}`
+            `💥 Trap Found! Safe Box was ${res.data.trapBox}`
           );
 
           return;
@@ -184,11 +185,28 @@ export default function RiskTower() {
 
       }
     };
-
+const FLOOR_REWARDS = [
+  15,
+  25,
+  45,
+  50,
+  100,
+  200,
+  350,
+  500,
+  1000,
+  2000
+];
   return (
 
     <div className="min-h-screen bg-black text-white p-4">
-
+   {/* Back Button */}
+      <button
+        onClick={() => navigate("/games")}
+        className="mb-4 flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+      >
+        ← Back to Games
+      </button>
       <div className="max-w-md mx-auto">
 
         <h1 className="text-3xl font-bold text-center mb-5 text-white">
@@ -297,10 +315,76 @@ export default function RiskTower() {
               {" "}
               Coins)
             </button>
-
-          </>
+             </>
 
         )}
+
+        <div className="bg-yellow-100 border border-yellow-300 rounded-xl p-3 mt-4 text-gray">
+  <div className="text-yellow-600">
+    Current Floor: <b>{floor}</b>
+  </div>
+
+  <div className="text-green-600">
+    Current Reward:
+    <b className="ml-1">
+      {reward || 0} Coins
+    </b>
+  </div>
+</div>
+<div className="bg-gray-900 rounded-xl p-4 text-white">
+  <h3 className="font-bold mb-3">
+    🏆 Reward Ladder
+  </h3>
+
+  {FLOOR_REWARDS.map((reward, index) => (
+    <div
+      key={index}
+      className={`flex justify-between px-3 py-2 rounded mb-1
+      ${floor === index + 1
+          ? "bg-green-600"
+          : "bg-gray-800"
+      }`}
+    >
+      <span>Floor {index + 1}</span>
+      <span>{reward} Coins</span>
+    </div>
+  ))}
+</div>
+
+<div className="bg-gray-900 text-white p-4 rounded-xl mb-4">
+  <h2 className="text-lg font-bold mb-2 text-white">
+    🎰 Risk Tower
+  </h2>
+
+  <p className="text-sm text-gray-300">
+    Entry Fee: <b>10 Coins</b>
+  </p>
+
+  <p className="text-sm text-gray-300 mt-1">
+    Choose 1 of 4 boxes each floor.
+  </p>
+
+  <p className="text-sm text-gray-300">
+    One box contains a trap 💣.
+  </p>
+
+  <p className="text-sm text-gray-300">
+    Three boxes are safe ✅.
+  </p>
+
+  <p className="text-sm text-yellow-400 mt-2">
+    Survival chance each floor: 75%
+  </p>
+
+  <p className="text-sm text-green-400">
+    Cash out anytime before hitting a trap.
+  </p>
+</div>
+<div className="mt-4 text-xs text-red-500 text-center">
+  ⚠️ If you hit the trap box, the game ends and
+  your current reward is lost.
+</div>
+         
 
         {/* MESSAGE */}
         {message && (

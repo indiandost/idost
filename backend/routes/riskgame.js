@@ -11,7 +11,7 @@ const FLOOR_REWARDS = [
   100,
   200,
   350,
-  600,
+  500,
   1000,
   2000
 ];
@@ -107,80 +107,81 @@ router.post("/start", async (req, res) => {
 router.post("/play", (req, res) => {
 
   const db = req.app.get("db");
-
-  const {
-    gameId,
-    box
-  } = req.body;
+  const { gameId, box } = req.body;
 
   db.query(
     `
     SELECT *
     FROM risk_games
-    WHERE id=?
+    WHERE id=? AND status='playing'
     `,
     [gameId],
     (err, rows) => {
 
+      if (err) {
+        console.log(err);
+        return res.json({ success: false });
+      }
+
       if (!rows.length) {
-
         return res.json({
-          success: false
+          success: false,
+          message: "Game not found"
         });
-
       }
 
       const game = rows[0];
 
-      const nextFloor =  game.current_floor + 1;
-/*Floor 1	25%
-Floor 2	25% × 25% = 6.25%
-Floor 3	25%³ = 1.56%
-Floor 4	25%⁴ = 0.39%
-Floor 5	25%⁵ = 0.098%
-Floor 6	0.024%
-Floor 7	0.006%
-Floor 8	0.0015%
-Floor 9	0.00038%
-Floor 10	0.000095%
-*///only one safe box 
-      //const safeBox = Math.floor(Math.random() * 4) + 1;
-      //const success = box === safeBox;
-/*Floor 1	75%
-Floor 2	56.25%
-Floor 3	42.19%
-Floor 4	31.64%
-Floor 5	23.73%
-Floor 6	17.80%
-Floor 7	13.35%
-Floor 8	10.01%
-Floor 9	7.51%
-Floor 10	5.63%
-*/// only one trap box
-const safeBox = Math.floor(Math.random() * 4) + 1;
-const trapBox = Math.floor(Math.random() * 4) + 1;
-const success = Number(box) !== trapBox;
-// Save move
-db.query(
-  `
-  INSERT INTO risk_moves
-  (
-    game_id,
-    floor_no,
-    chosen_box,
-    safe_box,
-    result
-  )
-  VALUES (?,?,?,?,?)
-  `,
-  [
-    gameId,
-    nextFloor,
-    box,
-    safeBox,
-    success ? "safe" : "lost"
-  ]
-);
+      const nextFloor = Number(game.current_floor || 0) + 1;
+
+      // Max floor check
+      if (nextFloor > FLOOR_REWARDS.length) {
+        return res.json({
+          success: false,
+          message: "Game completed"
+        });
+      }
+
+      // 1 trap box out of 4
+      //const trapBox = Math.floor(Math.random() * 4) + 1; //win chance 75%
+      //const chosenBox = Number(box);
+      //const success = chosenBox !== trapBox;
+
+      const trapBoxes = [1, 2, 3, 4].sort(() => Math.random() - 0.5) .slice(0, 2); //win chance 50%
+      const chosenBox = Number(box);
+      const success = !trapBoxes.includes(Number(box));
+
+      console.log({
+        gameId,
+        floor: nextFloor,
+        chosenBox,
+        trapBox,
+        success
+      });
+
+      // Save move history
+      db.query(
+        `
+        INSERT INTO risk_moves
+        (
+          game_id,
+          floor_no,
+          chosen_box,
+          safe_box,
+          result
+        )
+        VALUES (?,?,?,?,?)
+        `,
+        [
+          gameId,
+          nextFloor,
+          chosenBox,
+          trapBox,
+          success ? "safe" : "lost"
+        ]
+      );
+
+      // LOST
       if (!success) {
 
         db.query(
@@ -191,45 +192,49 @@ db.query(
           `,
           [gameId]
         );
-console.log({
-  chosen: Number(box),
-  trapBox,
-  success: Number(box) !== trapBox
-});
+
         return res.json({
           success: true,
           result: "lost",
           trapBox
         });
-
       }
 
-      const reward =  FLOOR_REWARDS[
-          nextFloor - 1
-        ];
+      // SAFE
+      const reward = FLOOR_REWARDS[nextFloor - 1];
 
       db.query(
         `
         UPDATE risk_games
         SET
-        current_floor=?,
-        reward=?
+          current_floor=?,
+          reward=?
         WHERE id=?
         `,
         [
           nextFloor,
           reward,
           gameId
-        ]
+        ],
+        (err2) => {
+
+          if (err2) {
+            console.log(err2);
+
+            return res.json({
+              success: false,
+              message: "Update failed"
+            });
+          }
+
+          return res.json({
+            success: true,
+            result: "safe",
+            floor: nextFloor,
+            reward
+          });
+        }
       );
-
-      res.json({
-        success: true,
-        result: "safe",
-        floor: nextFloor,
-        reward
-      });
-
     }
   );
 });
@@ -244,11 +249,8 @@ router.post("/cashout", async (req, res) => {
   const { gameId } = req.body;
 
   db.query(
-    `
-    SELECT *
-    FROM risk_games
-    WHERE id=?
-    `,
+    
+    ` SELECT * FROM risk_games WHERE id=? AND status='playing'`,
     [gameId],
    async (err, rows) => {
 

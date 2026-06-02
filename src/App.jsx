@@ -31,6 +31,10 @@ import { useCoins } from "./context/CoinContext";
 import useLoadCoins from "./hooks/useLoadCoins";
 import useDailyReward from "./hooks/useDailyReward";
 import RewardsHistory from "./pages/RewardsHistory";
+import Withdraw from "./pages/Withdraw";
+import WithdrawReq from "./pages/WithdrawReq";
+import Deposit from "./pages/Deposit";
+import Games from "./pages/Games";
 import GameRoom from "./pages/GameRoom";
 import GameHome from "./pages/GameHome";
 import JamRoom from "./pages/JamRoom";
@@ -90,7 +94,8 @@ useEffect(() => {
   //reward popup
   useEffect(() => {
     socket.on("rewardReceived", (data) => {
-      alert(`🎉 Reward Earned! ${data.coins} Coins${data.value}`);
+      alert(`🎉 Reward Earned! ${data.coins} Coins`);
+     //  alert(`🎉 Reward Earned! ${data.coins} Coins${data.value}`);
     });
     return () => {
       socket.off("rewardReceived");
@@ -127,6 +132,7 @@ useEffect(() => {
 
   const logout = () => {
       const u = JSON.parse(localStorage.getItem("user"));
+        setMenuOpen(false);
     fetch(`${API}/api/logout`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -251,14 +257,14 @@ useEffect(() => {
       )}
 
       {/* ================= SIDE MENU ================= */}
-      <div
-        className={`
-          fixed top-0 left-0 h-full w-72
-          bg-gray-900 z-50
-          transform transition-transform duration-300
-          ${menuOpen ? "translate-x-0" : "-translate-x-full"}
-        `}
-      >
+        <div
+          className="fixed top-0 left-0 h-screen w-72 bg-gray-900 z-[9999] flex flex-col transition-transform duration-300"
+          style={{
+            transform: menuOpen
+              ? "translateX(0)"
+              : "translateX(-100%)",
+          }}
+        >
         {/* TOP */}
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <h2 className="text-white text-lg font-bold">Menu</h2>
@@ -269,12 +275,14 @@ useEffect(() => {
         </div>
 
         {/* MENU LINKS */}
+          {/* Scrollable area */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-2 text-white">
         <div className="flex flex-col p-3 space-y-2 text-white">
           {user && (
             <div className="flex items-center gap-3">
               <span className="text-sm">Hi, {user.name}</span>
               <button
-                onClick={logout}
+                onClick={logout} 
                 className="bg-red-500 px-3 py-1 rounded text-sm"
               >
                 Logout
@@ -289,7 +297,7 @@ useEffect(() => {
             👤 My Profile
           </Link>
           <Link
-            to="/game"
+            to="/games"
             onClick={() => setMenuOpen(false)}
             className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
           >
@@ -339,8 +347,28 @@ useEffect(() => {
           >
             🎥 Meeting Room
           </Link>
-
+         <Link
+            to="/deposit"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
+          >
+            🪙 Deposit
+          </Link>
           <Link
+            to="/withdraw"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
+          >
+            🪙 Coins Withdraw Info
+          </Link>
+           <Link
+            to="/withdraw-req"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
+          >
+            🪙 Withdraw Request
+          </Link>
+           <Link
             to="/settings"
             onClick={() => setMenuOpen(false)}
             className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
@@ -357,6 +385,7 @@ useEffect(() => {
         >
           🚪 Logout
         </button>*/}
+        </div>
         </div>
       </div>
     </div>
@@ -1054,6 +1083,38 @@ if (!permissionAsked) {
               </PrivateRoute>
             }
           />
+        <Route
+            path="/withdraw"
+            element={
+              <PrivateRoute>
+                <Withdraw />{" "}
+              </PrivateRoute>
+            }
+          />
+           <Route
+            path="/deposit"
+            element={
+              <PrivateRoute>
+                <Deposit />{" "}
+              </PrivateRoute>
+            }
+          /> 
+            <Route
+            path="/withdraw-req"
+            element={
+              <PrivateRoute>
+                <WithdrawReq />{" "}
+              </PrivateRoute>
+            }
+          />
+         <Route
+            path="/games"
+            element={
+              <PrivateRoute>
+                <Games />{" "}
+              </PrivateRoute>
+            }
+          /> 
           <Route
             path="/game"
             element={
