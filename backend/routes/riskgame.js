@@ -155,7 +155,7 @@ router.post("/play", (req, res) => {
         gameId,
         floor: nextFloor,
         chosenBox,
-        trapBox,
+        trapBoxes,
         success
       });
 
@@ -176,7 +176,7 @@ router.post("/play", (req, res) => {
           gameId,
           nextFloor,
           chosenBox,
-          trapBox,
+          trapBoxes,
           success ? "safe" : "lost"
         ]
       );
@@ -196,7 +196,7 @@ router.post("/play", (req, res) => {
         return res.json({
           success: true,
           result: "lost",
-          trapBox
+          trapBoxes
         });
       }
 
