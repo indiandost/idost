@@ -453,84 +453,78 @@ io.on("connection", (socket) => {
   // =============================
   // ✅ REGISTER USER
   // =============================
-  socket.on("register", (userId) => {
+ socket.on("register", (userId) => {
+  userId = Number(userId);
 
-    try {
+  socket.userId = userId;
 
-      const id =
-        Number(userId);
+  users[userId] = socket.id;
 
-      if (!id) return;
+  console.log(
+    "👤 User mapped:",
+    userId,
+    "=>",
+    socket.id
+  );
 
-      // prevent duplicate register
-      if (socket.userId === id) {
-        return;
-      }
-
-      // save on socket
-      socket.userId = id;
-
-      // map user => socket
-      users[id] = socket.id;
-
-      // private room
-      socket.join(`user-${id}`);
-
-      // broadcast online users
-      io.emit(
-        "onlineUsers",
-        Object.keys(users)
-      );
-
-      console.log(
-        "👤 User mapped:",
-        id,
-        "=>",
-        socket.id
-      );
-
-    } catch (err) {
-
-      console.log(
-        "❌ REGISTER ERROR:",
-        err
-      );
-    }
-  });
+  io.emit(
+    "onlineUsers",
+    Object.keys(users)
+  );
+});
 
   // =============================
   // ✅ DISCONNECT
   // =============================
-  socket.on("disconnect", () => {
+ socket.on("disconnect", (reason) => {
+  try {
+    console.log("🔌 Disconnected:", socket.id);
+    console.log("Reason:", reason);
 
-    try {
+    if (!socket.userId) return;
 
-      console.log(
-        "🔌 Disconnected:",
-        socket.id
-      );
+    const userId = socket.userId;
+    const disconnectedSocketId = socket.id;
 
-      // remove mapped user
-      if (socket.userId) {
+    // Wait 30 seconds before removing
+    setTimeout(() => {
+      try {
+        // User already reconnected with a new socket?
+        if (
+          users[userId] &&
+          users[userId] !== disconnectedSocketId
+        ) {
+          console.log(
+            `✅ User ${userId} reconnected with ${users[userId]}`
+          );
+          return;
+        }
 
-        delete users[
-          socket.userId
-        ];
+        console.log(
+          `❌ Removing user after timeout: ${userId}`
+        );
+
+        delete users[userId];
 
         io.emit(
           "onlineUsers",
           Object.keys(users)
         );
+      } catch (err) {
+        console.log(
+          "❌ Delayed disconnect error:",
+          err
+        );
       }
+    }, 30000); // 30 seconds grace period
 
-    } catch (err) {
-
-      console.log(
-        "❌ DISCONNECT ERROR:",
-        err
-      );
-    }
-  });
+  } catch (err) {
+    console.log(
+      "❌ DISCONNECT ERROR:",
+      err
+    );
+  }
+});
 
 });
 

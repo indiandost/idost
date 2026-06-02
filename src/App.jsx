@@ -66,8 +66,6 @@ function PrivateRoute({ children }) {
   return user ? children : <Navigate to="/login" />;
 }
 
-const user = JSON.parse(localStorage.getItem("user") || "null");
-const viewer = user?.srno || 0;
 // 🔝 Navbar
 function Navbar({ menuOpen, setMenuOpen }) {
   const navigate = useNavigate();
@@ -509,6 +507,8 @@ function BottomNav({ setMenuOpen }) {
 
 export default function App() {
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+const viewer = user?.srno || 0;
   const [menuOpen, setMenuOpen] = useState(false);
   const [chatNotice, setChatNotice] = useState(null);
 
@@ -813,7 +813,7 @@ if (!permissionAsked) {
   }
 }, [user]);
 */
-  useEffect(() => {
+  /*useEffect(() => {
     if (!user?.srno) return;
 
     const handleConnect = () => {
@@ -829,7 +829,74 @@ if (!permissionAsked) {
     return () => {
       socket.off("connect", handleConnect);
     };
-  }, [user?.srno]);
+  }, [user?.srno]); 
+  */
+ useEffect(() => {
+  if (!user?.srno) return;
+
+  const registerUser = () => {
+    console.log(
+      "✅ Registering user:",
+      user.srno,
+      "Socket:",
+      socket.id
+    );
+
+    socket.emit("register", Number(user.srno));
+  };
+
+  const handleConnect = () => {
+    console.log(
+      "🔌 Socket Connected:",
+      socket.id
+    );
+
+    registerUser();
+  };
+
+  const handleDisconnect = (reason) => {
+    console.log(
+      "❌ Socket Disconnected:",
+      reason
+    );
+  };
+
+  const handleReconnect = (attempt) => {
+    console.log(
+      "🔄 Socket Reconnected. Attempt:",
+      attempt
+    );
+
+    registerUser();
+  };
+
+  const handleConnectError = (err) => {
+    console.log(
+      "🚨 Socket Connect Error:",
+      err.message
+    );
+  };
+
+  // Initial register if already connected
+  if (socket.connected) {
+    registerUser();
+  }
+
+  socket.on("connect", handleConnect);
+  socket.on("disconnect", handleDisconnect);
+  socket.io.on("reconnect", handleReconnect);
+  socket.on("connect_error", handleConnectError);
+
+  return () => {
+    socket.off("connect", handleConnect);
+    socket.off("disconnect", handleDisconnect);
+    socket.off("connect_error", handleConnectError);
+
+    if (socket.io) {
+      socket.io.off("reconnect", handleReconnect);
+    }
+  };
+}, [user?.srno]);
   // 📞 Incoming call ringtone
   const ringtoneRef = useRef(null);
 

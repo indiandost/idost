@@ -24,8 +24,8 @@ socket.on("connect", () => {
   console.log("✅ Connected:", socket.id);
 });
 
-socket.on("disconnect", () => {
-  console.log("❌ Disconnected");
+socket.on("disconnect", (reason) => {
+  console.log("❌ SOCKET DISCONNECTED", reason);
 });
 
 socket.on("connect_error", (err) => {
