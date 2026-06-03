@@ -6,30 +6,28 @@ const activeCalls = {};
 
 export default function chatSocket(io, socket, db) {
 
-   console.log("🔌 User connected:", socket.id);
-
-
-   // =========================
+     // =========================
     // ✅ REGISTER USER
     // =========================
-      socket.on("register", (userId) => {
-      const id = Number(userId);
-      // prevent duplicate register for same socket
-      if (socket.userId === id) {
-        return;
-      }
+socket.on("register", (userId) => {
+  userId = Number(userId);
 
-      socket.userId = id;
-      // store socket
-      users[id] = socket.id;
-      // personal room
+  socket.userId = userId;
 
-      socket.join(`user-${id}`);
-      // send online users
-      io.emit("onlineUsers", Object.keys(users));
-      console.log("👤 User mapped:", id, "=>", socket.id);
+  users[userId] = socket.id;
 
-    });
+  console.log(
+    "👤 User mapped:",
+    userId,
+    "=>",
+    socket.id
+  );
+
+  io.emit(
+    "onlineUsers",
+    Object.keys(users)
+  );
+});
 
   // =====================
   // GIFT
@@ -134,6 +132,34 @@ const sql = `
   }
 
   console.log("💾 Saved message ID:", result.insertId);
+ // 2️⃣ SEND TO RECEIVER IF ONLINE
+
+    const toSocket = users[toId];
+    console.log("👉 Target socket:", toSocket);
+
+  const payload = {
+  id: result.insertId,
+  from: fromId,
+  to: toId,
+  message,
+  media_url: mediaUrl,
+  type,
+  createdAt: new Date()
+};
+
+
+
+// send ONLY to receiver
+if (toSocket) {
+  io.to(toSocket).emit("receiveMessage", payload);
+}
+
+// optional: send ACK to sender (different event)
+const tempId = data.tempId || null;
+io.to(socket.id).emit("messageSent", {
+  tempId: payload.tempId,
+  status: "sent",
+});
      //firebase notification code here
     try {
       // receiver token
@@ -171,35 +197,7 @@ const sql = `
     } catch (e) {
       console.log("FCM ERROR:", e );
     }
-
-    // 2️⃣ SEND TO RECEIVER IF ONLINE
-
-    const toSocket = users[toId];
-    console.log("👉 Target socket:", toSocket);
-
-  const payload = {
-  id: result.insertId,
-  from: fromId,
-  to: toId,
-  message,
-  media_url: mediaUrl,
-  type,
-  createdAt: new Date()
-};
-
-
-
-// send ONLY to receiver
-if (toSocket) {
-  io.to(toSocket).emit("receiveMessage", payload);
-}
-
-// optional: send ACK to sender (different event)
-const tempId = data.tempId || null;
-io.to(socket.id).emit("messageSent", {
-  tempId: payload.tempId,
-  status: "sent",
-});
+ 
 
   });
 });
