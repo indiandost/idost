@@ -59,7 +59,6 @@ import {
 } from "lucide-react";
 
 const API = import.meta.env.VITE_API_URL;
-const token = localStorage.getItem("token"); 
 // 🔐 Protected Route
 function PrivateRoute({ children }) {
   const user = localStorage.getItem("user");
@@ -510,7 +509,8 @@ function BottomNav({ setMenuOpen }) {
 export default function App() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "null");
-const viewer = user?.srno || 0;
+   const viewer = user?.srno || 0;
+   const token = localStorage.getItem("token"); 
   const [menuOpen, setMenuOpen] = useState(false);
   const [chatNotice, setChatNotice] = useState(null);
 
