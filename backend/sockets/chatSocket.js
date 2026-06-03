@@ -134,10 +134,7 @@ const sql = `
   console.log("💾 Saved message ID:", result.insertId);
  // 2️⃣ SEND TO RECEIVER IF ONLINE
 
-    const toSocket = users[toId];
-    console.log("👉 Target socket:", toSocket);
-
-  const payload = {
+   const payload = {
   id: result.insertId,
   from: fromId,
   to: toId,
@@ -146,14 +143,19 @@ const sql = `
   type,
   createdAt: new Date()
 };
-
+io.to(`user-${toId}`).emit(
+   "receiveMessage",
+   payload
+);
+ /*const toSocket = users[toId];
+    console.log("👉 Target socket:", toSocket);
 
 
 // send ONLY to receiver
 if (toSocket) {
   io.to(toSocket).emit("receiveMessage", payload);
 }
-
+*/
 // optional: send ACK to sender (different event)
 const tempId = data.tempId || null;
 io.to(socket.id).emit("messageSent", {
