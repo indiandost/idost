@@ -1,6 +1,7 @@
 import giveReward from "../utils/giveReward.js";
 import admin from "../firebase.js";
-const users = {}; // shared memory
+import { users } from "../server.js";
+//const users = {}; // shared memory
 const meetingRooms = {};
 const activeCalls = {};
 
@@ -9,7 +10,7 @@ export default function chatSocket(io, socket, db) {
      // =========================
     // ✅ REGISTER USER
     // =========================
-socket.on("register", (userId) => {
+/*socket.on("register", (userId) => {
   userId = Number(userId);
 
   socket.userId = userId;
@@ -17,7 +18,7 @@ socket.on("register", (userId) => {
   users[userId] = socket.id;
 
   console.log(
-    "👤 User mapped:",
+    "👤 User mapped2:",
     userId,
     "=>",
     socket.id
@@ -28,7 +29,7 @@ socket.on("register", (userId) => {
     Object.keys(users)
   );
 });
-
+*/
   // =====================
   // GIFT
   // =====================
@@ -104,7 +105,9 @@ const message = data.message || null;
 const mediaUrl = data.media_url || null;
 
 const type = data.type || "text";
+const room = io.sockets.adapter.rooms.get(`user-${toId}`);
 
+console.log("ROOM USERS:", room);
 
 
 console.log("📩 Message:", data);
@@ -143,11 +146,12 @@ const sql = `
   type,
   createdAt: new Date()
 };
-io.to(`user-${toId}`).emit(
+/*io.to(`user-${toId}`).emit(
    "receiveMessage",
    payload
 );
- /*const toSocket = users[toId];
+*/
+ const toSocket = users[toId];
     console.log("👉 Target socket:", toSocket);
 
 
@@ -155,7 +159,7 @@ io.to(`user-${toId}`).emit(
 if (toSocket) {
   io.to(toSocket).emit("receiveMessage", payload);
 }
-*/
+
 // optional: send ACK to sender (different event)
 const tempId = data.tempId || null;
 io.to(socket.id).emit("messageSent", {
@@ -1276,7 +1280,7 @@ socket.on("endMeetingRoom", ({ roomId }) => {
 // 🔌 DISCONNECT
 
 // =========================
-
+/*
 socket.on("disconnect", () => {
 
 
@@ -1288,7 +1292,6 @@ socket.on("disconnect", () => {
   let disconnectedUserId = null;
 
 
-
   // =============================
 
   // REMOVE ONLINE USER
@@ -1296,59 +1299,32 @@ socket.on("disconnect", () => {
   // =============================
 
   for (let id in users) {
-
-
-
     if (users[id] === socket.id) {
-
-
-
       disconnectedUserId = Number(id);
-
-
-
-      console.log(
-
+     console.log(
         "❌ Removing user:",
-
         disconnectedUserId
-
       );
-
-
-
       delete users[id];
-
-
-
-      // remove call busy state
-
+     // remove call busy state
       delete activeCalls[id];
-
-
-
       io.emit(
-
         "onlineUsers",
-
         Object.keys(users)
-
       );
-
-
-
       break;
-
-
-
     }
+   }
+*/
 
 
+socket.on("disconnect", () => {
 
-  }
+  console.log("🔌 Disconnected:", socket.id);
 
+  let disconnectedUserId = socket.userId;
 
-
+  delete activeCalls[disconnectedUserId];
   // =============================
 
   // CLEANUP MEETING ROOMS

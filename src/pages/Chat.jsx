@@ -255,8 +255,9 @@ const startCallBilling = () => {
       />
 
       {/* MESSAGES */}
-      <MessageList className="pt-[130px]" messages={messages} myId={myId} />
-
+      <div className="flex-1 overflow-y-auto pt-[130px]">
+      <MessageList  messages={messages} myId={myId} />
+    </div>
       {/* INPUT */}
       <ChatInput onSend={sendMessage} />
 

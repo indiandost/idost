@@ -39,8 +39,14 @@ export default function useChatMessages(friendId) {
   // =========================
   // RECEIVE MESSAGE
   // =========================
-  useEffect(() => {
+  /*useEffect(() => {
     const handler = (data) => {
+      console.log(
+    "📩 RECEIVED",
+    data,
+    "Current Friend:",
+    friendId
+  );
       setMessages((prev) => {
         const exists = prev.some(
           (m) => m.from === data.from && m.createdAt === data.createdAt
@@ -56,6 +62,41 @@ export default function useChatMessages(friendId) {
 
     return () => socket.off("receiveMessage", handler);
   }, []);
+  */
+ useEffect(() => {
+  const handler = (data) => {
+      console.log(
+    "📩 RECEIVED",
+    data,
+    "Current Friend:",
+    friendId
+  );
+    // current chat ka hi message add karo
+    const isCurrentChat =
+      Number(data.from) === Number(friendId) ||
+      Number(data.to) === Number(friendId);
+
+    if (!isCurrentChat) return;
+
+    setMessages((prev) => {
+
+      if (
+        data.id &&
+        prev.some((m) => m.id === data.id)
+      ) {
+        return prev;
+      }
+
+      return [...prev, data];
+    });
+  };
+
+  socket.on("receiveMessage", handler);
+
+  return () => {
+    socket.off("receiveMessage", handler);
+  };
+}, [friendId]);
 
   // =========================
   // SEND MESSAGE

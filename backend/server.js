@@ -402,8 +402,8 @@ app.set("io", io);
 // =============================
 // USERS MAP
 // =============================
-const users = {}; // userId -> socketId
-
+//const users = {}; // userId -> socketId
+export const users = {}; // userId -> socketId
 // =============================
 // MAIN SOCKET CONNECTION
 // ONLY ONE io.on("connection")
@@ -453,10 +453,17 @@ io.on("connection", (socket) => {
   // =============================
   // ✅ REGISTER USER
   // =============================
- socket.on("register", (userId) => {
+socket.on("register", (userId) => {
   userId = Number(userId);
 
+  if (socket.userId === userId) {
+    console.log("⚠️ Already registered:", userId);
+    return;
+  }
+
   socket.userId = userId;
+
+  socket.join(`user-${userId}`);
 
   users[userId] = socket.id;
 
@@ -467,12 +474,13 @@ io.on("connection", (socket) => {
     socket.id
   );
 
-  io.emit(
-    "onlineUsers",
-    Object.keys(users)
+  console.log(
+    "Joined room:",
+    `user-${userId}`
   );
-});
 
+  io.emit("onlineUsers", Object.keys(users));
+});
   // =============================
   // ✅ DISCONNECT
   // =============================
@@ -487,9 +495,10 @@ io.on("connection", (socket) => {
     const disconnectedSocketId = socket.id;
 
     // Wait 30 seconds before removing
-    setTimeout(() => {
+      setTimeout(() => {
       try {
-        // User already reconnected with a new socket?
+
+        // user reconnected
         if (
           users[userId] &&
           users[userId] !== disconnectedSocketId
@@ -497,6 +506,11 @@ io.on("connection", (socket) => {
           console.log(
             `✅ User ${userId} reconnected with ${users[userId]}`
           );
+          return;
+        }
+
+        // socket already replaced
+        if (users[userId] !== disconnectedSocketId) {
           return;
         }
 
@@ -510,6 +524,7 @@ io.on("connection", (socket) => {
           "onlineUsers",
           Object.keys(users)
         );
+
       } catch (err) {
         console.log(
           "❌ Delayed disconnect error:",

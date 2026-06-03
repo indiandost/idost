@@ -78,7 +78,7 @@ export default function MessageList({ messages, myId }) {
                 <div
                   className={`
                     max-w-[78%]
-                    flex flex-col
+                    flex flex-col min-h-full
                     ${isMe ? "items-end" : "items-start"}
                   `}
                 >
