@@ -88,29 +88,44 @@ export default function Login() {
    if (Capacitor.getPlatform()==='web') { 
         const loggedUser = data.user;
         console.log( "token going to save -=-="+loggedUser.srno); 
-}
-    if (Capacitor.getPlatform()!== 'web') {    
-      PushNotifications.requestPermissions().then(result => {
-
-        if (result.receive === 'granted') {
-          PushNotifications.register();
-        }
-      });
-
-      PushNotifications.addListener('registration', (token) => {
-        console.log("FCM Token:", token.value);
-        const loggedUser = data.user;
-        console.log( "token going to save -=-="+loggedUser.srno);
-        fetch(`${API}/notification/save-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-          user_id: loggedUser.srno,
-          token: token.value
-        })
-        });
-      });
     }
+   if (Capacitor.getPlatform() !== 'web') {
+
+  PushNotifications.addListener('registration', (token) => {
+          console.log("FCM Token:", token.value);
+
+          const loggedUser = data.user;
+
+          console.log("token going to save =", loggedUser.srno);
+
+          fetch(`${API}/notification/save-token`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              user_id: loggedUser.srno,
+              token: token.value
+            })
+          })
+          .then(res => res.json())
+          .then(res => console.log("Token saved:", res))
+          .catch(err => console.error(err));
+        });
+
+        PushNotifications.addListener('registrationError', (err) => {
+          console.log("Registration Error:", err);
+        });
+
+        PushNotifications.requestPermissions().then(result => {
+          console.log("Permission:", result);
+
+          if (result.receive === 'granted') {
+            PushNotifications.register();
+          }
+        });
+
+      }
 
         navigate("/");
 
