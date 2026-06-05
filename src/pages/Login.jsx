@@ -137,15 +137,15 @@ export default function Login() {
 
     })
 
-    .catch(err => {
-
-      console.log(err);
-
-      setLoading(false);
-
-      setError("Server error. Try again.");
-
-    });
+ .catch(err => {
+  console.error("LOGIN ERROR:", err);
+  setLoading(false);
+  alert(
+    err?.message ||
+    JSON.stringify(err) ||
+    "Server Error"
+  );
+  });
 
   };
 
