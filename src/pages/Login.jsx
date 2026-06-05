@@ -33,30 +33,24 @@ export default function Login() {
     // START LOADING
     setLoading(true);
 
-    navigator.geolocation.getCurrentPosition(
-
-      (pos) => {
-
-        const lat = pos.coords.latitude;
-
-        const lng = pos.coords.longitude;
-
-        sendLogin(lat, lng);
-
-      },
-
-      () => {
-
-        // IF LOCATION BLOCKED
-        sendLogin(0, 0);
-
-      }
-
-    );
+   navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          sendLogin(pos.coords.latitude, pos.coords.longitude);
+        },
+        (err) => {
+          console.log("Location error", err);
+          sendLogin(0, 0);
+        },
+        {
+          timeout: 10000,
+          enableHighAccuracy: false
+        }
+      );
   };
 
   const sendLogin = (lat, lng) => {
-
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), 15000);
     fetch(`${API}/api/login`, {
 
       method: "POST",
@@ -70,7 +64,8 @@ export default function Login() {
         pass,
         lat,
         lng
-      })
+      }),
+      signal: controller.signal
 
     })
 
