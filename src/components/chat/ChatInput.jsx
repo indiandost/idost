@@ -4,65 +4,43 @@ export default function ChatInput({
   onSend,
 }) {
 
-  const [message, setMessage] =
-    useState("");
+  const [message, setMessage] =  useState("");
 
-  const [image, setImage] =
-    useState(null);
+  const [image, setImage] =  useState(null);
 
-  const [preview, setPreview] =
-    useState(null);
+  const [preview, setPreview] =  useState(null);
 
-  const [sending, setSending] =
-    useState(false);
+  const [sending, setSending] =  useState(false);
 
   const handleSend = async () => {
-
-    if (
-      !message.trim() &&
-      !image
-    ) return;
-
+    if (!message.trim() && !image) return;
     try {
-
       setSending(true);
-
       // ✅ IMPORTANT
       // wait until upload + socket send complete
       await onSend(
         message.trim(),
         image
       );
-
       // ✅ clear after successful send
       setMessage("");
       setImage(null);
       setPreview(null);
 
       // ✅ reset input
-      const fileInput =
-        document.getElementById(
-          "chat-image"
-        );
-
+      const fileInput =  document.getElementById("chat-image");
       if (fileInput) {
         fileInput.value = "";
       }
-
     } catch (err) {
-
       console.log(
         "Send failed",
         err
       );
-
     } finally {
-
       setSending(false);
-
     }
   };
-
   return (
 
     <div

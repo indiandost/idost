@@ -96,7 +96,7 @@ export default function useChatMessages(friendId) {
   return () => {
     socket.off("receiveMessage", handler);
   };
-}, [friendId]);
+ }, [friendId]);
 
   // =========================
   // SEND MESSAGE
@@ -108,20 +108,43 @@ export default function useChatMessages(friendId) {
       let imageUrl = null;
 
       if (image) {
-        const formData = new FormData();
-        formData.append("image", image);
+  const formData = new FormData();
+  formData.append("image", image);
 
-       const res = await fetch(`${API}/api/upload`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
+  try {
 
-        const data = await res.json();
-        imageUrl = data.url;
-      }
+    console.log("UPLOAD URL =", `${API}/api/upload`);
+    console.log("TOKEN =", token);
+
+    const res = await fetch(`${API}/api/upload`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    console.log("STATUS =", res.status);
+
+    const text = await res.text();
+
+    console.log("RAW RESPONSE =", text);
+/*
+    if (!res.ok) {
+      throw new Error(`Upload failed: ${res.status}`);
+    }
+*/
+    const data = JSON.parse(text);
+
+    imageUrl = data.url;
+
+  } catch (err) {
+
+    console.error("UPLOAD ERROR =", err);
+
+    alert(err.message);
+  }
+}
 
       const msgData = {
         from: Number(myId),

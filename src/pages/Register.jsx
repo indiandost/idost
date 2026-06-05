@@ -505,8 +505,10 @@ useEffect(() => {
       setUserExists(false);
 
       if (value.trim().length >= 3) {
+        setTimeout(() => {
         checkUsername(value.trim());
-      }
+      }, 500);
+        }
     }
 
     // Email Check
@@ -514,7 +516,9 @@ useEffect(() => {
       setEmailExists(false);
 
       if (/\S+@\S+\.\S+/.test(value)) {
+        setTimeout(() => {
         checkEmail(value.trim());
+        }, 500);
       }
     }
   };
@@ -671,7 +675,7 @@ if (
   const sendData = async (lat = null, lng = null) => {
     try {
       setLoading(true);
-
+      const API = import.meta.env.VITE_API_URL;
       const res = await fetch(`${API}/api/register`, {
         method: "POST",
         headers: {
@@ -909,6 +913,34 @@ if (
           {errors.email && (
             <p className="text-red-400 text-sm mt-1">
               {errors.email}
+            </p>
+          )}
+        </div>
+
+          {/* Email */}
+       {/* Gender */}
+        <div>
+          <select
+            name="sex"
+            value={form.sex || ""}
+            onChange={handleChange}
+            className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white
+              ${
+                errors.sex
+                  ? "border-red-500"
+                  : "border-gray-600 focus:border-green-500"
+              }`}
+          >
+          <option value="">Select Gender</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Trans">Transgender</option>
+          <option value="Other">Other</option>
+          </select>
+
+          {errors.sex && (
+            <p className="text-red-400 text-sm mt-1">
+              {errors.sex}
             </p>
           )}
         </div>

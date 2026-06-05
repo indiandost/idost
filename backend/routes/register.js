@@ -9,6 +9,7 @@ router.post("/register", async (req, res) => {
     pass,
     name,
     email,
+    sex,
     telephone,
     dob,
     city,
@@ -24,6 +25,7 @@ const sql = `
     pass,
     name,
     email,
+    sex,
     telephone,
     date,
     dob,
@@ -32,7 +34,7 @@ const sql = `
     longitude,
     status
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
   const hashedPassword = await bcrypt.hash(pass, 10);
   const st='A';
   db.query(
@@ -42,6 +44,7 @@ const sql = `
     hashedPassword,
     name,
     email,
+    sex,
     telephone,
     created_at,
     dob,

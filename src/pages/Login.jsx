@@ -192,7 +192,7 @@ export default function Login() {
     {/* USERNAME */}
     <input
       type="text"
-      placeholder="Username"
+      placeholder="Username / Email"
       className="w-full p-3 bg-gray-900 text-white border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 placeholder-gray-400"
       value={user}
       onChange={(e) => setUser(e.target.value)}

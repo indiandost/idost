@@ -87,134 +87,70 @@ app.use(express.json({
 // 👉 Make DB usable in all routes
 
 app.set("db", db);
-
 //app.use("/uploads", express.static("uploads"));
-
 app.use("/api", postRoutes);
-
 //app.set("io", io);
 
 
 
 //chat history
-
 app.get("/api/chat/:user1/:user2", verifyToken, (req, res) => {
-
   const { user1, user2 } = req.params;
   const sql = `
-
     SELECT 
-
       id,
-
       sender_id AS \`from\`,
-
       receiver_id AS \`to\`,
-
       message,
-
       media_url,
-
       message_type AS type,
-
       DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS createdAt
-
     FROM chat_messages
-
     WHERE (sender_id = ? AND receiver_id = ?)
-
        OR (sender_id = ? AND receiver_id = ?)
-
     ORDER BY created_at ASC
-
   `;
 
-
-
   db.query(sql, [user1, user2, user2, user1], (err, result) => {
-
     if (err) return res.json(err);
-
     res.json(result);
-
   });
-
 });
 
-
-
-
-
-
-
 // 📁 Absolute upload path
-
-const UPLOAD_DIR = path.join(__dirname, process.env.UPLOAD_DIR || "uploads");
-
-
-
+//const UPLOAD_DIR = path.join( __dirname,  process.env.UPLOAD_DIR || "uploads");//old
+const UPLOAD_DIR = process.env.UPLOAD_DIR;
+console.log("UPLOAD_DIR =", UPLOAD_DIR);
 // 📁 storage config
-
 const storage = multer.diskStorage({
-
   destination: (req, file, cb) => {
-
     cb(null, UPLOAD_DIR);
-
   },
-
 filename: (req, file, cb) => {
-
   const ext = path.extname(file.originalname);
-
   const name = path.basename(file.originalname, ext).replace(/\s+/g, "_");
-
   cb(null, Date.now() + "-" + name + ext);
-
 }
-
 });
 
 const upload = multer({
-
   storage,
-
   limits: { fileSize: 2 * 1024 * 1024 } // 2MB
-
 });
 
-
-
 // 📦 make uploads public
-
 app.use("/uploads", express.static(UPLOAD_DIR));
-
-
 
 // 🚀 UPLOAD API
 
 app.post("/api/upload",  verifyToken, upload.single("image"), (req, res) => {
-
   if (!req.file) {
-
     return res.status(400).json({ error: "No file uploaded" });
-
   }
-
-
-
   // ✅ Use FILE_URL from env
-
   const fileUrl = process.env.FILE_URL || `${process.env.BASE_URL}/uploads`;
-
-
-
   const url = `${fileUrl}/${req.file.filename}`;
-
-
-
   res.json({ url });
-
 });
 
 

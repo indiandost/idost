@@ -959,8 +959,7 @@ const deleteProfile = async () => {
   <option value="">Select Gender</option>
   <option value="Male">Male</option>
   <option value="Female">Female</option>
-  <option value="Transgender">Transgender</option>
-  <option value="Non-Binary">Non-Binary</option>
+  <option value="Trans">Transgender</option>
   <option value="Other">Other</option>
 </select>
 <select
@@ -1067,12 +1066,12 @@ const deleteProfile = async () => {
   />
 
   <input
-    name="email"
-    value={form.email}
-    onChange={handleChange}
-    placeholder="Email"
-    className="w-full p-3 rounded bg-gray-700"
-  />
+  type="email"
+  name="email"
+  value={form.email}
+  disabled
+  className="w-full p-3 rounded bg-gray-700 text-gray-400 cursor-not-allowed opacity-70"
+/>
 
   <textarea
   name="about"
