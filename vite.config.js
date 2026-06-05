@@ -22,8 +22,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'My Dating App',
-        short_name: 'DatingApp',
+        name: 'Indiandost',
+        short_name: 'ID',
         theme_color: '#ff4d6d',
         background_color: '#ffffff',
         display: 'standalone',
