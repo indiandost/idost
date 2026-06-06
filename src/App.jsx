@@ -838,6 +838,7 @@ if (!permissionAsked) {
   if (!user?.srno) return;
 
   const registerUser = () => {
+      if (!socket.connected) return;
     console.log(
       "✅ Registering user:",
       user.srno,
@@ -847,6 +848,7 @@ if (!permissionAsked) {
 
     socket.emit("register", Number(user.srno));
   };
+  socket.io.on("reconnect", registerUser);
 
   const handleConnect = () => {
     console.log(
@@ -946,7 +948,9 @@ if (!permissionAsked) {
 
   useEffect(() => {
     const incomingHandler = (data) => {
-      console.log("📞 Incoming call:", data);
+      console.log(
+      "INCOMING", data,  "isInCall:",  localStorage.getItem("isInCall")
+    );
 
       // ❌ only REAL busy check
       const isBusy = localStorage.getItem("isInCall") === "1";
@@ -961,17 +965,19 @@ if (!permissionAsked) {
       }
 
       // ✅ create unique call
-      const callId = `${data.from}_${data.to}_${Date.now()}`;
-
-      const callData = {
-        ...data,
-        callId,
-      };
+      //const callId = `${data.from}_${data.to}_${Date.now()}`;
+        const callData = {
+          ...data,
+          callId: data.callId || `${data.from}_${data.to}_${Date.now()}`,
+        };
 
       incomingCallRef.current = callData;
-
       // 🔥 IMPORTANT: force state update
-      setIncomingCall(null); // reset first
+     // setIncomingCall(null); // reset first
+      setIncomingCall({
+          ...callData,
+          uiKey: Date.now(), // force re-render
+        });
       setTimeout(() => {
         setIncomingCall(callData);
       }, 10);
@@ -985,8 +991,9 @@ if (!permissionAsked) {
       }
 
       // missed call timer
+      const currentCallId = data.callId;
       setTimeout(() => {
-        if (incomingCallRef.current?.callId === callId) {
+        if (incomingCallRef.current?.callId === currentCallId) {
           socket.emit("sendMessage", {
             from: data.from,
             to: data.to,
@@ -1279,6 +1286,7 @@ if (!permissionAsked) {
 
                   // send accepted event
                   socket.emit("acceptCall", {
+                    callId: callData.callId,
                     from: callData.from,
                     to: user.srno,
                     type: callData.type || "video",
@@ -1335,6 +1343,7 @@ if (!permissionAsked) {
 
                   // notify caller
                   socket.emit("rejectCall", {
+                    callId: callData.callId,
                     from: callData.from,
                     to: user.srno,
                   });

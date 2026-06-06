@@ -75,60 +75,115 @@ export default function Login() {
 
       // STOP LOADING
       setLoading(false);
-      if (data.success) {
-        localStorage.setItem("token", data.token); //for token
+if (data.success) {
+
+  const loggedUser = data.user;
+
+  if (Capacitor.getPlatform() === "web") {
+
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+
+    socket.connect();
+
+    navigate("/");
+
+    return;
+  }
+
+  PushNotifications.removeAllListeners();
+
+  PushNotifications.addListener(
+    "registration",
+    (token) => {
+
+      console.log("✅ FCM Token:", token.value);
+
+      fetch(`${API}/notification/save-token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          user_id: loggedUser.srno,
+          token: token.value
+        })
+      })
+      .then(res => res.json())
+      .then(result => {
+
+        console.log("💾 Token Save:", result);
+
+        if (!result.success) {
+          setLoading(false);
+          alert("Unable to save device token");
+          return;
+        }
+
+        // LOGIN SUCCESS ONLY AFTER TOKEN SAVED
+
+        localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
+
         socket.connect();
-    // 🔥 PUSH NOTIFICATION SETUP (AFTER LOGIN ONLY)
-   if (Capacitor.getPlatform()==='web') { 
-        const loggedUser = data.user;
-        console.log( "token going to save -=-="+loggedUser.srno); 
-    }
-   if (Capacitor.getPlatform() !== 'web') {
-
-  PushNotifications.addListener('registration', (token) => {
-          console.log("FCM Token:", token.value);
-
-          const loggedUser = data.user;
-
-          console.log("token going to save =", loggedUser.srno);
-
-          fetch(`${API}/notification/save-token`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              user_id: loggedUser.srno,
-              token: token.value
-            })
-          })
-          .then(res => res.json())
-          .then(res => console.log("Token saved:", res))
-          .catch(err => console.error(err));
-        });
-
-        PushNotifications.addListener('registrationError', (err) => {
-          console.log("Registration Error:", err);
-        });
-
-        PushNotifications.requestPermissions().then(result => {
-          console.log("Permission:", result);
-
-          if (result.receive === 'granted') {
-            PushNotifications.register();
-          }
-        });
-
-      }
 
         navigate("/");
 
+      })
+      .catch(err => {
+
+        console.error("Save token error:", err);
+
+        setLoading(false);
+
+        alert("Unable to save device token");
+      });
+    }
+  );
+
+  PushNotifications.addListener(
+    "registrationError",
+    (err) => {
+
+      console.error("Registration Error:", err);
+
+      setLoading(false);
+
+      alert("Unable to register device for notifications");
+    }
+  );
+
+  PushNotifications.requestPermissions()
+    .then(result => {
+
+      console.log("Permission:", result);
+
+      if (result.receive === "granted") {
+
+        PushNotifications.register();
+
       } else {
 
-        setError("Invalid username or password");
+        setLoading(false);
 
+        alert("Notification permission required");
       }
+    })
+    .catch(err => {
+
+      console.error(err);
+
+      setLoading(false);
+
+      alert("Permission request failed");
+    });
+
+} else {
+
+  setLoading(false);
+
+  setError("Invalid username or password");
+}
 
     })
 

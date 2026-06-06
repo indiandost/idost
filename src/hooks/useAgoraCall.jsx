@@ -9,7 +9,8 @@ export default function useAgoraCall(friendId) {
   const remoteVideoRef = useRef(null);
 
   const clientRef = useRef(null);
-
+const currentCallIdRef = useRef(null);
+const callStartRef = useRef(null);
   const tracksRef = useRef({
     mic: null,
     cam: null,
@@ -48,7 +49,13 @@ export default function useAgoraCall(friendId) {
       if (clientRef.current) {
         clientRef.current.removeAllListeners();
 
+      if (clientRef.current) {
+        try {
+          await clientRef.current.unpublish();
+        } catch (e) {}
+
         await clientRef.current.leave();
+      }
 
         clientRef.current = null;
       }
@@ -82,15 +89,22 @@ export default function useAgoraCall(friendId) {
       setCalling(false);
 
       await joinAgora(data?.type || "video");
+      currentCallIdRef.current = data.callId;
+       //currentCallIdRef.current = null;
     };
 
-    const rejectedHandler = async () => {
-      console.log("❌ REJECTED");
+  const rejectedHandler = async (data) => {
+  console.log("❌ REJECTED", data);
 
-      alert("Call Rejected");
+  if (data?.callId && data.callId !== currentCallIdRef.current) {
+    console.log("Ignoring old reject");
+    return;
+  }
 
-      await endCall(false);
-    };
+  alert("Call Rejected");
+
+  await endCall(false);
+};
 
     const endedHandler = async () => {
       console.log("📴 CALL ENDED");
@@ -170,6 +184,9 @@ export default function useAgoraCall(friendId) {
 
         setCalling(false);
         setCallStatus("Connected");
+        if (!callStartRef.current) {
+          callStartRef.current = Date.now();
+        }
       });
 
       client.on("user-left", async () => {
@@ -247,8 +264,10 @@ export default function useAgoraCall(friendId) {
 
       // show UI immediately
       setInCall(true);
-
+const callId = `${myId}_${friendId}_${Date.now()}`;
+currentCallIdRef.current = callId;
       socket.emit("callUser", {
+        callId,
         from: myId,
         to: friendId,
         type,
@@ -265,22 +284,24 @@ export default function useAgoraCall(friendId) {
   // =========================
   const endCall = async (emit = true) => {
     try {
+      const callId = currentCallIdRef.current;
       if (emit) {
         socket.emit("endCall", {
+          callId:callId,
           from: myId,
           to: friendId,
         });
       }
+    currentCallIdRef.current = null;
+    localStorage.removeItem("isInCall");
+    //setIsInCall(false);
+    await cleanupAgora();
 
-      await cleanupAgora();
-
-      setInCall(false);
-      setCalling(false);
-
-      setCallStatus("");
-
-      setIsMuted(false);
-      setIsCameraOn(true);
+    setInCall(false);
+    setCalling(false);
+    setCallStatus("");
+    setIsMuted(false);
+    setIsCameraOn(true);
     } catch (err) {
       console.log(err);
     }
@@ -359,5 +380,6 @@ export default function useAgoraCall(friendId) {
 
     isMuted,
     isCameraOn,
+    callStartRef,
   };
 }

@@ -104,7 +104,7 @@ router.post("/add-time", verifyToken, async (req, res) => {
     // DAILY LIMIT
     // =========================
     const dailyLimit =
-      coins >= 5000 ? 300 : 30;
+      coins >= 5000 ? 1000 : 60;
 
     // =========================
     // CHECK DAILY LIMIT

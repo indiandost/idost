@@ -21,13 +21,12 @@ AgoraRTC.setLogLevel(2);
 export default function Chat() {
   const navigate = useNavigate();
   const { id: friendId } = useParams();
-
+const isConnectedRef = useRef(false);
   const location = useLocation();
-
+const { callStartRef } = useAgoraCall(friendId);
   const myId = JSON.parse(localStorage.getItem("user"))?.srno;
   const token = localStorage.getItem("token"); 
-  const callStartRef = useRef(null);
-  const callTypeRef = useRef("audio");
+    const callTypeRef = useRef("audio");
   const billingIntervalRef = useRef(null);
   const isCallerRef = useRef(false);  //for only caller's coins reduce
   // =========================
@@ -119,12 +118,13 @@ export default function Chat() {
 
 //billing effect
 useEffect(() => {
- // if (inCall) {
   if (inCall && isCallerRef.current) {
-    console.log("📞 Call connected");
+    console.log("📞 Call active → start billing");
+
     startCallBilling();
   } else {
-    // stop if call ended
+    console.log("⛔ Stop billing");
+
     if (billingIntervalRef.current) {
       clearInterval(billingIntervalRef.current);
       billingIntervalRef.current = null;
@@ -139,12 +139,20 @@ useEffect(() => {
   };
 }, [inCall]);
 
+//reset start time
+useEffect(() => {
+  if (!inCall && !calling) {
+    callStartRef.current = null;
+  }
+}, [inCall, calling]);
+
 //endcall new function
 const handleEndCall = async () => {
-  const duration = callStartRef.current
-    ? Math.floor((Date.now() - callStartRef.current) / 1000)
-    : 0;
-    console.log(`call ending save duration ${duration}s `);
+    const duration = callStartRef.current
+      ? Math.floor((Date.now() - callStartRef.current) / 1000)
+      : 0;
+  console.log(`call ending save duration ${duration}s`);
+  callStartRef.current = null; // IMPORTANT RESET
   // save call message
   socket.emit("sendMessage", {
     from: Number(myId),
@@ -165,6 +173,7 @@ const handleEndCall = async () => {
 //call limitation 
 const startCallBilling = () => {
   // prevent duplicate interval
+   callStartRef.current = Date.now();
   if (billingIntervalRef.current) {
     clearInterval(billingIntervalRef.current);
   }
@@ -181,7 +190,7 @@ const startCallBilling = () => {
           },
           body: JSON.stringify({
             userId: myId,
-            seconds: 5,
+            seconds: 8,
           }),
         }
       );
@@ -207,7 +216,7 @@ const startCallBilling = () => {
     } catch (err) {
       console.log("Billing error:", err);
     }
-  }, 5000);
+  }, 8000);
 };
 
   // =========================
@@ -237,7 +246,6 @@ const startCallBilling = () => {
           startCall("audio");
         }}
         onVideoCall={() => {
-          callStartRef.current = Date.now();
           callTypeRef.current = "video";
           isCallerRef.current = true;
           startCall("video");

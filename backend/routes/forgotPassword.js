@@ -79,7 +79,7 @@ router.post("/forgot-password", (req, res) => {
 
           // RESET LINK
           const resetLink =
-            `https://indiandost.com/idost/reset-password/${token}`;
+            `https://indiandost.com/idost/reset-password/${encodeURIComponent(token)}`;
 
           const mailOptions = {
             from: '"IndianDost Support" <no-reply@indiandost.com>',
@@ -93,9 +93,13 @@ router.post("/forgot-password", (req, res) => {
 
               <a href="${resetLink}">
                 Reset Password
-              </a>
+              </a> 
 
+            <p>Link not opening then you may direct copy and paste in your browser:</p>
+            <p>${resetLink}</p>
+           <br/>
               <p>Link valid for 1 hour.</p>
+              <p><br/>Thanks & Regards,<br/>IndianDost Team</p>
             `,
           };
 

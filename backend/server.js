@@ -454,7 +454,11 @@ socket.on("register", (userId) => {
           `❌ Removing user after timeout: ${userId}`
         );
 
-        delete users[userId];
+        setTimeout(() => {
+          if (!io.sockets.sockets.get(socket.id)) {
+            delete users[socket.userId];
+          }
+        }, 10000);
 
         io.emit(
           "onlineUsers",
