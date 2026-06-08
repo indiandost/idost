@@ -10,7 +10,7 @@ router.post("/register", async (req, res) => {
     name,
     email,
     sex,
-    telephone,
+    telephone= "",
     dob,
     city,
     latitude,

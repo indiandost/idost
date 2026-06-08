@@ -11,8 +11,7 @@ const [acceptedPolicy, setAcceptedPolicy] = useState(false);
     name: "",
     dob: "",
     city: "",
-    email: "",
-    telephone: ""
+    email: ""
   });
 const indiaCities = [
   "Adilabad",
@@ -648,14 +647,14 @@ useEffect(() => {
     }
 
 // Phone optional
-if (
+/*if (
   form.telephone.trim() &&
   !/^\d{10}$/.test(form.telephone)
 ) {
   newErrors.telephone =
     "Must be exactly 10 digits";
 }
-
+*/
     if (userExists) {
       newErrors.user = "Username already exists";
     }
@@ -945,7 +944,7 @@ if (
           )}
         </div>
 
-        {/* Phone */}
+        {/* Phone 
         <div>
           <input
             type="tel"
@@ -967,7 +966,7 @@ if (
               {errors.telephone}
             </p>
           )}
-        </div>
+        </div>*/}
 
         {/* DOB */}
         <div>
@@ -982,7 +981,7 @@ if (
         max={
           new Date(
             new Date().setFullYear(
-              new Date().getFullYear() - 16
+              new Date().getFullYear() - 18
             )
           )
             .toISOString()

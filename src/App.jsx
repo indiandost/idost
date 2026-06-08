@@ -508,6 +508,7 @@ function BottomNav({ setMenuOpen }) {
 }
 
 export default function App() {
+  console.log("APP RENDER");
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "null");
    const viewer = user?.srno || 0;
