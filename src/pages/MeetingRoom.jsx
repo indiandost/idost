@@ -217,8 +217,8 @@ const getUserCoins = async (id) => {
         }
 
         const latestCoins = await getUserCoins(myId);
-        if (latestCoins < 30) {
-          alert(`Minimum 30 coins required to host meeting. Current coins: ${latestCoins}`);
+        if (latestCoins < 1000) {
+          alert(`Minimum 1000 coins required to host meeting. Current coins: ${latestCoins}`);
           //navigate("/");
           return;
         }
