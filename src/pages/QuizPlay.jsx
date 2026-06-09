@@ -9,10 +9,9 @@ import {
 } from "react-router-dom";
 
 const API = import.meta.env.VITE_API_URL;
-
 export default function QuizPlay() {
   const { battleId } = useParams();
-
+const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const [questions, setQuestions] =
@@ -57,6 +56,10 @@ export default function QuizPlay() {
   const submitAnswer = async (
     optionNumber
   ) => {
+    if (submitting) return;
+
+  setSubmitting(true);
+
     try {
       const token =
         localStorage.getItem("token");
@@ -106,6 +109,8 @@ export default function QuizPlay() {
       }
     } catch (err) {
       console.error(err);
+    } finally {
+    setSubmitting(false);
     }
   };
 
@@ -130,20 +135,20 @@ export default function QuizPlay() {
   return (
     <div className="max-w-xl mx-auto p-4">
 
-      <div className="mb-4 text-center">
+      <div className="mb-4 text-center text-white">
         Question {current + 1} of{" "}
         {questions.length}
       </div>
 
       <div className="border rounded-xl p-4 shadow">
 
-        <h2 className="text-lg font-bold mb-4">
+        <h2 className="text-lg font-bold mb-4 text-white">
           {q.question}
         </h2>
 
         <div className="grid gap-3">
 
-          <button
+          <button disabled={submitting}
             onClick={() =>
               submitAnswer(1)
             }
@@ -152,7 +157,7 @@ export default function QuizPlay() {
             {q.option1}
           </button>
 
-          <button
+          <button disabled={submitting}
             onClick={() =>
               submitAnswer(2)
             }
@@ -161,7 +166,7 @@ export default function QuizPlay() {
             {q.option2}
           </button>
 
-          <button
+          <button disabled={submitting}
             onClick={() =>
               submitAnswer(3)
             }
@@ -170,7 +175,7 @@ export default function QuizPlay() {
             {q.option3}
           </button>
 
-          <button
+          <button disabled={submitting}
             onClick={() =>
               submitAnswer(4)
             }

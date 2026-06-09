@@ -25,15 +25,14 @@ if (Number(challengerId) === Number(opponentId)) {
   }
 db.query(
   `
-  SELECT id
-  FROM quiz_battles
-  WHERE (
-      challenger_id=? AND opponent_id=?
-  )
-  OR (
-      challenger_id=? AND opponent_id=?
-  )
-  AND status IN ('pending','accepted')
+SELECT id
+FROM quiz_battles
+WHERE (
+      (challenger_id=? AND opponent_id=?)
+      OR
+      (challenger_id=? AND opponent_id=?)
+)
+AND status IN ('pending','accepted')
   `,
   [
     challengerId,
@@ -42,6 +41,10 @@ db.query(
     challengerId
   ],
   (err, rows) => {
+
+    if (err) {
+      return res.status(500).json(err);
+    }
 
     if (rows.length) {
       return res.json({
@@ -124,38 +127,65 @@ db.query(
 router.post("/accept/:battleId", verifyToken, (req, res) => {
 
   const userId = req.user.id;
-const io = req.app.get("io");
+  const battleId = req.params.battleId;
+  const io = req.app.get("io");
+
   db.query(
     `
-    UPDATE quiz_battles
-    SET status='accepted'
+    SELECT challenger_id
+    FROM quiz_battles
     WHERE id=?
-    AND opponent_id=?
-    AND status='pending'
     `,
-    [req.params.battleId, userId],
-    (err, result) => {
+    [battleId],
+    (err, battleRows) => {
 
       if (err) {
         return res.status(500).json(err);
       }
 
-      if (!result.affectedRows) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid battle"
+      if (!battleRows.length) {
+        return res.status(404).json({
+          success:false,
+          message:"Battle not found"
         });
       }
-            io.to(`user-${challengerId}`).emit(
+
+      const challengerId = battleRows[0].challenger_id;
+
+      db.query(
+        `
+        UPDATE quiz_battles
+        SET status='accepted'
+        WHERE id=?
+        AND opponent_id=?
+        AND status='pending'
+        `,
+        [battleId, userId],
+        (err2, result) => {
+
+          if (err2) {
+            return res.status(500).json(err2);
+          }
+
+          if (!result.affectedRows) {
+            return res.status(400).json({
+              success:false,
+              message:"Invalid battle"
+            });
+          }
+
+          io.to(`user-${challengerId}`).emit(
             "battleAccepted",
             {
-                battleId
+              battleId
             }
-            );
-      res.json({
-        success: true
-      });
-      
+          );
+
+          res.json({
+            success:true
+          });
+        }
+      );
     }
   );
 });
@@ -275,7 +305,11 @@ router.post("/answer", verifyToken, (req, res) => {
     questionId,
     answer
   } = req.body;
-
+console.log({
+  battleId,
+  userId,
+  questionId,
+  answer});
   db.query(
     `
     SELECT correct_answer
@@ -323,19 +357,21 @@ router.post("/answer", verifyToken, (req, res) => {
         (err2) => {
 
           if (err2) {
+
+            if (err2.code === "ER_DUP_ENTRY") {
+              return res.json({
+                success: true,
+                duplicate: true
+              });
+            }
+
             return res.status(500).json(err2);
           }
-
-          res.json({
-            success: true,
-            correct: !!isCorrect
-          });
         }
       );
     }
   );
 });
-
 
 // ===========================
 // RESULT
@@ -352,7 +388,6 @@ router.get("/result/:battleId", verifyToken, (req, res) => {
     FROM quiz_answers
     WHERE battle_id=?
     GROUP BY user_id
-    ORDER BY score DESC
     `,
     [battleId],
     (err, scores) => {
@@ -361,35 +396,104 @@ router.get("/result/:battleId", verifyToken, (req, res) => {
         return res.status(500).json(err);
       }
 
-      if (!scores.length) {
-        return res.json({
-          success: true,
-          winner: null
-        });
-      }
-
-      const winnerId = scores[0].user_id;
-
       db.query(
         `
-        UPDATE quiz_battles
-        SET
-          winner_id=?,
-          status='completed'
+        SELECT
+          challenger_id,
+          opponent_id
+        FROM quiz_battles
         WHERE id=?
         `,
-        [winnerId, battleId]
+        [battleId],
+        (err2, battleRows) => {
+
+          if (err2) {
+            return res.status(500).json(err2);
+          }
+
+          if (!battleRows.length) {
+            return res.status(404).json({
+              success: false,
+              message: "Battle not found"
+            });
+          }
+
+          const challengerId = battleRows[0].challenger_id;
+          const opponentId = battleRows[0].opponent_id;
+
+          let challengerScore = 0;
+          let opponentScore = 0;
+
+          scores.forEach((row) => {
+
+            if (
+              Number(row.user_id) === Number(challengerId)
+            ) {
+              challengerScore = Number(row.score || 0);
+            }
+
+            if (
+              Number(row.user_id) === Number(opponentId)
+            ) {
+              opponentScore = Number(row.score || 0);
+            }
+
+          });
+
+          let winnerId = null;
+
+          if (challengerScore > opponentScore) {
+            winnerId = challengerId;
+          }
+          else if (opponentScore > challengerScore) {
+            winnerId = opponentId;
+          }
+          // if equal => draw => winnerId remains null
+
+          db.query(
+            `
+            UPDATE quiz_battles
+            SET
+              challenger_score=?,
+              opponent_score=?,
+              winner_id=?,
+              status='completed'
+            WHERE id=?
+            `,
+            [
+              challengerScore,
+              opponentScore,
+              winnerId,
+              battleId
+            ],
+            (err3) => {
+
+              if (err3) {
+                return res.status(500).json(err3);
+              }
+
+              res.json({
+                success: true,
+                battleId,
+                challengerId,
+                opponentId,
+                challengerScore,
+                opponentScore,
+                winnerId,
+                draw:
+                  challengerScore === opponentScore
+              });
+
+            }
+          );
+
+        }
       );
 
-      res.json({
-        success: true,
-        winnerId,
-        scores
-      });
     }
   );
-});
 
+});
 
 // ===========================
 // ADD QUESTION (ADMIN)
@@ -448,39 +552,69 @@ router.post("/add-question", verifyToken, (req, res) => {
 router.post("/reject/:battleId", verifyToken, (req, res) => {
 
   const userId = req.user.id;
+  const battleId = req.params.battleId;
+  console.log(userId +'---'+ battleId);
+  
 
   db.query(
     `
-    UPDATE quiz_battles
-    SET status='rejected'
+    SELECT challenger_id
+    FROM quiz_battles
     WHERE id=?
-    AND opponent_id=?
-    AND status='pending'
     `,
-    [req.params.battleId, userId],
-    (err, result) => {
+    [battleId],
+    (err, rows) => {
 
       if (err) {
         return res.status(500).json(err);
       }
 
-      if (!result.affectedRows) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid battle"
+      if (!rows.length) {
+        return res.status(404).json({
+          success:false,
+          message:"Battle not found"
         });
       }
-      const io = req.app.get("io");
-        io.to(`user-${challengerId}`).emit(
-        "battleRejected",
-        {
-            battleId
+
+      const challengerId = rows[0].challenger_id;
+
+      db.query(
+        `
+        UPDATE quiz_battles
+        SET status='rejected'
+        WHERE id=?
+        AND opponent_id=?
+        AND status='pending'
+        `,
+        [battleId, userId],
+        (err2, result) => {
+
+          if (err2) {
+            return res.status(500).json(err2);
+          }
+
+          if (!result.affectedRows) {
+            return res.status(400).json({
+              success:false,
+              message:"Invalid battle"
+            });
+          }
+
+          const io = req.app.get("io");
+
+          io.to(`user-${challengerId}`).emit(
+            "battleRejected",
+            {
+              battleId
+            }
+          );
+
+          res.json({
+            success:true,
+            message:"Battle rejected"
+          });
         }
-        );
-      res.json({
-        success: true,
-        message: "Battle rejected"
-      });
+      );
     }
   );
 });

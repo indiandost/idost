@@ -12,6 +12,16 @@ export default function QuizBattles() {
     loadBattles();
   }, []);
 
+
+/*  useEffect(() => {
+  fetch(`${API}/api/quiz/result/${battleId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}, []);
+*/
+
   const loadBattles = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -186,6 +196,24 @@ export default function QuizBattles() {
       View Result
     </button>
   )}
+
+
+{battle.status === "completed" && (
+  <div className="mt-2 text-sm">
+    <div>
+      Score: {battle.challenger_score} - {battle.opponent_score}
+    </div>
+
+    <div className="font-semibold">
+      {battle.winner_id
+        ? Number(battle.winner_id) === Number(battle.challenger_id)
+          ? `${battle.challenger_name} Won`
+          : `${battle.opponent_name} Won`
+        : "Match Draw"}
+    </div>
+  </div>
+)}
+
 
 </div>
         </div>
