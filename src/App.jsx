@@ -41,6 +41,8 @@ import JamRoom from "./pages/JamRoom";
 import CreateJamRoom from "./pages/CreateJamRoom";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import RiskTower from "./pages/RiskTower";
+import QuizBattles from "./pages/QuizBattles";
+import QuizPlay from "./pages/QuizPlay";
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import socket from "./socket";
@@ -64,7 +66,7 @@ function PrivateRoute({ children }) {
   const user = localStorage.getItem("user");
   return user ? children : <Navigate to="/login" />;
 }
-    const user = JSON.parse(localStorage.getItem("user") || "null");
+const user = JSON.parse(localStorage.getItem("user") || "null");
 const viewer = user?.srno || 0;
 // 🔝 Navbar
 function Navbar({ menuOpen, setMenuOpen }) {
@@ -393,22 +395,31 @@ useEffect(() => {
 }
 
 // 🔽 Bottom Nav
-/*function BottomNav() {
-  return (
-    <div className="flex justify-around items-center bg-gray-800 p-3 text-white">
-      <Link to="/">Home</Link>
-      <Link to="/friends">Friends</Link>
-      <Link to="/chats">Chat</Link>
-      <Link to="/community">Community</Link>
-      <Link to={`/meeting/${Date.now()}`}> Meet</Link>
-      <Link to="/blocked-users">B</Link>
-       <Link to="/my-visitors">V</Link>
-      <Link to="/me">Me</Link>
-    </div>
-  );
-}*/
 function BottomNav({ setMenuOpen }) {
   const location = useLocation();
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const token = localStorage.getItem("token"); 
+  const [unreadCount, setUnreadCount] = useState(0);
+ useEffect(() => {
+  const fetchUnreadCount = async () => {
+    try {
+      const res = await fetch(`${API}/api/chat/unread-count`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      setUnreadCount(data.unreadCount);
+      //console.log('unread message -'+ data.unreadCount);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  fetchUnreadCount();
+  const interval = setInterval(fetchUnreadCount, 10000);
+  return () => clearInterval(interval);
+}, [token]);
+
   const navItems = [
     {
       name: "Home",
@@ -491,7 +502,15 @@ function BottomNav({ setMenuOpen }) {
                         : "hover:bg-gray-800"
                     }`}
                   >
-                    <Icon size={22} />
+                   <div className="relative">
+  <Icon size={22} />
+
+  {item.name === "Chat" && unreadCount > 0 && (
+    <span className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold">
+      {unreadCount}
+    </span>
+  )}
+</div>
                   </div>
 
                   <span className="text-[11px] mt-1 font-medium">
@@ -511,7 +530,7 @@ export default function App() {
   console.log("APP RENDER");
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "null");
-   const viewer = user?.srno || 0;
+  const viewer = user?.srno || 0;
    const token = localStorage.getItem("token"); 
   const [menuOpen, setMenuOpen] = useState(false);
   const [chatNotice, setChatNotice] = useState(null);
@@ -701,6 +720,39 @@ if (!permissionAsked) {
 
 }, []);
 */
+//battel invitation
+useEffect(() => {
+  socket.on("battleInvite", ({ battleId }) => {
+    if (
+      window.confirm(
+        "⚔️ New Quiz Battle Challenge"
+      )
+    ) {
+      navigate("/quiz-battles");
+    }
+  });
+
+  socket.on("battleAccepted", () => {
+    alert(
+      "✅ Your battle was accepted"
+    );
+  });
+
+  socket.on("battleRejected", () => {
+
+    alert(
+      "❌ Your battle was rejected"
+    );
+
+  });
+  return () => {
+    socket.off("battleInvite");
+    socket.off("battleAccepted");
+    socket.off("battleRejected");
+
+  };
+}, [navigate]);
+
   useEffect(() => {
     // initial check
     inMeetingRef.current = localStorage.getItem("in_meeting") === "1";
@@ -1233,6 +1285,25 @@ if (!permissionAsked) {
               <PrivateRoute>
                 {" "}
                 <RiskTower />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/quiz-battles"
+            element={
+              <PrivateRoute>
+                {" "}
+                <QuizBattles />
+              </PrivateRoute>
+            }
+          />
+                    <Route
+            path="/quiz/:battleId"
+            element={
+              <PrivateRoute>
+                {" "}
+                <QuizPlay />
               </PrivateRoute>
             }
           />

@@ -138,6 +138,24 @@ export default function ChatsList() {
 
                 <div className="font-semibold">
                   {c.name}
+                    {c.unreadCount > 0 && (
+                  <span
+                    className="
+                      bg-green-500
+                      text-white
+                      text-xs
+                      min-w-[20px]
+                      h-5
+                      px-1
+                      rounded-full
+                      flex
+                      items-center
+                      justify-center
+                    "
+                  >
+                    {c.unreadCount}
+                  </span>
+                )}
                 </div>
 
                 <div

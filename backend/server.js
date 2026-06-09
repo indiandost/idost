@@ -48,7 +48,7 @@ import notificationRoutes from "./routes/notification.js";
 import riskGameRoutes from "./routes/riskgame.js";
 import withdrawRoutes from "./routes/withdraw.js";
 import depositRoutes from "./routes/deposit.js";
-
+import quizRoutes from "./routes/quiz.js";
 
 //import colorCrashSocket from "./sockets/colorCrashSocket.js";
 
@@ -110,7 +110,6 @@ app.get("/api/chat/:user1/:user2", verifyToken, (req, res) => {
        OR (sender_id = ? AND receiver_id = ?)
     ORDER BY created_at ASC
   `;
-
   db.query(sql, [user1, user2, user2, user1], (err, result) => {
     if (err) return res.json(err);
     res.json(result);
@@ -140,9 +139,7 @@ const upload = multer({
 
 // 📦 make uploads public
 app.use("/uploads", express.static(UPLOAD_DIR));
-
 // 🚀 UPLOAD API
-
 app.post("/api/upload",  verifyToken, upload.single("image"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
@@ -156,111 +153,99 @@ app.post("/api/upload",  verifyToken, upload.single("image"), (req, res) => {
 
 
 // =============================
-
 // 📥 GET CONVERSATIONS LIST
-
 // =============================
-
 app.get("/api/conversations/:userId", verifyToken, (req, res) => {
-
   const userId = req.params.userId;
-
-
-
   const sql = `
-
     SELECT 
-
       u.srno as userId,
-
       u.name,
-
       u.pic,
-
       m.message,
-
       m.media_url,
-
-      m.created_at
-
+      m.created_at,
+         (
+        SELECT COUNT(*)
+        FROM chat_messages cm
+        WHERE cm.sender_id = u.srno
+          AND cm.receiver_id = ?
+          AND cm.is_read = 0
+      ) AS unreadCount 
     FROM chat_messages m
-
     JOIN users u 
-
       ON u.srno = IF(m.sender_id = ?, m.receiver_id, m.sender_id)
-
-    WHERE m.id IN (
-
-      SELECT MAX(id)
-
-      FROM chat_messages
-
-      WHERE sender_id = ? OR receiver_id = ?
-
+    WHERE m.id IN (SELECT MAX(id) FROM chat_messages WHERE sender_id = ? OR receiver_id = ?
       GROUP BY 
-
         LEAST(sender_id, receiver_id),
-
         GREATEST(sender_id, receiver_id)
-
     )
-
     ORDER BY m.created_at DESC
-
   `;
-
-
-
-  db.query(sql, [userId, userId, userId], (err, result) => {
-
+  db.query(sql, [userId, userId, userId, userId], (err, result) => {
     if (err) return res.status(500).json(err);
-
     res.json(result);
-
   });
-
 });
 
+//Read mark api
+app.post("/api/chat/read", verifyToken, (req, res) => {
+  const { myId, friendId } = req.body;
+  db.query(    `
+    UPDATE chat_messages
+    SET is_read = 1
+    WHERE sender_id = ?
+      AND receiver_id = ?
+      AND is_read = 0
+    `,
+    [friendId, myId],
+    (err) => {
+      if (err) {
+        return res.status(500).json(err);
+      }
+      res.json({ success: true });
+    }
+  );
+});
 
+//unread count
+app.get("/api/chat/unread-count", verifyToken, (req, res) => {
+  const userId = req.user.id;
+  db.query(
+    `
+    SELECT COUNT(*) AS unreadCount
+    FROM chat_messages
+    WHERE receiver_id = ?
+      AND is_read = 0
+    `,
+    [userId],
+    (err, result) => {
+      if (err) return res.status(500).json(err);
+      res.json({
+        unreadCount: result[0].unreadCount,
+      });
+    }
+  );
+});
 
 // =============================
-
 // ❌ DELETE CHAT
-
 // =============================
-
 app.post("/api/chat/delete", verifyToken, (req, res) => {
-
   const { user1, user2 } = req.body;
-
-
-
   const sql = `
-
     DELETE FROM chat_messages
-
     WHERE (sender_id = ? AND receiver_id = ?)
-
        OR (sender_id = ? AND receiver_id = ?)
-
   `;
-
-
-
   db.query(sql, [user1, user2, user2, user1], (err) => {
-
     if (err) return res.status(500).json(err);
-
     res.json({ success: true });
-
   });
-
 });
 
 // =============================
-
 // ✅ ROUTES
-
 // =============================
 
 app.use("/api", registerRoutes);
@@ -292,6 +277,7 @@ app.use("/friends", friendsRoutes);
 app.use("/api", blockRoutes);
 app.use("/api/game", gameRoutes);
 app.use("/api/jam-room", jamRoutes);
+app.use("/api/quiz", quizRoutes);
 
 // =============================
 

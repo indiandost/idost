@@ -72,7 +72,6 @@ const { callStartRef } = useAgoraCall(friendId);
       return () => clearTimeout(timer);
     }
   }, []);
-
   // =========================
   // RECEIVER JOIN ONLY
   // =========================

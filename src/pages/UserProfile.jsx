@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import BattleBtn from "../components/BattleBtn";
 
 export default function UserProfile() {
-  const { id } = useParams();
+const { id } = useParams();
 const myId = JSON.parse(localStorage.getItem("user"))?.srno;
 
   const [user, setUser] = useState(null);
@@ -185,9 +186,11 @@ if (blocked) {
 <div className="grid grid-cols-4 gap-3">
  {Number(myId) !== Number(id) && (
   <>
-    <button className="bg-pink-500 py-2 rounded-xl">
+   {/* <button className="bg-pink-500 py-2 rounded-xl">
       ❤️ Like
     </button>
+   */}
+    <BattleBtn opponentId={user.srno} />   
 
     <button
       onClick={blockUser}

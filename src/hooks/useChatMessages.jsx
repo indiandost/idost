@@ -14,7 +14,6 @@ export default function useChatMessages(friendId) {
   // =========================
   useEffect(() => {
     if (!friendId || !myId) return;
-
     const loadChat = async () => {
       try {
         const res = await fetch(`${API}/api/chat/${myId}/${friendId}`, {
@@ -22,9 +21,7 @@ export default function useChatMessages(friendId) {
               Authorization: `Bearer ${token}`,
             },
           });
-
         const data = await res.json();
-
         if (Array.isArray(data)) {
           setMessages(data);
         }
@@ -32,9 +29,41 @@ export default function useChatMessages(friendId) {
         console.log("Chat load error:", err);
       }
     };
-
     loadChat();
   }, [friendId, myId]);
+
+  //mark read 
+useEffect(() => {
+  const markMessagesAsRead = async () => {
+    try {
+      const response = await fetch(`${API}/api/chat/read`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          myId,
+          friendId,
+        }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text);
+      }
+
+      const data = await response.json();
+      console.log(data);
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+    }
+  };
+
+  if (myId && friendId) {
+    markMessagesAsRead();
+  }
+}, [friendId, myId, token]);
 
   // =========================
   // RECEIVE MESSAGE
