@@ -121,8 +121,8 @@ export default function ChatsList() {
                 cursor-pointer flex-1
               "
               onClick={() =>
-                navigate(`/chat/${c.userId}`)
-              }
+                  navigate(`/profile/${c.userId}`)
+                }
             >
 
               <img
@@ -134,7 +134,9 @@ export default function ChatsList() {
                 "
               />
 
-              <div className="overflow-hidden">
+              <div className="overflow-hidden"  onClick={() =>
+                  navigate(`/profile/${c.userId}`)
+                }>
 
                 <div className="font-semibold">
                   {c.name}

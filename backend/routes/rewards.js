@@ -120,7 +120,8 @@ router.get("/history/:userId", (req, res) => {
           reward_type,
           reward_value,
           coins,
-          created_at
+          created_at,
+          debit
         FROM rewards_history
         WHERE user_id = ?
         ORDER BY id DESC

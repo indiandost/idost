@@ -1,6 +1,6 @@
 import React, { useEffect, useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-
+import socket from "../socket";
 export default function Home() {
   const navigate = useNavigate();
   const [liveUsers, setLiveUsers] = useState([]);
@@ -28,6 +28,23 @@ useEffect(() => {
     setSelectedMood(currentMood);
   }
 }, [currentMood]);
+//online check
+const [onlineUsers, setOnlineUsers] = useState([]);
+
+
+  // =========================
+  // ONLINE USERS
+  // =========================
+  useEffect(() => {
+    const handler = (list) => {
+      setOnlineUsers(list);
+    };
+    socket.on("onlineUsers", handler);
+    return () => {
+      socket.off("onlineUsers", handler);
+    };
+  }, []);
+
 const [exploreOpen, setExploreOpen] = useState(false);
  // ======================
 // LOAD USERS
@@ -453,7 +470,7 @@ useEffect(() => {
         rounded-full
         border-2
         border-black
-        ${Number(u.onst) === 1
+        ${onlineUsers.some(id => String(id) === String(u.srno))
           ? "bg-green-500"
           : "bg-gray-400"}
       `}
@@ -622,7 +639,7 @@ useEffect(() => {
         text-gray-200
       "
     >
-      {Number(u.onst) === 1
+       ${onlineUsers.some(id => String(id) === String(u.srno))
         ? "🟢 Online"
         : "⚪ Offline"}
     </div>

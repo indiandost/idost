@@ -43,6 +43,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import RiskTower from "./pages/RiskTower";
 import QuizBattles from "./pages/QuizBattles";
 import QuizPlay from "./pages/QuizPlay";
+import QuizResult from "./pages/QuizResult";
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import socket from "./socket";
@@ -77,7 +78,7 @@ const viewer = user?.srno || 0;
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState([]);
-
+const location = useLocation();
   const { coins, setCoins } = useCoins();
 // ✅ custom hook
 useLoadCoins(user?.srno);
@@ -159,12 +160,16 @@ useEffect(() => {
           </button>
 
           {/* LOGO */}
-          <Link to="/">
-            {" "}
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center shadow-lg">
-              <span className="text-2xl font-extrabold text-white">ID</span>
-            </div>
-          </Link>
+        <div
+          onClick={() => {
+            if (location.pathname !== "/") {
+              navigate("/");
+            }
+          }}
+          className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center shadow-lg cursor-pointer"
+        >
+          <span className="text-2xl font-extrabold text-white">ID</span>
+        </div>
         </div>
         <div className="flex items-center gap-3">
           {/* 💰 COINS DISPLAY (NEW) */}
@@ -488,10 +493,20 @@ function BottomNav({ setMenuOpen }) {
 
               return (
                 <Link
-                  key={item.name}
-                  to={item.path} 
-                   onClick={() => setMenuOpen(false)}
-                   className={`flex flex-col items-center min-w-[65px] transition-all duration-300 ${
+  key={item.name}
+  to={item.path}
+  onClick={(e) => {
+    if (
+      item.path === "/" &&
+      location.pathname === "/"
+    ) {
+      e.preventDefault();
+      return;
+    }
+
+    setMenuOpen(false);
+  }}
+className={`flex flex-col items-center min-w-[65px] transition-all duration-300 ${
                     active ? "text-pink-400" : "text-gray-400 hover:text-white"
                   }`}
                 >
@@ -528,6 +543,7 @@ function BottomNav({ setMenuOpen }) {
 
 export default function App() {
   console.log("APP RENDER");
+  
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const viewer = user?.srno || 0;
@@ -1298,7 +1314,16 @@ useEffect(() => {
               </PrivateRoute>
             }
           />
-                    <Route
+            <Route
+            path="/quiz-result/:battleId"
+            element={
+              <PrivateRoute>
+                {" "}
+                <QuizResult />
+              </PrivateRoute>
+            }
+          />           
+            <Route
             path="/quiz/:battleId"
             element={
               <PrivateRoute>

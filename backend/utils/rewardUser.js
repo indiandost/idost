@@ -2,8 +2,8 @@ export default function rewardUser(db, io, userId, coins, type, value = "",  deb
   // =========================
   // ADD COINS
   // =========================
- const query = debit
-  ? "UPDATE users SET coins = coins - ? WHERE srno=?"
+  const query = debit
+  ? "UPDATE users SET coins = GREATEST(0, coins - ?) WHERE srno=?"
   : "UPDATE users SET coins = coins + ? WHERE srno=?";
   db.query(
     query,
@@ -24,11 +24,12 @@ export default function rewardUser(db, io, userId, coins, type, value = "",  deb
           user_id,
           reward_type,
           reward_value,
-          coins
+          coins,
+          debit
         )
-        VALUES (?,?,?,?)
+        VALUES (?,?,?,?,?)
         `,
-        [userId, type, value, coins]
+        [userId, type, value, coins,debit]
       );
 
       // =========================

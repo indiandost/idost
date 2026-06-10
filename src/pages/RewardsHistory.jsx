@@ -4,69 +4,39 @@ const API = import.meta.env.VITE_API_URL;
 
 export default function RewardsHistory() {
 
-  const user =
-    JSON.parse(
-      localStorage.getItem("user")
-    );
-
-  const [rewards, setRewards] =
-    useState([]);
-
-  const [page, setPage] =
-    useState(1);
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [hasMore, setHasMore] =
-    useState(true);
-
+  const user = JSON.parse(localStorage.getItem("user"));
+  const [rewards, setRewards] = useState([]);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const loaderRef = useRef(null);
-
   // =========================
   // LOAD REWARDS
   // =========================
   const loadRewards = async () => {
-
     if (loading || !hasMore)
       return;
-
     try {
-
       setLoading(true);
-
       const res = await fetch(
         `${API}/api/rewards/history/${user.srno}?page=${page}`
       );
-
-      const data =
-        await res.json();
-
+      const data = await res.json();
       if (data.success) {
-
-        if (
-          data.rewards.length === 0
-        ) {
-
+        if (data.rewards.length === 0) {
           setHasMore(false);
-
         } else {
-
           setRewards((prev) => [
             ...prev,
             ...data.rewards,
           ]);
-
           setPage((prev) => prev + 1);
         }
       }
 
     } catch (err) {
-
       console.log(err);
-
     } finally {
-
       setLoading(false);
     }
   };
@@ -75,24 +45,18 @@ export default function RewardsHistory() {
   // FIRST LOAD
   // =========================
   useEffect(() => {
-
     loadRewards();
-
   }, []);
-
   // =========================
   // INFINITE SCROLL
   // =========================
   useEffect(() => {
-
     const observer =
       new IntersectionObserver(
         (entries) => {
-
           if (
             entries[0].isIntersecting
           ) {
-
             loadRewards();
           }
         },
@@ -109,25 +73,17 @@ export default function RewardsHistory() {
     }
 
     return () => {
-
-      if (loaderRef.current) {
-
-        observer.unobserve(
-          loaderRef.current
-        );
+      if (loaderRef.current) {observer.unobserve(loaderRef.current);
       }
     };
 
   }, [loaderRef.current, loading]);
 
   return (
-
-    <div className="min-h-screen bg-black text-white pt-16 pb-24 px-3">
-
+    <div className="min-h-screen bg-black text-white pt-2 pb-24 px-3">
       {/* HEADER */}
-      <div className="sticky top-14 z-40 bg-black py-3">
-
-        <h1 className="text-2xl font-bold">
+      <div className="sticky z-40 bg-black py-3">
+        <h1 className="text-2xl font-bold text-white">
           🎁 Rewards History
         </h1>
 
@@ -136,10 +92,10 @@ export default function RewardsHistory() {
       {/* LIST */}
       <div className="space-y-3 mt-3">
 
-        {rewards.map((item) => (
+        {rewards.map((item, index) => (
 
           <div
-            key={item.id}
+            key={`${item.id}-${index}`}
             className="
               bg-gray-900
               rounded-2xl
@@ -153,8 +109,8 @@ export default function RewardsHistory() {
 
               <div>
 
-                <div className="text-lg font-semibold text-yellow-400">
-                  💰 +{item.coins} Coins
+               <div className="text-lg font-semibold text-yellow-400">
+                  💰 {item.debit == 1 ? "-" : "+"}{item.coins} Coins
                 </div>
 
                 <div className="text-sm text-gray-300 mt-1">

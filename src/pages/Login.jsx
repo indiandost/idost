@@ -49,8 +49,10 @@ export default function Login() {
   };
 
   const sendLogin = (lat, lng) => {
-    const controller = new AbortController();
-    setTimeout(() => controller.abort(), 15000);
+   const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 30000);
     fetch(`${API}/api/login`, {
 
       method: "POST",
@@ -126,7 +128,8 @@ if (data.success) {
         localStorage.setItem("user", JSON.stringify(data.user));
 
         socket.connect();
-
+        clearTimeout(timeoutId);
+        setLoading(false);
         navigate("/");
 
       })
@@ -135,7 +138,7 @@ if (data.success) {
         console.error("Save token error:", err);
 
         setLoading(false);
-
+        clearTimeout(timeoutId);
         alert("Unable to save device token");
       });
     }
@@ -148,7 +151,6 @@ if (data.success) {
       console.error("Registration Error:", err);
 
       setLoading(false);
-
       alert("Unable to register device for notifications");
     }
   );
@@ -189,7 +191,6 @@ if (data.success) {
 
  .catch(err => {
   console.error("LOGIN ERROR:", err);
-  setLoading(false);
   alert(
     err?.message ||
     JSON.stringify(err) ||

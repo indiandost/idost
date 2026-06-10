@@ -2,25 +2,27 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const API = import.meta.env.VITE_API_URL;
-const myId =  JSON.parse(localStorage.getItem("user"))?.srno;
+
 export default function QuizBattles() {
   const [battles, setBattles] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const myId =  JSON.parse(localStorage.getItem("user"))?.srno;
 
-  useEffect(() => {
-    loadBattles();
-  }, []);
+useEffect(() => {
 
+  loadBattles();
 
-/*  useEffect(() => {
-  fetch(`${API}/api/quiz/result/${battleId}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const interval = setInterval(
+    loadBattles,
+    5000
+  );
+
+  return () =>
+    clearInterval(interval);
+
 }, []);
-*/
+
 
   const loadBattles = async () => {
     try {
@@ -108,8 +110,8 @@ export default function QuizBattles() {
   }
 
   return (
-    <div className="p-4 max-w-xl mx-auto">
-      <h2 className="text-xl font-bold mb-4">
+    <div className="p-10 max-w-xl mx-auto">
+      <h2 className="text-xl font-bold mb-4 text-white">
         ⚔️ Quiz Battles
       </h2>
 
@@ -198,7 +200,7 @@ export default function QuizBattles() {
   )}
 
 
-{battle.status === "completed" && (
+{/*battle.status === "completed" && (
   <div className="mt-2 text-sm">
     <div>
       Score: {battle.challenger_score} - {battle.opponent_score}
@@ -212,7 +214,7 @@ export default function QuizBattles() {
         : "Match Draw"}
     </div>
   </div>
-)}
+)*/}
 
 
 </div>

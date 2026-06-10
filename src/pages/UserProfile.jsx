@@ -260,12 +260,12 @@ if (blocked) {
 )}
   </>
 )}
-    <button
+     {Number(myId) !== Number(id) && ( <button
       onClick={() => navigate(`/chat/${id}`)}
       className="bg-blue-500 py-2 rounded-xl"
     >
       💬 Chat
-    </button>
+    </button>)}
 </div>
 
         {/* 📸 ALBUM */}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import socket from "../../socket";
 
 const API =
@@ -11,15 +11,12 @@ export default function ChatHeader({
   onVideoCall,
   }) {
 
-  const { id: friendId } =
-    useParams();
+  const { id: friendId } =  useParams();
 
-  const [friendData, setFriendData] =
-    useState(null);
+  const [friendData, setFriendData] = useState(null);
 
-  const [onlineUsers, setOnlineUsers] =
-    useState([]);
-
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const navigate = useNavigate();
   // =========================
   // LOAD FRIEND DETAILS
   // =========================
@@ -100,7 +97,9 @@ export default function ChatHeader({
       {/* LEFT */}
       <div className="flex items-center gap-3 min-w-0">
 
-        <div className="relative">
+        <div className="relative" onClick={() =>
+                  navigate(`/profile/${friendId}`)
+                }>
 
           <img
             src={
@@ -137,7 +136,9 @@ export default function ChatHeader({
               text-white font-semibold
               text-[15px]
               truncate
-            "
+            " onClick={() =>
+                  navigate(`/profile/${friendId}`)
+                }
           >
             {friendData?.name || "Loading..."}
           </h2>

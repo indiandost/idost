@@ -811,11 +811,11 @@ const deleteProfile = async () => {
         </div>
 
         <div className="p-4">
-          <h2 className="text-xl font-bold">
+          <h2 className="text-xl font-bold text-white">
             {user.name}, {user.age}
           </h2>
-          <p className="text-gray-400">{user.city}</p>
-          <p className="mt-2 text-sm">
+          <p className="text-gray-400 text-white">{user.city}</p>
+          <p className="mt-2 text-sm text-white">
             {user.online || "Add something about yourself..."}
           </p>
         </div>
@@ -916,13 +916,19 @@ const deleteProfile = async () => {
         </div>
       )}
 
-      <button
+    <button
         onClick={startLiveMeeting}
         className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-white font-bold"
       >
         🔴 Start Live
       </button>
 
+      <button
+        onClick={() => navigate("/quiz-battles")}
+        className="bg-green-500 hover:bg-green-400 px-4 py-2 rounded-lg text-white font-bold ml-4"
+      >
+        ⚔️ My Battles
+      </button>
 
       <div className="bg-gray-800 p-4 rounded-2xl space-y-3">
 
