@@ -325,150 +325,65 @@ app.set("io", io);
 // USERS MAP
 // =============================
 //const users = {}; // userId -> socketId
-export const users = {}; // userId -> socketId
-// =============================
-// MAIN SOCKET CONNECTION
-// ONLY ONE io.on("connection")
-// =============================
+export const users = {};
+
 io.on("connection", (socket) => {
 
   console.log("🔌 Connected:", socket.id);
 
-  // =============================
-  // LOAD SOCKET MODULES
-  // =============================
-  chatSocket(io, socket, db);
+  socket.on("register", (userId) => {
 
-  jamRoomSocket(io, socket);
+    userId = String(userId);
 
-  colorCrashSocket(io, socket);
+    socket.userId = userId;
 
-  // =============================
-  // 🎁 GIFT HANDLER
-  // =============================
-  socket.on("giftSent", (data) => {
+    socket.join(`user-${userId}`);
 
-    try {
+    users[userId] = socket.id;
 
-      console.log(
-        "🎁 Gift received on server:",
-        data
-      );
+    console.log(
+      `👤 User ${userId} registered`
+    );
 
-      if (!data?.roomId) return;
+    console.log(
+      "ONLINE USERS:",
+      Object.keys(users)
+    );
 
-      // send to room
-      io.to(data.roomId).emit(
-        "giftReceived",
-        data
-      );
-
-    } catch (err) {
-
-      console.log(
-        "❌ GIFT ERROR:",
-        err
-      );
-    }
+    io.emit(
+      "onlineUsers",
+      Object.keys(users)
+    );
   });
 
-  // =============================
-  // ✅ REGISTER USER
-  // =============================
-socket.on("register", (userId) => {
-  userId = Number(userId);
-console.log(
-  "ONLINE USERS:",
-  Object.keys(users)
-);
-  if (socket.userId === userId) {
-    console.log("⚠️ Already registered:", userId);
-    return;
-  }
+  socket.on("disconnect", () => {
 
-  socket.userId = userId;
-
-  socket.join(`user-${userId}`);
-
-  users[userId] = socket.id;
-
-  console.log(
-    "👤 User mapped:",
-    userId,
-    "=>",
-    socket.id
-  );
-
-  console.log(
-    "Joined room:",
-    `user-${userId}`
-  );
-
-  io.emit("onlineUsers", Object.keys(users));
-});
-  // =============================
-  // ✅ DISCONNECT
-  // =============================
- socket.on("disconnect", (reason) => {
-  try {
-    console.log("🔌 Disconnected:", socket.id);
-    console.log("Reason:", reason);
+    console.log(
+      "🔌 Disconnected:",
+      socket.id
+    );
 
     if (!socket.userId) return;
 
     const userId = socket.userId;
-    const disconnectedSocketId = socket.id;
 
-    // Wait 30 seconds before removing
-      setTimeout(() => {
-      try {
+    if (
+      users[userId] &&
+      users[userId] === socket.id
+    ) {
 
-        // user reconnected
-        if (
-          users[userId] &&
-          users[userId] !== disconnectedSocketId
-        ) {
-          console.log(
-            `✅ User ${userId} reconnected with ${users[userId]}`
-          );
-          return;
-        }
+      delete users[userId];
 
-        // socket already replaced
-        if (users[userId] !== disconnectedSocketId) {
-          return;
-        }
+      console.log(
+        `❌ User Offline: ${userId}`
+      );
 
-        console.log(
-          `❌ Removing user after timeout: ${userId}`
-        );
-
-        setTimeout(() => {
-          if (!io.sockets.sockets.get(socket.id)) {
-            delete users[socket.userId];
-          }
-        }, 10000);
-
-        io.emit(
-          "onlineUsers",
-          Object.keys(users)
-        );
-
-      } catch (err) {
-        console.log(
-          "❌ Delayed disconnect error:",
-          err
-        );
-      }
-    }, 30000); // 30 seconds grace period
-
-  } catch (err) {
-    console.log(
-      "❌ DISCONNECT ERROR:",
-      err
-    );
-  }
-});
+      io.emit(
+        "onlineUsers",
+        Object.keys(users)
+      );
+    }
+  });
 
 });
 

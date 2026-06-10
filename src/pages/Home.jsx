@@ -37,7 +37,8 @@ const [onlineUsers, setOnlineUsers] = useState([]);
   // =========================
   useEffect(() => {
     const handler = (list) => {
-      setOnlineUsers(list);
+       console.log("ONLINE USERS RECEIVED:", list);
+        setOnlineUsers(list);
     };
     socket.on("onlineUsers", handler);
     return () => {
@@ -460,6 +461,7 @@ useEffect(() => {
     />
 
     {/* ONLINE DOT */}
+
     <div
       className={`
         absolute
@@ -470,7 +472,7 @@ useEffect(() => {
         rounded-full
         border-2
         border-black
-        ${onlineUsers.some(id => String(id) === String(u.srno))
+        ${ onlineUsers.includes(String(u.srno))
           ? "bg-green-500"
           : "bg-gray-400"}
       `}
