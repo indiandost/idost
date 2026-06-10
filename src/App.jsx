@@ -907,7 +907,8 @@ useEffect(() => {
   if (!user?.srno) return;
 
   const registerUser = () => {
-      if (!socket.connected) return;
+    if (!socket.connected) return;
+
     console.log(
       "✅ Registering user:",
       user.srno,
@@ -917,58 +918,35 @@ useEffect(() => {
 
     socket.emit("register", Number(user.srno));
   };
-  socket.io.on("reconnect", registerUser);
 
   const handleConnect = () => {
-    console.log(
-      "🔌 Socket Connected:",
-      socket.id
-    );
-
+    console.log("🔌 Socket Connected:", socket.id);
     registerUser();
   };
 
   const handleDisconnect = (reason) => {
-    console.log(
-      "❌ Socket Disconnected:",
-      reason
-    );
+    console.log("❌ Socket Disconnected:", reason);
   };
 
   const handleReconnect = (attempt) => {
-    console.log(
-      "🔄 Socket Reconnected. Attempt:",
-      attempt
-    );
-
+    console.log("🔄 Socket Reconnected:", attempt);
     registerUser();
   };
 
-  const handleConnectError = (err) => {
-    console.log(
-      "🚨 Socket Connect Error:",
-      err.message
-    );
-  };
-
-  // Initial register if already connected
   if (socket.connected) {
     registerUser();
   }
 
   socket.on("connect", handleConnect);
   socket.on("disconnect", handleDisconnect);
+  socket.on("connect_error", console.error);
+
   socket.io.on("reconnect", handleReconnect);
-  socket.on("connect_error", handleConnectError);
 
   return () => {
     socket.off("connect", handleConnect);
     socket.off("disconnect", handleDisconnect);
-    socket.off("connect_error", handleConnectError);
-
-    if (socket.io) {
-      socket.io.off("reconnect", handleReconnect);
-    }
+    socket.io.off("reconnect", handleReconnect);
   };
 }, [user?.srno]);
   // 📞 Incoming call ringtone

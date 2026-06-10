@@ -377,7 +377,10 @@ io.on("connection", (socket) => {
   // =============================
 socket.on("register", (userId) => {
   userId = Number(userId);
-
+console.log(
+  "ONLINE USERS:",
+  Object.keys(users)
+);
   if (socket.userId === userId) {
     console.log("⚠️ Already registered:", userId);
     return;

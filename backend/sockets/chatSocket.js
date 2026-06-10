@@ -1298,7 +1298,7 @@ socket.on("disconnect", (reason) => {
   const disconnectedUserId = Number(socket.userId);
 
   //delete activeCalls[disconnectedUserId];
-
+/*
   if (disconnectedUserId) {
     delete users[disconnectedUserId];
     delete activeCalls[disconnectedUserId];
@@ -1311,6 +1311,7 @@ socket.on("disconnect", (reason) => {
       disconnectedUserId
     );
   }
+    */
   // =============================
 
   // CLEANUP MEETING ROOMS
