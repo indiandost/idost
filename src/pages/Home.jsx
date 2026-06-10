@@ -463,21 +463,13 @@ useEffect(() => {
     {/* ONLINE DOT */}
 
     <div
-      className={`
-        absolute
-        bottom-1
-        right-1
-        w-4
-        h-4
-        rounded-full
-        border-2
-        border-black
-        ${ onlineUsers.includes(String(u.srno))
-          ? "bg-green-500"
-          : "bg-gray-400"}
-      `}
-    />
-
+  className={
+    "absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-black " +
+    (onlineUsers.includes(String(u.srno))
+      ? "bg-green-500"
+      : "bg-gray-400")
+  }
+/>
   </div>
 
   {/* NAME */}
@@ -641,7 +633,7 @@ useEffect(() => {
         text-gray-200
       "
     >
-       ${onlineUsers.some(id => String(id) === String(u.srno))
+       {onlineUsers.some(id => String(id) === String(u.srno))
         ? "🟢 Online"
         : "⚪ Offline"}
     </div>
