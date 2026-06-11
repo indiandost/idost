@@ -330,7 +330,29 @@ export const users = {};
 io.on("connection", (socket) => {
 
   console.log("🔌 Connected:", socket.id);
-
+  chatSocket(io, socket, db);
+  jamRoomSocket(io, socket);
+  colorCrashSocket(io, socket);
+  socket.on("giftSent", (data) => {
+    try {
+      console.log(
+        "🎁 Gift received on server:",
+        data
+      );
+      if (!data?.roomId) return;
+      // send to room
+      io.to(data.roomId).emit(
+        "giftReceived",
+        data
+      );
+    } catch (err) {
+      console.log(
+        "❌ GIFT ERROR:",
+        err
+      );
+    }
+  });
+  
   socket.on("register", (userId) => {
 
     userId = String(userId);
