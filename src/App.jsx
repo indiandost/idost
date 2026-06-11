@@ -46,6 +46,7 @@ import QuizPlay from "./pages/QuizPlay";
 import QuizResult from "./pages/QuizResult";
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
+import { HelmetProvider } from "react-helmet-async";
 import socket from "./socket";
 import {
   Home as HomeIcon,
@@ -1094,6 +1095,7 @@ useEffect(() => {
       {!shouldHideLayout && <Navbar menuOpen={menuOpen} setMenuOpen={setMenuOpen}/>}
 
       <div className="flex-grow">
+       <HelmetProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -1283,36 +1285,13 @@ useEffect(() => {
             }
           />
 
-          <Route
-            path="/quiz-battles"
-            element={
-              <PrivateRoute>
-                {" "}
-                <QuizBattles />
-              </PrivateRoute>
-            }
-          />
-            <Route
-            path="/quiz-result/:battleId"
-            element={
-              <PrivateRoute>
-                {" "}
-                <QuizResult />
-              </PrivateRoute>
-            }
-          />           
-            <Route
-            path="/quiz/:battleId"
-            element={
-              <PrivateRoute>
-                {" "}
-                <QuizPlay />
-              </PrivateRoute>
-            }
-          />
+          <Route path="/quiz-battles"  element={<PrivateRoute> {" "}<QuizBattles /></PrivateRoute>} />
+            <Route path="/quiz-result/:battleId" element={<PrivateRoute>{" "}<QuizResult /></PrivateRoute>}/>           
+            <Route  path="/quiz/:battleId" element={<PrivateRoute> {" "} <QuizPlay /></PrivateRoute>}/>
           <Route path="/timeline" element={<Timeline />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
+        </HelmetProvider>
       </div>
       {!shouldHideLayout && <BottomNav  setMenuOpen={setMenuOpen} />}
 

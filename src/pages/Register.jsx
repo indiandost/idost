@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect  } from "react";
 import { useNavigate, Link } from "react-router-dom";
-
+import { Helmet } from "react-helmet-async";
 export default function Register() {
   const navigate = useNavigate();
   const API = import.meta.env.VITE_API_URL;
@@ -754,6 +754,14 @@ useEffect(() => {
   };
 
   return (
+     <>
+    <Helmet>
+   <title>Sign Up for IndianDost - Meet Friends, Chat & Earn Rewards</title>
+    <meta
+      name="description"
+      content="Join IndianDost today to meet new friends, chat online, share photos, discover people nearby, and earn rewards through activities and engagement on the platform."
+    />
+    </Helmet>
 <div className="min-h-screen overflow-hidden flex items-center justify-center bg-gray-900 text-white px-4 relative">
 
   {/* Background Glow */}
@@ -1106,5 +1114,6 @@ useEffect(() => {
       </form>
     </div>
     </div>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { useNavigate, useParams  } from "react-router-dom";
 import StoryBar from "../components/StoryBar";
 import CreatePost from "../components/CreatePost";
 import PostCard from "../components/PostCard";
+import { Helmet } from "react-helmet-async";
 const token = localStorage.getItem("token"); 
 const configtoken = token
   ? {
@@ -158,13 +159,19 @@ console.log(res.data);
   }, [page, loading, hasMore, id]);
 
   return (
+    <>  
+    <Helmet>
+    <title>Social Feed | IndianDost - Posts, Photos & Community Updates</title>
+    <meta
+      name="description"
+      content="Stay connected with the IndianDost community. View posts, photos, status updates, and trending content from friends and members."
+    />
+     </Helmet>
     <div className="min-h-screen bg-gray-950 text-white pb-28">
-
       {/* ONLY TIMELINE PAGE */}
       {!id && (
         <>
           <StoryBar />
-
           <CreatePost
             refresh={() => fetchFeed(1)}
           />
@@ -220,5 +227,6 @@ console.log(res.data);
     )}
 
     </div>
+    </>
   );
 }

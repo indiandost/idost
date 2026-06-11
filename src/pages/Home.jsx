@@ -1,6 +1,7 @@
 import React, { useEffect, useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import socket from "../socket";
+import { Helmet } from "react-helmet-async";
 export default function Home() {
   const navigate = useNavigate();
   const [liveUsers, setLiveUsers] = useState([]);
@@ -306,6 +307,14 @@ useEffect(() => {
   }
 */
   return (
+      <>
+    <Helmet>
+    <title>IndianDost Home - Meet Friends, Chat & Earn Rewards</title>
+    <meta
+      name="description"
+      content="Connect with nearby members, discover online friends, find mood matches, chat in real time, and earn exciting rewards on IndianDost."
+    />
+    </Helmet>
     <div className="p-3 space-y-3">
       {/* ERROR MESSAGE */}
       {error && (
@@ -796,6 +805,6 @@ useEffect(() => {
 
 )}
     </div>
-    
+    </>
   );
 }

@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
+import { Helmet } from "react-helmet-async";
+
 import socket from "./../socket";
 
 export default function Login() {
@@ -201,7 +203,13 @@ if (data.success) {
   };
 
   return (
-
+    <>
+<Helmet>
+<title>IndianDost Login | Social Networking & Online Chat Platform</title>
+<meta name="description"
+content="Sign in to your IndianDost account. Chat with friends, meet new people, share photos, and stay connected with the IndianDost community."
+/>
+</Helmet>
 <div className="min-h-screen overflow-hidden flex items-center justify-center bg-gray-900 text-white px-4 relative">
 
   {/* Background Glow */}
@@ -326,6 +334,6 @@ if (data.success) {
   </div>
 
 </div>
-
+</>
   );
 }
