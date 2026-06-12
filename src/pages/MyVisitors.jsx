@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 
 export default function MyVisitors() {
-
   const [visitors, setVisitors] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -80,8 +80,15 @@ export default function MyVisitors() {
   );
 
   return (
+           <>
+      <Helmet>
+        <title>My Visitors | IndianDost - Profile Views & Visitors</title>
+        <meta
+          name="description"
+          content="See who has visited your profile on IndianDost. Discover recent profile visitors, connect with new people, and grow your social network."
+        />
+      </Helmet>
     <div className="p-4">
-
       <h2 className="text-2xl font-bold mb-4 mt-8 text-white">
         My Visitors
       </h2>
@@ -105,7 +112,6 @@ export default function MyVisitors() {
                   alt={v.name}
                   className="w-14 h-14 rounded-full object-cover"
                 />
-
                 <div>
                   <h3 className="font-semibold">
                     {v.name}
@@ -161,5 +167,6 @@ export default function MyVisitors() {
       )}
 
     </div>
+    </>
   );
 }

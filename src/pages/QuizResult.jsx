@@ -106,6 +106,38 @@ export default function QuizResult() {
                 </div>
 
           </div>
+          {result.review?.length > 0 && (
+            <div className="mt-4 bg-white rounded-xl shadow p-4">
+              <h3 className="font-bold text-lg mb-3">
+                Answer Review
+              </h3>
+
+              {result.review.map((q, index) => (
+                <div
+                  key={q.id}
+                  className={`mb-4 p-3 rounded-lg border ${
+                    q.is_correct
+                      ? "bg-green-50 border-green-300"
+                      : "bg-red-50 border-red-300"
+                  }`}
+                >
+                  <div className="font-semibold">
+                    Q{index + 1}. {q.question}
+                  </div>
+
+                  <div>
+                    Your Answer: <b>{q.selected_option}</b>
+                  </div>
+
+                  {!q.is_correct && (
+                    <div className="text-green-700">
+                      Correct Answer: <b>{q.correct_answer}</b>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
         </div>
 

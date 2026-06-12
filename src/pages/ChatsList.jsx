@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { Helmet } from "react-helmet-async";
 const API = import.meta.env.VITE_API_URL;
 
 export default function ChatsList() {
@@ -89,10 +89,17 @@ export default function ChatsList() {
   };
 
   return (
-
+    <>
+    <Helmet>
+        <title>IndianDost Chatlist - Chat Records with Friends - Idost App</title>
+        <meta
+          name="description"
+          content="Chat records with rriends, connect and chat members, friends chatlist, IndianDost, ID app list."
+        />
+        </Helmet>
     <div className="p-4 text-white mt-5">
 
-      <h2 className="text-xl mb-4">
+      <h2 className="text-xl mb-4 text-white">
         💬 Chats
       </h2>
 
@@ -211,7 +218,7 @@ export default function ChatsList() {
       </div>
 
     </div>
-
+ </>
   );
 
 }

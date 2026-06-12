@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import { Helmet } from "react-helmet-async";
 const API = import.meta.env.VITE_API_URL;
 
 export default function Withdraw() {
@@ -42,15 +42,20 @@ alert(data.message);
 
 };
 
-return ( <div className="p-4 text-white">
-
-
+return ( 
+     <>
+       <Helmet>
+      <title>Redeem Rewards | IndianDost Coin Withdrawal</title>
+      <meta
+        name="description"
+        content="Withdraw your earned coins, manage reward requests, and track payout status through the IndianDost rewards system."
+      />
+    </Helmet>
+      <div className="p-4 text-white">
   <h1 className="text-2xl font-bold mb-4">
     Withdraw Coins
   </h1>
-
   <div className="bg-gray-900 p-4 rounded-xl">
-
     <p className="mb-3">
       100 Coins = ₹1
     </p>
@@ -81,10 +86,8 @@ return ( <div className="p-4 text-white">
     >
       Submit Request
     </button>
-
   </div>
-
 </div>
-
+</>
 );
 }

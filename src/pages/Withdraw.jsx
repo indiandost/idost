@@ -1,7 +1,16 @@
 import { Link } from "react-router-dom";
-
+import { Helmet } from "react-helmet-async";
 export default function WithdrawInfo() {
-return ( <div className="min-h-screen bg-gray-950 text-white p-4 pb-24">
+return (
+      <>
+      <Helmet>
+      <title>IndianDost Rewards - Earn Coins & Withdraw Cash</title>
+      <meta
+        name="description"
+        content="Discover ways to earn coins, view coin-to-cash conversion rates, and learn the requirements for withdrawing rewards on IndianDost."
+      />
+    </Helmet>
+    <div className="min-h-screen bg-gray-950 text-white p-4 pb-24">
 
   {/* Header */}
   <div className="mb-6">
@@ -173,6 +182,6 @@ return ( <div className="min-h-screen bg-gray-950 text-white p-4 pb-24">
   </div>
 
 </div>
-
+</>
 );
 }

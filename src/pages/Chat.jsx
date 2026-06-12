@@ -222,6 +222,13 @@ const startCallBilling = () => {
   // UI
   // =========================
   return (
+    <> <Helmet>
+        <title>IndianDost Chat - Chat With Friend</title>
+        <meta
+          name="description"
+          content="Connect and chat with nearby members, chat online friends, chat in real time at IndianDost, Idost."
+        />
+        </Helmet>
     <div
       className="
       flex flex-col
@@ -290,5 +297,6 @@ const startCallBilling = () => {
         />
       )}
     </div>
+    </>
   );
 }

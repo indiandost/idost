@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import BattleBtn from "../components/BattleBtn";
+import { Helmet } from "react-helmet-async";
 
 export default function UserProfile() {
 const { id } = useParams();
@@ -123,8 +124,21 @@ if (blocked) {
 
   // fallback
   const finalAlbum = album.length > 0 ? album : [user.pic];
-
+const userName = user?.name
+  ? user.name
+      .split(" ")
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ")
+  : "Member";
   return (
+      <>
+         <Helmet>
+          <title>{`${userName} - Connect on IndianDost`}</title>
+          <meta
+            name="description"
+            content={`Visit ${userName}'s IndianDost profile to view updates, photos, interests, and connect through chat, friendship, and community activities.`}
+          />
+        </Helmet>
     <div className="text-white bg-gray-900 min-h-screen">
 
       {/* PROFILE HEADER */}
@@ -143,7 +157,15 @@ if (blocked) {
 
         <div className="absolute bottom-4 left-4">
           <h2 className="text-2xl font-bold text-white">
-            {user.name}, {user.age}
+            <span>
+            {[
+              userName,
+              user?.age,
+              user?.sex
+            ]
+              .filter(Boolean)
+              .join(", ")}
+          </span>
           </h2>
   {user.live_status == 1 && user.live_room && (
   <div
@@ -167,20 +189,49 @@ if (blocked) {
     🔴 Join Live
   </div>
 )}
-          <p className="text-sm text-gray-300">📍 {user.city}</p>
+    <p className="text-sm text-gray-300">📍 {user.city}  | <span className="font-medium text-white">🪙 Coins:</span>{" "}
+    {Number(user.coins || 0).toLocaleString()} |   {Number(user.onst) === 1 ? "🟢 Online" : "⚪ Offline"} </p>
         </div>
       </div>
-
       {/* DETAILS */}
       <div className="p-4 space-y-3">
+      <div className="space-y-1 text-gray-300 text-sm">
+         {user.mood && (
+          <p>
+            <span className="font-medium text-white">😊 Mood:</span>{" "}
+            {user.mood}
+          </p>
+        )}
+         {user.doingnow && (
+          <p>
+            <span className="font-medium text-white">🎯 Doing Now:</span>{" "}
+            {user.doingnow}
+          </p>
+        )}
+        {user.relationship_goal && (
+          <p>
+            <span className="font-medium text-white">💕 Looking For:</span>{" "}
+            {user.relationship_goal}
+          </p>
+        )}
 
-        <p>
-           {Number(user.onst) === 1  ? "🟢 Online"  : "⚪ Offline"}
-        </p>
+        {user.language && (
+          <p>
+            <span className="font-medium text-white">🌐 Language:</span>{" "}
+            {user.language}
+          </p>
+        )}
 
-        <p className="text-gray-300">
-          {user.online || "No bio available"}
-        </p>
+        {user.online && (
+          <p>
+            <span className="font-medium text-white">📝 </span>{" "}
+            {user.online}
+          </p>
+        )}
+
+       
+       
+        </div>
 
        {/* ACTIONS */}
 <div className="grid grid-cols-4 gap-3">
@@ -276,7 +327,12 @@ if (blocked) {
             {finalAlbum.map((img, i) => (
               <img
                 key={i}
-                src={img}
+                src={img ? img.startsWith("http://") ||
+                img.startsWith("https://")
+                ? img
+                : `https://indiandost.com/${img}`
+                : "/default-user.png"
+                }
                 onClick={() => setActiveImg(img)}
                 className="w-full h-28 object-cover rounded-xl cursor-pointer hover:scale-105 transition"
               />
@@ -294,6 +350,8 @@ if (blocked) {
           <img src={activeImg} className="max-h-[90%] max-w-[90%]" />
         </div>
       )}
+      <p>{user.about}</p>
     </div>
+    </>
   );
 }

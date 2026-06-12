@@ -22,7 +22,6 @@ export default function Timeline() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
-
   const [page, setPage] = useState(1);
 
   const [loading, setLoading] = useState(false);
@@ -33,25 +32,17 @@ export default function Timeline() {
   // FETCH SINGLE POST
   // =========================
   const fetchSinglePost = async () => {
-
     try {
-
       setLoading(true);
-
       const res = await axios.get(
         `${API}/api/post/${id}?viewer=${viewer}`
       );
-
       if (res.data.post) {
-        setPosts([res.data.post]);
+        setPosts([res.data.post]);       
       }
-
     } catch (err) {
-
       console.log(err);
-
     } finally {
-
       setLoading(false);
     }
   };
@@ -68,7 +59,7 @@ export default function Timeline() {
         `${API}/api/feed?viewer=${viewer}&page=${pageNo}`,
         configtoken
       );
-console.log(res.data);
+//console.log(res.data);
       const newPosts = res.data.posts || [];
 
       if (pageNo === 1) {
@@ -101,16 +92,11 @@ console.log(res.data);
   // FIRST LOAD
   // =========================
   useEffect(() => {
-
     if (id) {
-
       fetchSinglePost();
-
     } else {
-
       fetchFeed(1);
     }
-
   }, [id]);
 
   // =========================
@@ -157,16 +143,26 @@ console.log(res.data);
       );
 
   }, [page, loading, hasMore, id]);
-
   return (
-    <>  
-    <Helmet>
-    <title>Social Feed | IndianDost - Posts, Photos & Community Updates</title>
-    <meta
-      name="description"
-      content="Stay connected with the IndianDost community. View posts, photos, status updates, and trending content from friends and members."
-    />
-     </Helmet>
+    <>     {!id ? (
+      <Helmet>
+        <title>
+          Social Feed | IndianDost - Posts, Photos & Community Updates
+        </title>
+        <meta
+          name="description"
+          content="Stay connected with the IndianDost community. View posts, photos, status updates, and trending content from friends and members."
+        />
+      </Helmet>
+    ) : (
+      <Helmet>
+       <title>{`${posts?.[0]?.content || "Post"} by ${posts?.[0]?.name || "name"} | IndianDost`}</title>
+        <meta
+          name="description"
+          content={`View ${posts?.[0]?.content || "Post"}'s by ${posts?.[0]?.name || "name"} post on IndianDost. Like, comment, share, and connect with the community.`}
+        />
+      </Helmet>
+    )}
     <div className="min-h-screen bg-gray-950 text-white pb-28">
       {/* ONLY TIMELINE PAGE */}
       {!id && (

@@ -1046,47 +1046,31 @@ router.get("/:id", verifyToken, (req, res) => {
       // =========================
 
       const sql = `
-
          SELECT
-
     srno,
-
     name,
-
-
-
+    sex,
     TIMESTAMPDIFF(
-
       YEAR,
-
       dob,
-
       CURDATE()
-
     ) AS age,
-
     city,
-
+    doingnow,
+    relationship_goal,
+    coins,
+    language,
+    mood,
     CASE
-
       WHEN status = 'N' THEN ''
-
       ELSE pic
-
     END AS pic,
-
     about,
-
     online,
-
     onst,
-
     live_status,
-
     live_room
-
   FROM users
-
   WHERE srno = ?
 
       `;

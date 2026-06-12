@@ -1,22 +1,13 @@
 import { useState } from "react";
-
+import { Helmet } from "react-helmet-async";
 const API = import.meta.env.VITE_API_URL;
 
 export default function Deposit() {
-
-  const user =
-    JSON.parse(
-      localStorage.getItem("user")
-    );
-
-  const [amount,setAmount] =
-    useState("");
-
-  const [ref,setRef] =
-    useState("");
+  const user =   JSON.parse(localStorage.getItem("user"));
+  const [amount,setAmount] =  useState("");
+  const [ref,setRef] = useState("");
 
   const submit = async ()=>{
-
     const res = await fetch(
       `${API}/deposit/request`,
       {
@@ -33,16 +24,20 @@ export default function Deposit() {
       }
     );
 
-    const data =
-      await res.json();
-
+    const data = await res.json();
     alert(data.message);
   };
 
   return (
-
+     <>
+       <Helmet>
+        <title>Add Coins & Rewards | IndianDost Wallet</title>
+        <meta
+          name="description"
+          content="Top up your IndianDost coin balance securely. Use coins for games, rewards, challenges, and exclusive platform features."
+        />
+      </Helmet>
 <div className="max-w-xl mx-auto p-4 text-white">
-
 <h1 className="text-2xl font-bold mb-4 text-white">
 💰 Add Coins
 </h1>
@@ -158,6 +153,6 @@ Important
 </div>
 
 </div>
-
+</>
   );
 }

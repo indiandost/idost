@@ -1,20 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { Helmet } from "react-helmet-async";
 const API = import.meta.env.VITE_API_URL;
 
 export default function Friends() {
- const [friends, setFriends] = useState([]);
+const [friends, setFriends] = useState([]);
 const [requests, setRequests] = useState([]);
-
 const [page, setPage] = useState(1);
 const [loading, setLoading] = useState(false);
 const [hasMore, setHasMore] = useState(true);
-
-  const [tab, setTab] = useState("friends"); // friends | requests
-
-  const myId = JSON.parse(localStorage.getItem("user"))?.srno;
-  const navigate = useNavigate();
+const [tab, setTab] = useState("friends"); // friends | requests
+const myId = JSON.parse(localStorage.getItem("user"))?.srno;
+const navigate = useNavigate();
 const token = localStorage.getItem("token"); 
   // =============================
   // 🔄 Load Data (Friends / Requests)
@@ -192,6 +189,14 @@ const loadRequests = async (pageNum = 1, reset = false) => {
   // 🎯 UI
   // =============================
   return (
+      <>
+    <Helmet>
+      <title>Friends List | IndianDost - Connect & Chat</title>
+      <meta
+        name="description"
+        content="Explore your friends list on IndianDost. Connect with friends, start conversations, share updates, and discover people you may know."
+      />
+    </Helmet>
     <div className="p-4 pt-8 text-white">
 
       <h2 className="text-xl mb-4 text-white">👥 Friends</h2>
@@ -346,5 +351,6 @@ const loadRequests = async (pageNum = 1, reset = false) => {
       </div>
     )}
     </div>
+    </>
   );
 }

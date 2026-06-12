@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 
 export default function ForgotPassword() {
   const API = import.meta.env.VITE_API_URL;
@@ -59,7 +60,14 @@ export default function ForgotPassword() {
   };
 
   return (
-
+     <>
+      <Helmet>
+       <title>Forgot Password | IndianDost Account Recovery</title>
+      <meta
+        name="description"
+        content="Reset your IndianDost account password securely. Recover access to your account and get back to chatting, connecting with friends, and enjoying the IndianDost community."
+      />
+      </Helmet>
     <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white px-4 relative overflow-hidden">
 
       {/* Background Glow */}
@@ -147,5 +155,6 @@ export default function ForgotPassword() {
       </div>
 
     </div>
+    </>
   );
 }

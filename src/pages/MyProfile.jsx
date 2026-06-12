@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import Cropper from "react-easy-crop";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import axios from "axios";
 
 export default function MyProfile() {
   const storedUser = JSON.parse(localStorage.getItem("user"));
-
   const [user, setUser] = useState(null);
   const [photos, setPhotos] = useState([]);
 
@@ -769,6 +769,14 @@ const deleteProfile = async () => {
   if (!user) return <div className="text-white p-4">Loading...</div>;
 
   return (
+    <>
+     <Helmet>
+     <title>My Profile | IndianDost - Profile, Live Rooms & Battles</title>
+      <meta
+        name="description"
+        content="Manage your IndianDost profile, update your information, create live Jamming Rooms, view your battles, track achievements, and stay connected with friends."
+      />
+      </Helmet>
     <div className="text-white max-w-md mx-auto p-4 space-y-5">
 
       {/* PROFILE CARD */}
@@ -1124,5 +1132,6 @@ const deleteProfile = async () => {
 </button>
 
     </div>
+    </>
   );
 }

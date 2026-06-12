@@ -1,19 +1,15 @@
 import { useEffect, useState } from "react";
-
+import { Helmet } from "react-helmet-async";
 const API = import.meta.env.VITE_API_URL;
 
 export default function BlockedUsers() {
   const token = localStorage.getItem("token"); 
-  const me =
-    JSON.parse(localStorage.getItem("user"));
-
+  const me = JSON.parse(localStorage.getItem("user"));
   const [users, setUsers] = useState([]);
-
   // =========================
   // FETCH BLOCK LIST
   // =========================
   const loadBlockedUsers = () => {
-
     fetch(
       `${API}/api/block-list/${me.srno}`, {
     headers: {
@@ -75,8 +71,15 @@ export default function BlockedUsers() {
   };
 
   return (
+        <>
+      <Helmet>
+      <title>Blocked Friends List | IndianDost</title>
+      <meta
+        name="description"
+        content="Manage your blocked friends and users on IndianDost. Review blocked accounts, unblock people at any time, and customize your social experience."
+      />
+      </Helmet>
     <div className="min-h-screen bg-gray-900 text-white p-4">
-
       <h1 className="text-2xl font-bold mb-5">
         Blocked Users
       </h1>
@@ -138,8 +141,7 @@ export default function BlockedUsers() {
         ))}
 
       </div>
-
     </div>
+    </>
   );
-
 }

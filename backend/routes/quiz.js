@@ -603,75 +603,92 @@ db.query(
 // RESULT
 // ===========================
 router.get("/result/:battleId", verifyToken, (req, res) => {
-
   const battleId = req.params.battleId;
 
-  // Check how many users have submitted answers
   db.query(
-  `
-  SELECT
-    qb.challenger_id,
-    qb.opponent_id,
-    qb.challenger_score,
-    qb.opponent_score,
-    qb.winner_id,
-    qb.status,
-    u1.name AS challenger_name,
-    u2.name AS opponent_name,
-    uw.name AS winner_name
-  FROM quiz_battles qb
-  LEFT JOIN users u1
-    ON qb.challenger_id = u1.srno
-  LEFT JOIN users u2
-    ON qb.opponent_id = u2.srno
-  LEFT JOIN users uw
-    ON qb.winner_id = uw.srno
-  WHERE qb.id=?
-  `,
-  [battleId],
-  (err, rows) => {
+    `
+    SELECT
+      qb.challenger_id,
+      qb.opponent_id,
+      qb.challenger_score,
+      qb.opponent_score,
+      qb.winner_id,
+      qb.status,
+      u1.name AS challenger_name,
+      u2.name AS opponent_name,
+      uw.name AS winner_name
+    FROM quiz_battles qb
+    LEFT JOIN users u1
+      ON qb.challenger_id = u1.srno
+    LEFT JOIN users u2
+      ON qb.opponent_id = u2.srno
+    LEFT JOIN users uw
+      ON qb.winner_id = uw.srno
+    WHERE qb.id=?
+    `,
+    [battleId],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json(err);
+      }
 
-    if (err) {
-      return res.status(500).json(err);
+      if (!rows.length) {
+        return res.status(404).json({
+          success: false,
+          message: "Battle not found"
+        });
+      }
+
+      const battle = rows[0];
+
+      if (battle.status !== "completed") {
+        return res.json({
+          success: true,
+          waiting: true,
+          message: "Waiting for opponent"
+        });
+      }
+
+      const userId = req.user.id; // verify this
+        db.query(
+          `
+          SELECT
+            q.id,
+            q.question,
+            q.correct_answer,
+            a.selected_answer,
+            a.is_correct
+          FROM quiz_answers a
+          JOIN quiz_questions q
+            ON q.id = a.question_id
+          WHERE a.battle_id = ?
+            AND a.user_id = ?
+          `,
+          [battleId, userId],
+          (err, answerRows) => {
+
+            if (err) {
+              console.error(err);
+              return res.status(500).json(err);
+            }
+          return res.json({
+            success: true,
+            battleId,
+            challengerId: battle.challenger_id,
+            opponentId: battle.opponent_id,
+            challengerName: battle.challenger_name,
+            opponentName: battle.opponent_name,
+            challengerScore: Number(battle.challenger_score || 0),
+            opponentScore: Number(battle.opponent_score || 0),
+            winnerId: battle.winner_id,
+            winnerName: battle.winner_name,
+            draw: Number(battle.challenger_score || 0) ===  Number(battle.opponent_score || 0),
+            review: answerRows
+          });
+        }
+      );
     }
-
-    if (!rows.length) {
-      return res.status(404).json({
-        success: false,
-        message: "Battle not found"
-      });
-    }
-
-    const battle = rows[0];
-
-    // Battle still running
-    if (battle.status !== "completed") {
-      return res.json({
-        success: true,
-        waiting: true,
-        message: "Waiting for opponent"
-      });
-    }
-
-    return res.json({
-      success: true,
-      battleId,
-
-      challengerId: battle.challenger_id,
-      opponentId: battle.opponent_id,
-      challengerName: battle.challenger_name,
-      opponentName: battle.opponent_name,
-      challengerScore: Number(battle.challenger_score || 0),
-      opponentScore: Number(battle.opponent_score || 0),
-      winnerId: battle.winner_id,
-      winnerName: battle.winner_name,
-      draw: Number(battle.challenger_score || 0) === Number(battle.opponent_score || 0)
-    });
-
-  }
-);
- 
-
+  );
 });
 
 // ===========================

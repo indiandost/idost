@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-
+import { Helmet } from "react-helmet-async";
 export default function Home() {
   const navigate = useNavigate();
 const games = [
@@ -33,6 +33,14 @@ const games = [
   },
 ];
   return (
+        <>
+    <Helmet>
+        <title>Play Games & Win Coins | IndianDost Games Zone</title>
+        <meta
+        name="description"
+        content="Test your skills and luck in IndianDost Games Zone. Play Color Crash, Risk Tower, win coins, unlock rewards, and become a leaderboard champion."
+      />
+        </Helmet>
     <div className="max-w-4xl mx-auto p-4">
 
       {/* Header */}
@@ -126,5 +134,6 @@ const games = [
       </div>
 
     </div>
+    </>
   );
 }

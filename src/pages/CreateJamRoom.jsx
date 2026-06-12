@@ -2,68 +2,39 @@
 // FILE: src/pages/CreateJamRoom.jsx
 // ==========================================
 
-import {
-  useEffect,
-  useState,
-} from "react";
-
-import {
-  useNavigate,
-} from "react-router-dom";
-
+import {useEffect, useState} from "react";
+import {useNavigate} from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 const API = import.meta.env.VITE_API_URL;
 
 export default function CreateJamRoom() {
-
   // ==========================================
   // USER
   // ==========================================
-
-  const user =
-    JSON.parse(
-      localStorage.getItem("user")
-    );
-
+  const user =  JSON.parse(localStorage.getItem("user"));
   // ==========================================
   // NAVIGATE
   // ==========================================
-
-  const navigate =
-    useNavigate();
-
+  const navigate = useNavigate();
   // ==========================================
   // STATES
   // ==========================================
 
-  const [title, setTitle] =
-    useState("");
-
-  const [description, setDescription] =
-    useState("");
-
-  const [roomType, setRoomType] =
-    useState("jam");
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [liveRooms, setLiveRooms] =
-    useState([]);
-
-  const [loadingRooms, setLoadingRooms] =
-    useState(true);
-const token = localStorage.getItem("token"); 
+  const [title, setTitle] =  useState("");
+  const [description, setDescription] = useState("");
+  const [roomType, setRoomType] = useState("jam");
+  const [loading, setLoading] = useState(false);
+  const [liveRooms, setLiveRooms] = useState([]);
+  const [loadingRooms, setLoadingRooms] = useState(true);
+  const token = localStorage.getItem("token"); 
   // ==========================================
   // FETCH LIVE ROOMS
   // ==========================================
 
   const fetchLiveRooms =
     async () => {
-
       try {
-
         setLoadingRooms(true);
-
         const res =
           await fetch(
             `${API}/api/jam-room/live`,{
@@ -92,149 +63,76 @@ const token = localStorage.getItem("token");
       }
 
       catch (err) {
-
         console.log(
           "LIVE ROOM ERROR:",
           err
         );
-
       }
-
       finally {
-
         setLoadingRooms(false);
-
       }
-
     };
-
   // ==========================================
   // INITIAL LOAD
-  // ==========================================
-
+  // =========================================
   useEffect(() => {
-
     fetchLiveRooms();
-
   }, []);
-
   // ==========================================
   // CREATE ROOM
   // ==========================================
-
   const createRoom =
     async () => {
-
       try {
-
         // ==========================
         // VALIDATION
-        // ==========================
-
-        if (
-          !title.trim()
-        ) {
-
-          alert(
-            "Please enter room title"
-          );
-
+        // =========================
+        if (!title.trim()) {
+          alert("Please enter room title");
           return;
-
         }
-
         // ==========================
         // USER CHECK
         // ==========================
-
-        if (
-          !user?.srno
-        ) {
-
-          alert(
-            "User not found"
-          );
-
+        if (!user?.srno) {
+          alert("User not found");
           return;
-
         }
-
         setLoading(true);
-
         // ==========================
         // API CALL
         // ==========================
-
-        const res =
-          await fetch(
-
-            `${API}/api/jam-room/create`,
-
+        const res =  await fetch(`${API}/api/jam-room/create`,
             {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
                  Authorization: `Bearer ${token}`,
               },
-
-              body:
-                JSON.stringify({
-
+              body: JSON.stringify({
                   hostId:
                     Number(
                       user.srno
                     ),
-
                   title,
-
                   description,
-
                   roomType,
-
                 }),
-
             }
-
           );
-
-        const data =
-          await res.json();
-
-        console.log(
-          "CREATE ROOM:",
-          data
-        );
-
+        const data = await res.json();
+        console.log("CREATE ROOM:", data);
         // ==========================
         // SUCCESS
         // ==========================
-
-        if (
-          data.success
-        ) {
-
-          navigate(
-            `/jam-room/${data.roomId}`
-          );
-
+        if (data.success) {
+          navigate(`/jam-room/${data.roomId}`);
         }
-
         else {
-
-          alert(
-
-            data.message ||
-
-            "Failed to create room"
-
-          );
-
+          alert(data.message || "Failed to create room");
         }
-
       }
-
       catch (err) {
-
         console.log(
           "CREATE ROOM ERROR:",
           err
@@ -243,36 +141,33 @@ const token = localStorage.getItem("token");
         alert(
           "Something went wrong"
         );
-
       }
 
       finally {
-
         setLoading(false);
-
       }
-
     };
 
   // ==========================================
   // JOIN ROOM
   // ==========================================
-
-  const joinRoom =
-    (roomId) => {
-
+  const joinRoom = (roomId) => {
       navigate(
         `/jam-room/${roomId}`
       );
-
     };
-
   // ==========================================
   // UI
   // ==========================================
-
   return (
-
+       <>
+      <Helmet>
+        <title>Jamming Rooms - Sing, Chat & Have Fun Live - IndianDost</title>
+        <meta
+          name="description"
+          content="Experience live voice entertainment on IndianDost. Create rooms, sing songs, enjoy antakshari, chat with friends, meet new people, and participate in interactive audio sessions."
+        />
+      </Helmet>
     <div className="min-h-screen bg-black text-white p-5">
 
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-6">
@@ -577,7 +472,7 @@ const token = localStorage.getItem("token");
       </div>
 
     </div>
-
+</>
   );
 
 }
