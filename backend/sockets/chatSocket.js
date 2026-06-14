@@ -10,7 +10,7 @@ export default function chatSocket(io, socket, db) {
      // =========================
     // ✅ REGISTER USER
     // =========================
-/*socket.on("register", (userId) => {
+socket.on("register", (userId) => {
   userId = Number(userId);
 
   socket.userId = userId;
@@ -29,7 +29,7 @@ export default function chatSocket(io, socket, db) {
     Object.keys(users)
   );
 });
-*/
+
   // =====================
   // GIFT
   // =====================
