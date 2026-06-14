@@ -95,7 +95,7 @@ export default function CreateJamRoom() {
         // USER CHECK
         // ==========================
         if (!user?.srno) {
-          alert("User not found");
+          alert("User not found, Login for create a jam room.");
           return;
         }
         setLoading(true);
@@ -303,7 +303,7 @@ export default function CreateJamRoom() {
 
             <div>
 
-              <h2 className="text-2xl font-bold">
+              <h2 className="text-2xl font-bold text-white">
 
                 🔴 Live Jam Rooms
 

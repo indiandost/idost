@@ -13,6 +13,7 @@ import useChatMessages from "../hooks/useChatMessages";
 import GiftBar from "../components/GiftBar";
 
 import AgoraRTC from "agora-rtc-sdk-ng";
+import { Helmet } from "react-helmet-async";
 
 import socket from "../socket";
 

@@ -316,7 +316,7 @@ router.get("/lati", async (req, res) => {
   });
 });
 
-router.get("/", verifyToken, (req, res) => {
+router.get("/",  (req, res) => {
   const db = req.app.get("db");
     const page = Number(req.query.page) || 1;
     //const limit = Number(req.query.limit) || 10;

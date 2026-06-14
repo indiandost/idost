@@ -210,31 +210,40 @@ if (data.success) {
 content="Sign in to your IndianDost account. Chat with friends, meet new people, share photos, and stay connected with the IndianDost community."
 />
 </Helmet>
-<div className="min-h-screen overflow-hidden flex items-center justify-center bg-gray-900 text-white px-4 relative">
-
-  {/* Background Glow */}
-  <div className="absolute w-72 h-72 bg-pink-600/20 rounded-full blur-3xl top-0 left-0"></div>
-
+<div
+  className="
+    flex
+    items-center
+    justify-center
+    text-white
+    px-0
+    relative
+  "
+  style={{
+    minHeight: "calc(100vh - 120px)"
+  }}
+>
+   <div className="absolute w-72 h-72 bg-pink-600/20 rounded-full blur-3xl top-0 left-0"></div>
   <div className="absolute w-72 h-72 bg-blue-600/20 rounded-full blur-3xl bottom-0 right-0"></div>
 
-  <div className="relative bg-gray-800/95 backdrop-blur-md border border-gray-700 p-8 rounded-3xl w-full max-w-sm shadow-2xl space-y-4">
+  <div className="relative bg-gray-800/95 backdrop-blur-md border border-gray-400 p-8 rounded-3xl w-full max-w-sm shadow-2xl space-y-2">
 
     {/* LOGO */}
-    <div className="flex flex-col items-center justify-center mb-2">
-
+    <div className="flex flex-col items-center justify-center mb-4">
+    <Link to="/">
       <div className="w-20 h-20 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center shadow-lg">
 
         <span className="text-3xl font-extrabold text-white">
           ID
         </span>
 
-      </div>
+      </div></Link>
 
-      <h1 className="text-3xl font-extrabold mt-4 bg-gradient-to-r from-pink-400 to-blue-400 bg-clip-text text-transparent">
+      <h1 className="text-3xl font-extrabold mt-1 bg-gradient-to-r from-pink-400 to-blue-400 bg-clip-text text-transparent">
         IndianDost
       </h1>
 
-      <p className="text-gray-400 text-sm mt-1">
+      <p className="text-gray-400 text-sm mt-0">
         Connect • Chat • Meet
       </p>
 
@@ -247,7 +256,7 @@ content="Sign in to your IndianDost account. Chat with friends, meet new people,
         Login
       </h2>
 
-      <p className="text-gray-400 text-sm mt-1">
+      <p className="text-gray-400 text-sm mt-0">
         Welcome back 👋
       </p>
 

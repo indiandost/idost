@@ -622,8 +622,8 @@ useEffect(() => {
       text-white
     "
     onClick={(e) => {
-      e.stopPropagation();
-      navigate(`/profile/${u.srno}`);
+      //e.stopPropagation();
+      navigate(`/profile/${u.id}`);
     }}
   >
     <div
@@ -633,8 +633,8 @@ useEffect(() => {
         truncate
       "
     >
-      {u.name}, {u.age}
-    </div>
+      {u.name}, {u.age} 
+          </div>
 
     <div
       className="
@@ -642,7 +642,7 @@ useEffect(() => {
         text-gray-200
       "
     >
-       {onlineUsers.some(id => String(id) === String(u.srno))
+       {onlineUsers.some(id => String(id) === String(u.id))
         ? "🟢 Online"
         : "⚪ Offline"}
     </div>
@@ -740,7 +740,7 @@ useEffect(() => {
         bg-[#111]
 
         rounded-t-3xl
-
+        bottom-[70px]
         p-4
 
         max-h-[80vh]
@@ -767,7 +767,7 @@ useEffect(() => {
       <div className="flex items-center justify-between mb-4">
 
         <h2 className="text-xl font-bold text-white">
-          Explore
+        {myId && ("  Explore ")}
         </h2>
 
         <button
@@ -783,7 +783,8 @@ useEffect(() => {
       </div>
 
       {/* BIRTHDAY */}
-      <div className="mb-6">      
+
+  {myId ?(<>      <div className="mb-6">      
         <Suspense fallback={null}>
           <BirthdayUsers />
         </Suspense>
@@ -798,6 +799,30 @@ useEffect(() => {
         </Suspense>
 
       </div>
+      </> ): (
+        <>
+      <h2 className="text-2xl font-bold text-center text-pink-400">
+  💙 Meet New Friends, Chat, Play & Earn on IndianDost
+</h2>
+
+<p className="text-center text-gray-500 mt-2">
+ IndianDost is a growing social networking platform of India where you can:
+</p>
+
+<div className="mt-4 space-y-2 text-white">
+  <div>💬 Make New Friends</div>
+  <div>🎮 Play Fun Games</div>
+  <div>🎤 Join Live Jamming Rooms</div>
+  <div>🪙 Earn Coins Daily</div>
+  <div>💸 Redeem Rewards</div>
+</div>
+
+<button className="w-full mt-5 bg-pink-600 py-3 rounded-xl font-bold text-white" onClick={() => navigate(`/register`)}>
+  🚀 Join Free Now
+</button>
+        
+        </>
+      )}
 
     </div>
 

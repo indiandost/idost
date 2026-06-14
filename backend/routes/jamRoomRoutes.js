@@ -23,7 +23,7 @@ router.post(
 // LIVE ROOMS
 // ==============================
 router.get(
-  "/live", verifyToken,
+  "/live",
   getLiveJamRooms
 );
 // ==============================

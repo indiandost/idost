@@ -60,6 +60,9 @@ import {
   Newspaper,
   Menu,
   X,
+  Coins,
+  Gamepad2,
+  Music,
 } from "lucide-react";
 
 const API = import.meta.env.VITE_API_URL;
@@ -286,8 +289,8 @@ useEffect(() => {
           {/* Scrollable area */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2 text-white">
         <div className="flex flex-col p-3 space-y-2 text-white">
-          {user && (
-            <div className="flex items-center gap-3">
+         {user ? (
+            <>            <div className="flex items-center gap-3">
               <span className="text-sm">Hi, {user.name}</span>
               <button
                 onClick={logout} 
@@ -296,7 +299,7 @@ useEffect(() => {
                 Logout
               </button>
             </div>
-          )}
+          
           <Link
             to="/me"
             onClick={() => setMenuOpen(false)}
@@ -304,20 +307,31 @@ useEffect(() => {
           >
             👤 My Profile
           </Link>
+          </>
+          ): (
+            <Link
+            to="/login"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left  gap-2"
+          >
+            <User size={20}/> <span>Login / Register</span>
+          </Link>
+          )}
           <Link
             to="/games"
             onClick={() => setMenuOpen(false)}
-            className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
+            className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left gap-2"
           >
-            🕹️ Games
+             <Gamepad2 size={20} /> <span>Games</span>  
           </Link>
           <Link
             to="/create-jam"
             onClick={() => setMenuOpen(false)}
-            className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
+            className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left  gap-2"
           >
-            🕹️ Jamming
+            <Music size={20}/> <span>Jamming</span>
           </Link>
+           {user && (<>
           <Link
             to="/my-visitors"
             onClick={() => setMenuOpen(false)}
@@ -362,13 +376,6 @@ useEffect(() => {
           >
             🪙 Deposit
           </Link>
-          <Link
-            to="/withdraw"
-            onClick={() => setMenuOpen(false)}
-            className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
-          >
-            🪙 Coins Withdraw Info
-          </Link>
            <Link
             to="/withdraw-req"
             onClick={() => setMenuOpen(false)}
@@ -376,13 +383,21 @@ useEffect(() => {
           >
             🪙 Withdraw Request
           </Link>
+          </>)}
            <Link
+            to="/withdraw"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left  gap-2"
+          >
+            <Coins size={20} /> <span>Coins Withdraw Info</span>
+          </Link>
+              {user && ( <Link
             to="/settings"
             onClick={() => setMenuOpen(false)}
             className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
           >
             ⚙️ Settings
-          </Link>
+          </Link>)}
 
           {/*  <button
           onClick={() => {
@@ -426,55 +441,57 @@ function BottomNav({ setMenuOpen }) {
   return () => clearInterval(interval);
 }, [token]);
 
-  const navItems = [
-    {
-      name: "Home",
-      path: "/",
-      icon: HomeIcon,
-    },
-    {
-      name: "Friends",
-      path: "/friends",
-      icon: Users,
-    },
-    {
-      name: "Chat",
-      path: "/chats",
-      icon: MessageCircle,
-    },
-    /* {
-      name: "Community",
-      path: "/community",
-      icon: UsersRound,
-    },
-    {
-      name: "Meet",
-      path: `/meeting/${Date.now()}`,
-      icon: Video,
-    },
-    {
-      name: "Blocked",
-      path: "/blocked-users",
-      icon: ShieldBan,
-    },
-    {
-      name: "Visitors",
-      path: "/my-visitors",
-      icon: Eye,
-    },
-    {
-      name: "Me",
-      path: "/me",
-      icon: User,
-    },
-    */
-    {
-      name: "T",
-      path: "/timeline",
-      icon: Newspaper,
-    },
-  ];
-
+//const user = JSON.parse(localStorage.getItem("user") || "null");
+  const navItems = user
+  ? [
+      {
+        name: "Home",
+        path: "/",
+        icon: HomeIcon,
+      },
+      {
+        name: "Friends",
+        path: "/friends",
+        icon: Users,
+      },
+      {
+        name: "Chat",
+        path: "/chats",
+        icon: MessageCircle,
+      },
+      {
+        name: "Post",
+        path: "/timeline",
+        icon: Newspaper,
+      },
+    ]
+  : [
+      {
+        name: "Home",
+        path: "/",
+        icon: HomeIcon,
+      },
+      {
+        name: "Login",
+        path: "/login",
+        icon: User,
+      },
+      {
+        name: "Earn Coins",
+        path: "/withdraw",
+        icon: Coins,
+      },
+       {
+        name: "Games",
+        path: "/games",
+        icon: Gamepad2,
+      },
+      {
+        name: "Post",
+        path: "/timeline",
+        icon: Newspaper,
+      },
+    ];
   return (
     <>
       {/* Bottom spacing */}
@@ -1103,15 +1120,8 @@ useEffect(() => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/post/:id" element={<Timeline />} />
-
-          <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                <Home />
-              </PrivateRoute>
-            }
-          />
+<Route path="/" element={<Home />} />
+          
           <Route
             path="/me"
             element={
@@ -1209,14 +1219,15 @@ useEffect(() => {
               </PrivateRoute>
             }
           />
-        <Route
-            path="/withdraw"
+           <Route
+            path="/withdraw-req"
             element={
               <PrivateRoute>
-                <Withdraw />{" "}
+                <WithdrawReq />{" "}
               </PrivateRoute>
             }
           />
+       
            <Route
             path="/deposit"
             element={
@@ -1225,22 +1236,25 @@ useEffect(() => {
               </PrivateRoute>
             }
           /> 
-            <Route
-            path="/withdraw-req"
+           
+           <Route path="/withdraw" element={<Withdraw />} />
+          <Route path="/games" element={<Games />} />
+         {/*  <Route
+            path="/withdraw"
             element={
               <PrivateRoute>
-                <WithdrawReq />{" "}
+                <Withdraw />{" "}
               </PrivateRoute>
             }
           />
-         <Route
+          <Route
             path="/games"
             element={
               <PrivateRoute>
                 <Games />{" "}
               </PrivateRoute>
             }
-          /> 
+          /> */}
           <Route
             path="/game"
             element={
@@ -1257,7 +1271,8 @@ useEffect(() => {
               </PrivateRoute>
             }
           />
-          <Route
+           <Route path="/create-jam" element={ <CreateJamRoom/> } />
+          {/*<Route
             path="/create-jam"
             element={
               <PrivateRoute>
@@ -1265,7 +1280,7 @@ useEffect(() => {
                 <CreateJamRoom />{" "}
               </PrivateRoute>
             }
-          />
+          />*/}
           <Route
             path="/jam-room/:roomId"
             element={
@@ -1293,8 +1308,8 @@ useEffect(() => {
         </Routes>
         </HelmetProvider>
       </div>
-      {!shouldHideLayout && <BottomNav  setMenuOpen={setMenuOpen} />}
-
+      {/*!shouldHideLayout && <BottomNav  setMenuOpen={setMenuOpen} />*/}
+ <BottomNav  setMenuOpen={setMenuOpen} />
       {/* 📞 GLOBAL CALL POPUP (FIXED POSITION) */}
 
       {incomingCall && (
