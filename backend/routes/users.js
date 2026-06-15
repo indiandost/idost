@@ -768,6 +768,130 @@ router.get("/search", verifyToken, (req, res) => {
   );
 });
 
+//my referer
+router.get("/my-referrals", verifyToken, (req, res) => {
+  const db = req.app.get("db");
+   const userCode = req.user.id; // ya jo referral code field hai
+  db.query(
+    `
+    SELECT
+    srno,
+    name,
+    city,
+    pic,
+    date AS created_at,
+    refcode
+FROM users
+WHERE refcode IN (
+    ?,
+    (SELECT user FROM users WHERE srno = ?)
+)
+ORDER BY srno DESC;
+    `,
+    [String(userCode),userCode],
+    (err, rows) => {
+      console.log(rows);
+      if (err) return res.status(500).json(err);
+      res.json({
+        success: true,
+        total: rows.length,
+        referrals: rows
+      });
+    }
+  );
+});
+
+//rewards distribut referor ka :
+router.get("/validate_referrals", (req, res) => {
+  const db = req.app.get("db");
+  console.log("validation start ---");
+///AND c.l_dt >= UNIX_TIMESTAMP(
+         ////   DATE_ADD(c.date, INTERVAL 2 DAY)
+         // )
+  db.query(
+    `
+    SELECT
+      c.srno AS child_srno,
+      c.refcode,
+      p.srno AS parent_srno,
+      p.user AS parent_code
+    FROM users c
+    INNER JOIN users p
+      ON c.refcode = p.user
+    WHERE
+      c.email IS NOT NULL
+      AND c.email <> ''
+      AND c.l_dt <= UNIX_TIMESTAMP(CURDATE())      
+    `,
+    (err, rows) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json(err);
+      }
+
+      if (!rows.length) {
+        return res.json({
+          success: true,
+          processed: 0,
+          message: "No eligible referrals found"
+        });
+      }
+
+      let processed = 0; 
+
+      rows.forEach((row) => {
+        const parentSrno = row.parent_srno;
+        const childSrno = row.child_srno;
+
+        // 1. Parent ko 500 coins
+        db.query(
+          `
+          UPDATE users
+          SET coins = coins + 500
+          WHERE srno = ?
+          `,
+          [parentSrno]
+        );
+        // SAVE HISTORY
+      // =========================
+      const reward_value="ref_"+childSrno;
+      db.query(
+        `
+        INSERT INTO rewards_history
+        (
+          user_id,
+          reward_type,
+          reward_value,
+          coins,
+          debit
+        )
+        VALUES (?,?,?,?,?)
+        `,
+        [parentSrno, "refer", reward_value, "500","0"]
+      );
+        
+        // 2. Child refcode ko parent srno me convert
+        db.query(
+          `
+          UPDATE users
+          SET refcode = ?
+          WHERE srno = ?
+          `,
+          [parentSrno, childSrno]
+        );
+
+        processed++;
+      });
+
+      res.json({
+        success: true,
+        processed,
+        message: `${processed} referrals validated successfully`
+      });
+    }
+  );
+});
+
 // birthday user
 router.get("/birthday-users", async (req, res) => {
 
@@ -1162,34 +1286,6 @@ router.get("/my-visitors/:id", verifyToken, (req, res) => {
   });
 });
 
-//my referer
-router.get("/my-referrals", verifyToken, (req, res) => {
-  const db = req.app.get("db");
-  const userCode = req.user.user; // ya jo referral code field hai
-  db.query(
-    `
-    SELECT
-      srno,
-      name,
-      city,
-      pic,
-      date as created_at
-    FROM users
-    WHERE refcode = ?
-    ORDER BY srno DESC
-    `,
-    [userCode],
-    (err, rows) => {
-      console.log(rows);
-      if (err) return res.status(500).json(err);
-      res.json({
-        success: true,
-        total: rows.length,
-        referrals: rows
-      });
-    }
-  );
-});
 
 // =============================
 

@@ -16,6 +16,7 @@ socket.on("register", (userId) => {
   socket.userId = userId;
 
   users[userId] = socket.id;
+  // users[userId] = new Set();
 
   console.log(
     "👤 User mapped2:",
@@ -216,8 +217,7 @@ io.to(socket.id).emit("messageSent", {
 
 
 
-    // 🔔 Call user
-socket.on("callUser", ({ callId, from, to, type }) => {
+   socket.on("callUser", ({ callId, from, to, type }) => {
   const toId = Number(to);
   const fromId = Number(from);
 
@@ -228,50 +228,7 @@ socket.on("callUser", ({ callId, from, to, type }) => {
     type,
   });
 
-  // 🚫 busy check
-  if (activeCalls[toId]) {
-    io.to(socket.id).emit("callRejected", {
-      callId,
-      reason: "busy",
-    });
-    return;
-  }
-
-  if (users[toId]) {
-   const socketId = users[toId];
-
-      if (!socketId) {
-        console.log("❌ User not connected:", toId);
-        return;
-      }
-
-      io.to(socketId).emit("incomingCall", {
-      callId,
-      from: fromId,
-      to: toId,
-      type,
-    });
-  } else {
-    console.log("❌ User offline");
-
-    io.to(socket.id).emit("userOffline", {
-      callId,
-    });
-  }
-});
-
-    // ✅ Accept call
-socket.on("acceptCall", ({ callId, from, to, type }) => {
-  if (!activeCalls[callId]) return;
-
-  // 🔒 prevent duplicate accept
-  if (activeCalls[callId].accepted) return;
-  activeCalls[callId].accepted = true;
-  
-  const fromId = Number(from);
-  const toId = Number(to);
-
-  // 🚫 already in another call
+  // 🚫 caller or receiver already busy
   if (activeCalls[fromId] || activeCalls[toId]) {
     io.to(socket.id).emit("callRejected", {
       callId,
@@ -280,35 +237,115 @@ socket.on("acceptCall", ({ callId, from, to, type }) => {
     return;
   }
 
-  // ✅ mark both busy
+  const socketId = users[toId];
+
+  if (!socketId) {
+    console.log("❌ User offline:", toId);
+
+    io.to(socket.id).emit("userOffline", {
+      callId,
+    });
+
+    return;
+  }
+
+  // create pending call only after validation
+  activeCalls[callId] = {
+    from: fromId,
+    to: toId,
+    type,
+    accepted: false,
+    createdAt: Date.now(),
+  };
+
+  io.to(socketId).emit("incomingCall", {
+    callId,
+    from: fromId,
+    to: toId,
+    type,
+  });
+
+  console.log(
+    `📲 Incoming call sent ${fromId} -> ${toId}`
+  );
+});
+    // ✅ Accept call
+socket.on("acceptCall", ({ callId, from, to, type }) => {
+  const call = activeCalls[callId];
+
+  if (!call) {
+    console.log("❌ Call not found:", callId);
+    return;
+  }
+
+  if (call.accepted) {
+    console.log("⚠️ Duplicate accept:", callId);
+    return;
+  }
+
+  const fromId = Number(from);
+  const toId = Number(to);
+
+  // already busy with someone else
+  if (
+    (activeCalls[fromId] && activeCalls[fromId] !== toId) ||
+    (activeCalls[toId] && activeCalls[toId] !== fromId)
+  ) {
+    io.to(socket.id).emit("callRejected", {
+      callId,
+      reason: "busy",
+    });
+    return;
+  }
+
+  call.accepted = true;
+
+  // mark both users busy
   activeCalls[fromId] = toId;
   activeCalls[toId] = fromId;
 
   console.log("✅ Call accepted:", {
+    callId,
     fromId,
     toId,
     type,
   });
 
-  if (users[fromId]) {
-    io.to(users[fromId]).emit("callAccepted", {
+  const callerSocket = users[fromId];
+
+  if (callerSocket) {
+    io.to(callerSocket).emit("callAccepted", {
       callId,
       from: toId,
+      to: fromId,
+      type,
+    });
+  }
+
+  // receiver ko bhi notify karo
+  const receiverSocket = users[toId];
+
+  if (receiverSocket) {
+    io.to(receiverSocket).emit("callStarted", {
+      callId,
+      from: fromId,
+      to: toId,
       type,
     });
   }
 });
 
-
-
-    // ❌ Reject call
 socket.on("rejectCall", ({ callerId, receiverId, callId }) => {
   const caller = Number(callerId);
   const receiver = Number(receiverId);
 
-  console.log("📴 RejectCall:", { caller, receiver, callId });
+  console.log("📴 RejectCall:", {
+    caller,
+    receiver,
+    callId,
+  });
 
-  // only clear if they actually match
+  // clear busy mapping
   if (activeCalls[caller] === receiver) {
     delete activeCalls[caller];
   }
@@ -317,7 +354,10 @@ socket.on("rejectCall", ({ callerId, receiverId, callId }) => {
     delete activeCalls[receiver];
   }
 
-  console.log("ACTIVE CALLS", activeCalls);
+  // clear pending call object
+  delete activeCalls[callId];
+
+  console.log("ACTIVE CALLS:", activeCalls);
 
   const callerSocket = users[caller];
 
@@ -328,7 +368,6 @@ socket.on("rejectCall", ({ callerId, receiverId, callId }) => {
     });
   }
 });
-
 /*
 socket.on("endCall", ({ callId, from, to }) => {
   const fromId = Number(from);
@@ -349,27 +388,46 @@ socket.on("endCall", ({ callId, from, to }) => {
     });
   }
 });*/
-socket.on("endCall", ({ from, to }) => {
+socket.on("endCall", ({ callId, from, to }) => {
   const fromId = Number(from);
   const toId = Number(to);
 
+  // clear busy status
   delete activeCalls[fromId];
   delete activeCalls[toId];
 
-  console.log("ACTIVE CALLS", activeCalls);
+  // clear call object
+  if (callId) {
+    delete activeCalls[callId];
+  }
+
+  console.log("📴 Call ended:", {
+    callId,
+    fromId,
+    toId,
+  });
+
+  console.log("ACTIVE CALLS:", activeCalls);
 
   const fromSocket = users[fromId];
   const toSocket = users[toId];
 
   if (fromSocket) {
-    io.to(fromSocket).emit("callEnded", { from: fromId });
+    io.to(fromSocket).emit("callEnded", {
+      callId,
+      from: fromId,
+      to: toId,
+    });
   }
 
   if (toSocket) {
-    io.to(toSocket).emit("callEnded", { from: toId });
+    io.to(toSocket).emit("callEnded", {
+      callId,
+      from: fromId,
+      to: toId,
+    });
   }
 });
-
 ///////////////////////////////////
 
 /// Group Meeting things ///
