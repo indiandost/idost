@@ -1162,6 +1162,35 @@ router.get("/my-visitors/:id", verifyToken, (req, res) => {
   });
 });
 
+//my referer
+router.get("/my-referrals", verifyToken, (req, res) => {
+  const db = req.app.get("db");
+  const userCode = req.user.user; // ya jo referral code field hai
+  db.query(
+    `
+    SELECT
+      srno,
+      name,
+      city,
+      pic,
+      date as created_at
+    FROM users
+    WHERE refcode = ?
+    ORDER BY srno DESC
+    `,
+    [userCode],
+    (err, rows) => {
+      console.log(rows);
+      if (err) return res.status(500).json(err);
+      res.json({
+        success: true,
+        total: rows.length,
+        referrals: rows
+      });
+    }
+  );
+});
+
 // =============================
 
 // 🖼️ Get user gallery

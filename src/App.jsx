@@ -26,6 +26,7 @@ import Friends from "./pages/Friends";
 import MeetingRoom from "./pages/MeetingRoom";
 import BlockedUsers from "./pages/BlockedUsers";
 import MyVisitors from "./pages/MyVisitors";
+import MyRefer from "./pages/MyRefer";
 import Timeline from "./pages/Timeline";
 import { useCoins } from "./context/CoinContext";
 import useLoadCoins from "./hooks/useLoadCoins";
@@ -346,6 +347,14 @@ useEffect(() => {
           >
             🎥 Friends
           </Link>
+           <Link
+            to="/my-refer"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
+          >
+            🎥 My Referrals
+          </Link>
+         
           <Link
             to="/blocked-users"
             onClick={() => setMenuOpen(false)}
@@ -362,13 +371,13 @@ useEffect(() => {
             💰 Rewards History
           </Link>
 
-          <Link
+         {/* <Link
             to={`/meeting/${Math.random().toString(36).substring(2, 8)}`}
             onClick={() => setMenuOpen(false)}
             className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
           >
             🎥 Meeting Room
-          </Link>
+          </Link>*/}
          <Link
             to="/deposit"
             onClick={() => setMenuOpen(false)}
@@ -1208,6 +1217,14 @@ useEffect(() => {
             element={
               <PrivateRoute>
                 <MyVisitors />{" "}
+              </PrivateRoute>
+            }
+          />
+           <Route
+            path="/my-refer"
+            element={
+              <PrivateRoute>
+                <MyRefer />{" "}
               </PrivateRoute>
             }
           />
