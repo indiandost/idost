@@ -17,6 +17,21 @@ export default function MyProfile() {
   const [uploading, setUploading] = useState(false);
 const [uploadProgress, setUploadProgress] = useState(0);
 const token = localStorage.getItem("token"); 
+const params = new URLSearchParams(window.location.search);
+const ref = params.get("ref");
+
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const ref = params.get("ref");
+
+  if (ref) {
+    setForm(prev => ({
+      ...prev,
+      refcode: ref
+    }));
+  }
+}, []);
+
 const [form, setForm] = useState({
   name: "",
   dob: "",
@@ -828,6 +843,50 @@ const deleteProfile = async () => {
           </p>
         </div>
       </div>
+      <div className="bg-gradient-to-r from-pink-600 to-purple-600 rounded-2xl p-4 mt-4 shadow-lg">
+  <h3 className="text-white font-bold text-lg">
+    🎁 Refer Friends & Earn 500 Coins
+  </h3>
+
+  <p className="text-white/90 text-sm mt-1">
+    Invite your friends to IndianDost. When they join using your referral code,
+    you get <b>500 bonus coins</b>.
+  </p>
+
+  <div className="mt-3 bg-white/20 rounded-lg p-3 flex items-center justify-between">
+    <div>
+      <div className="text-xs text-white/80">Your Referral Code</div>
+      <div className="text-xl font-bold text-white">
+        {user.user}
+      </div>
+    </div>
+
+    <button
+      onClick={() => {
+        navigator.clipboard.writeText(user.user);
+        alert("Referral code copied!");
+      }}
+      className="bg-white text-purple-700 px-3 py-2 rounded-lg font-semibold"
+    >
+      Copy
+    </button>
+  </div>
+
+<button
+ onClick={() => {
+  const referralLink = `https://indiandost.com/idost/register?ref=${user.user}`;
+
+  navigator.share({
+    title: "IndianDost",
+    text: `🎁 Join IndianDost using my referral code ${user.user}`,
+    url: referralLink
+  });
+}}
+  className="w-full mt-3 bg-white text-purple-700 font-bold py-3 rounded-xl"
+>
+  📤 Share & Earn 500 Coins
+</button>
+</div>
 
       {/* UPLOAD BOX */}
       <label className="block border-2 border-dashed border-gray-600 p-5 text-center rounded-xl cursor-pointer hover:border-pink-400 transition">
@@ -923,13 +982,14 @@ const deleteProfile = async () => {
           </div>
         </div>
       )}
-
+     {user?.coins > 1000 && (
     <button
         onClick={startLiveMeeting}
         className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-white font-bold"
       >
         🔴 Start Live
       </button>
+     )}
 
       <button
         onClick={() => navigate("/quiz-battles")}

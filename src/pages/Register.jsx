@@ -4,6 +4,8 @@ import { Helmet } from "react-helmet-async";
 export default function Register() {
   const navigate = useNavigate();
   const API = import.meta.env.VITE_API_URL;
+  const [checkingRef, setCheckingRef] = useState(false);
+const [refValid, setRefValid] = useState(null);
 const [acceptedPolicy, setAcceptedPolicy] = useState(false);
   const [form, setForm] = useState({
     user: "",
@@ -11,7 +13,8 @@ const [acceptedPolicy, setAcceptedPolicy] = useState(false);
     name: "",
     dob: "",
     city: "",
-    email: ""
+    email: "",
+    refcode:""
   });
 const indiaCities = [
   "Adilabad",
@@ -564,7 +567,32 @@ useEffect(() => {
     },
     [API]
   );
-
+//---------------------------------
+// ref code 
+//-------------------------------
+const checkRefCode = async (refcode) => {
+  if (!refcode.trim()) {
+    setRefValid(null);
+    return;
+  }
+  try {
+    setCheckingRef(true);
+    const res = await fetch(`${API}/api/check-refcode`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ refcode })
+    });
+    const data = await res.json();
+    setRefValid(data.exists);
+  } catch (err) {
+    console.error(err);
+    setRefValid(false);
+  } finally {
+    setCheckingRef(false);
+  }
+};
   // -----------------------------
   // Email Check
   // -----------------------------
@@ -636,11 +664,7 @@ useEffect(() => {
       newErrors.dob = "DOB required";
     }
 
-    if (!form.city.trim()) {
-      newErrors.city = "City required";
-    }
-
-    if (!form.email.trim()) {
+   if (!form.email.trim()) {
       newErrors.email = "Email required";
     } else if (!/\S+@\S+\.\S+/.test(form.email)) {
       newErrors.email = "Invalid email";
@@ -752,6 +776,21 @@ useEffect(() => {
       }
     );
   };
+const params = new URLSearchParams(window.location.search);
+const ref = params.get("ref");
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const ref = params.get("ref");
+
+  if (ref) {
+    setForm((prev) => ({
+      ...prev,
+      refcode: ref,
+    }));
+
+    checkRefCode(ref);
+  }
+}, []);
 
   return (
      <>
@@ -834,7 +873,7 @@ useEffect(() => {
           <input
             type="text"
             name="user"
-            placeholder="Username"
+            placeholder="Username *"
             value={form.user}
             onChange={handleChange}
             autoComplete="username"
@@ -864,7 +903,7 @@ useEffect(() => {
           <input
             type="password"
             name="pass"
-            placeholder="Password"
+            placeholder="Password *"
             value={form.pass}
             onChange={handleChange}
             autoComplete="new-password"
@@ -888,7 +927,7 @@ useEffect(() => {
           <input
             type="text"
             name="name"
-            placeholder="Full Name"
+            placeholder="Full Name *"
             value={form.name}
             onChange={handleChange}
             className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white
@@ -911,7 +950,7 @@ useEffect(() => {
           <input
             type="email"
             name="email"
-            placeholder="Email"
+            placeholder="Email *"
             value={form.email}
             onChange={handleChange}
             autoComplete="email"
@@ -950,7 +989,7 @@ useEffect(() => {
                   : "border-gray-600 focus:border-green-500"
               }`}
           >
-          <option value="">Select Gender</option>
+          <option value="">Select Gender *</option>
           <option value="Male">Male</option>
           <option value="Female">Female</option>
           <option value="Trans">Transgender</option>
@@ -964,40 +1003,20 @@ useEffect(() => {
           )}
         </div>
 
-        {/* Phone 
-        <div>
-          <input
-            type="tel"
-            name="telephone"
-            placeholder="Phone Number"
-            value={form.telephone}
-            onChange={handleChange}
-            maxLength={10}
-            className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white
-              ${
-                errors.telephone
-                  ? "border-red-500"
-                  : "border-gray-600 focus:border-green-500"
-              }`}
-          />
-
-          {errors.telephone && (
-            <p className="text-red-400 text-sm mt-1">
-              {errors.telephone}
-            </p>
-          )}
-        </div>*/}
-
-        {/* DOB */}
+              {/* DOB */}
         <div>
 <label className="text-sm text-gray-300 mb-1 block">
-  Date of Birth (16+ only)
+  Date of Birth (16+ only) *
 </label>
       <input
         type="date"
         name="dob"
         value={form.dob}
         onChange={handleChange}
+        onFocus={(e) => e.target.showPicker?.()}
+        min="1950-01-01"
+        className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white`}
+        placeholder="DOB *"
         max={
           new Date(
             new Date().setFullYear(
@@ -1007,13 +1026,7 @@ useEffect(() => {
             .toISOString()
             .split("T")[0]
         }
-        className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white
-          ${
-            errors.dob
-              ? "border-red-500"
-              : "border-gray-600 focus:border-green-500"
-          }`}
-      />
+      /> 
           {errors.dob && (
             <p className="text-red-400 text-sm mt-1">
               {errors.dob}
@@ -1023,43 +1036,58 @@ useEffect(() => {
 
         {/* City */}
         <div>
+<input
+  type="hidden"
+  name="city"
+  value={form.city || ""}
+/>
 
-  <select
-    name="city"
-    value={form.city}
-    onChange={handleChange}
-    className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white
-      ${
-        errors.city
-          ? "border-red-500"
-          : "border-gray-600 focus:border-green-500"
-      }`}
-  >
+</div>
+  {/* Ref Code */}
+<div>
+  <input
+    type="text"
+    name="refcode"
+    placeholder="Referral Code Optional"
+    value={form.refcode}
+    onChange={(e) => {
+      handleChange(e);
+      checkRefCode(e.target.value);
+    }}
+      className={`w-full p-3 rounded-lg bg-gray-700 border outline-none text-white
+    ${
+      refValid === false
+        ? "border-red-500"
+        : refValid === true
+        ? "border-green-500"
+        : "border-gray-600"
+    }`}
+/>
 
-    <option value="">
-      Select City
-    </option>
+<p className="text-xs text-gray-400 mt-1">
+  Have a friend's referral code? Enter it to earn bonus rewards for both of you.
+</p>
 
-    {indiaCities.map((city) => (
-      <option
-        key={city}
-        value={city}
-      >
-        {city}
-      </option>
-    ))}
-
-  </select>
-
-  {errors.city && (
-    <p className="text-red-400 text-sm mt-1">
-      {errors.city}
+  {checkingRef && (
+    <p className="text-yellow-400 text-sm mt-1">
+      Checking referral code...
     </p>
   )}
 
+  {refValid === true && (
+    <p className="text-green-400 text-sm mt-1">
+      Valid referral code ✅
+    </p>
+  )}
+
+  {refValid === false && (
+    <p className="text-red-400 text-sm mt-1">
+      Invalid referral code ❌
+    </p>
+  )}
 </div>
 {/* Privacy Policy */}
-<div className="flex items-start gap-2 text-sm text-gray-300">
+<div className="flex items-start gap-2 text-sm text-gray-300 mt-2">
 
   <input
     type="checkbox"
@@ -1078,7 +1106,7 @@ useEffect(() => {
       to="/privacy-policy"
       className="text-pink-400 hover:text-pink-300 underline"
     >
-      Privacy Policy
+      Privacy Policy *
     </Link>
 
   </label>
@@ -1100,7 +1128,7 @@ useEffect(() => {
             userExists ||
             emailExists
           }
-          className={`w-full py-3 rounded-lg font-semibold transition
+          className={`w-full py-3 rounded-lg font-semibold transition mt-2
             ${
               loading ||
               checkingUser ||

@@ -561,6 +561,7 @@ router.get("/me/:id", verifyToken, (req, res) => {
   const sql = `
     SELECT 
       srno,
+      user,
       name,
       city,
       pic,
@@ -573,6 +574,7 @@ router.get("/me/:id", verifyToken, (req, res) => {
       sex,
       relationship_goal,
       language,
+      coins,
       TIMESTAMPDIFF(YEAR, dob, CURDATE()) AS age
     FROM users WHERE srno=?
   `;

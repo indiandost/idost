@@ -12,7 +12,8 @@ router.post("/register", async (req, res) => {
     sex,
     telephone= "",
     dob,
-    city,
+    city="",
+    refcode="",
     latitude,
     longitude
   } = req.body;
@@ -30,11 +31,12 @@ const sql = `
     date,
     dob,
     city,
+    refcode,
     latitude,
     longitude,
     status
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)`;
   const hashedPassword = await bcrypt.hash(pass, 10);
   const st='A';
   db.query(
@@ -49,6 +51,7 @@ const sql = `
     created_at,
     dob,
     city,
+    refcode,
     latitude,
     longitude,
     st
@@ -78,6 +81,26 @@ router.post("/check-username", (req, res) => {
     }
   );
 });
+
+router.post("/check-refcode", (req, res) => {
+  const db = req.app.get("db");
+  const { refcode } = req.body;
+  const sql = "SELECT srno, user FROM users WHERE user = ? LIMIT 1";
+
+  db.query(sql, [refcode], (err, result) => {
+    if (err) {
+      return res.status(500).json({
+        exists: false,
+        error: "Database error"
+      });
+    }
+
+    res.json({
+      exists: result.length > 0
+    });
+  });
+});
+
 router.post("/check-email", (req, res) => {
   const db = req.app.get("db");
   const { email } = req.body;
