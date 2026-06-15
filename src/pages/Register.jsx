@@ -794,13 +794,51 @@ useEffect(() => {
 
   return (
      <>
-    <Helmet>
-   <title>Sign Up for IndianDost - Meet Friends, Chat & Earn Rewards</title>
-    <meta
-      name="description"
-      content="Join IndianDost today to meet new friends, chat online, share photos, discover people nearby, and earn rewards through activities and engagement on the platform."
-    />
-    </Helmet>
+   <Helmet>
+  <title>
+    Sign Up for IndianDost - Meet Friends, Chat & Earn Rewards
+  </title>
+
+  <meta
+    name="description"
+    content="Join IndianDost today to meet new friends, chat online, share photos, discover people nearby, and earn rewards through activities and engagement on the platform."
+  />
+
+  {/* Open Graph */}
+  <meta
+    property="og:title"
+    content="IndianDost - Meet Friends, Chat & Earn Rewards"
+  />
+  <meta
+    property="og:description"
+    content="Join IndianDost today to meet new friends, chat online, share photos, discover people nearby, and earn rewards."
+  />
+  <meta
+    property="og:image"
+    content="https://indiandost.com/idost/logo.png"
+  />
+  <meta
+    property="og:url"
+    content="https://indiandost.com/idost/register"
+  />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="IndianDost" />
+
+  {/* Twitter / X */}
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta
+    name="twitter:title"
+    content="IndianDost - Meet Friends, Chat & Earn Rewards"
+  />
+  <meta
+    name="twitter:description"
+    content="Join IndianDost today to meet new friends, chat online, share photos, discover people nearby, and earn rewards."
+  />
+  <meta
+    name="twitter:image"
+    content="https://indiandost.com/idost/logo.png"
+  />
+</Helmet>
 <div
   className="
     flex
