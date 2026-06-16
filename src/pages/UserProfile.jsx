@@ -213,19 +213,21 @@ const userName = user?.name
     </span>
   )}
 </p><p>
-  {user.height && (
+ {user.height > 0  && (
     <span className="bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-sm">
       📏 {user.height} cm
     </span>
   )}
 
-  {user.weight && (
+  {user.weight > 0 && (
     <span className="bg-green-500/20 text-green-300 px-3 py-1 rounded-full text-sm">
       ⚖️ {user.weight} kg
     </span>
   )}
 
-  {user.body_type && (
+{user.body_type &&
+ user.body_type.trim() !== "" &&
+ user.body_type !== "0" && (
     <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm">
       💪 {user.body_type}
     </span>
