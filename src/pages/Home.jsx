@@ -22,7 +22,7 @@ export default function Home() {
   const myId = JSON.parse(localStorage.getItem("user"))?.srno;
   const token = localStorage.getItem("token"); 
   const [selectedMood, setSelectedMood] = useState("");
-  const limit=9;
+  const limit=10;
 const [currentMood, setCurrentMood] = useState( JSON.parse(localStorage.getItem("user"))?.mood || "");
 useEffect(() => {
   if (currentMood) {

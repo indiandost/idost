@@ -564,6 +564,11 @@ router.get("/me/:id", verifyToken, (req, res) => {
       user,
       name,
       city,
+      state,
+      country,
+      height,
+      weight,
+      body_type,
       pic,
       dob,
       about,
@@ -575,7 +580,8 @@ router.get("/me/:id", verifyToken, (req, res) => {
       relationship_goal,
       language,
       coins,
-      TIMESTAMPDIFF(YEAR, dob, CURDATE()) AS age
+      TIMESTAMPDIFF(YEAR, dob, CURDATE()) AS age,
+      insta
     FROM users WHERE srno=?
   `;
 
@@ -717,6 +723,11 @@ router.post("/update/:id", verifyToken, async (req, res) => {
       name,
       dob,
       city,
+      state,
+      country,
+      height,
+      weight,
+      body_type,
       about,
       telephone,
       email,
@@ -724,7 +735,8 @@ router.post("/update/:id", verifyToken, async (req, res) => {
       doingnow,
       sex,
       relationship_goal,
-      language
+      language, 
+      insta
     } = req.body;
 
     db.query(`
@@ -732,6 +744,11 @@ router.post("/update/:id", verifyToken, async (req, res) => {
         name=?,
         dob=?,
         city=?,
+        state=?,
+        country=?,
+        height=?,
+        weight=?,
+        body_type=?,
         about=?,
         telephone=?,
         email=?,
@@ -739,12 +756,18 @@ router.post("/update/:id", verifyToken, async (req, res) => {
         doingnow=?,
         sex=?,
         relationship_goal=?,
-        language=?
+        language=?,
+        insta=?
       WHERE srno=?
     `, [
       name,
       dob,
       city,
+      state,
+      country,
+      height,
+      weight,
+      body_type,
       about,
       telephone,
       email,
@@ -753,6 +776,7 @@ router.post("/update/:id", verifyToken, async (req, res) => {
       sex,
       relationship_goal,
       language,
+      insta,
       req.params.id
     ], (err, result) => {
 

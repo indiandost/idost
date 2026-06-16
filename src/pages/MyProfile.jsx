@@ -36,14 +36,20 @@ const [form, setForm] = useState({
   name: "",
   dob: "",
   city: "",
+  state: "",
+  country: "",
   about: "",
   telephone: "",
   email: "",
+  height:"",
+  weight:"",
+  body_type:"",
   online: "",
   doingnow: "",
   sex: "",
   relationship_goal: "",
-  language: ""
+  language: "",
+  insta: ""
 });
 const API = import.meta.env.VITE_API_URL;
 const navigate = useNavigate();
@@ -523,6 +529,11 @@ const createCroppedImage = (imageSrc, croppedAreaPixels) => {
             name: data.name || "",
             dob: data.dob ? new Date(data.dob).toISOString().split("T")[0]  : "",
             city: data.city || "",
+            state: data.state || "",
+            country: data.country || "",
+            height: data.height || "",
+            weight: data.weight || "",
+            body_type: data.body_type || "",
             about: data.about || "",
             telephone: data.telephone || "",
             email: data.email || "",
@@ -530,7 +541,8 @@ const createCroppedImage = (imageSrc, croppedAreaPixels) => {
             doingnow: data.doingnow || "",
             sex: data.sex || "",
             relationship_goal: data.relationship_goal || "",
-            language: data.language || ""
+            language: data.language || "",
+            insta:data.insta || "",
             });
         });
   };
@@ -1000,7 +1012,7 @@ const deleteProfile = async () => {
 
       <div className="bg-gray-800 p-4 rounded-2xl space-y-3">
 
-  <h3 className="text-lg font-bold">Edit Profile</h3>
+  <h3 className="text-lg font-bold">👤 Basic Info</h3>
 
   <input
     name="name"
@@ -1091,14 +1103,13 @@ const deleteProfile = async () => {
   <option value="Other">Other</option>
 
 </select>
- <select
+ {/*<select
   name="city"
   value={form.city}
   onChange={handleChange}
   className="w-full p-3 rounded bg-gray-700 text-white"
 >
 
-  {/* Default selected current city */}
   <option value="">
     Select City
   </option>
@@ -1114,7 +1125,31 @@ const deleteProfile = async () => {
 
   ))}
 
-</select>
+</select>*/}
+ <input
+    name="city"
+    value={form.city}
+    onChange={handleChange}
+    placeholder="City"
+    className="w-full p-3 rounded bg-gray-700"
+  />
+
+ <input
+    name="state"
+    value={form.state}
+    onChange={handleChange}
+    placeholder="State"
+    className="w-full p-3 rounded bg-gray-700"
+  />
+
+ <input
+    name="country"
+    value={form.country}
+    onChange={handleChange}
+    placeholder="Country"
+    className="w-full p-3 rounded bg-gray-700"
+  />
+
   <input
     name="doingnow"
     value={form.doingnow}
@@ -1160,6 +1195,87 @@ const deleteProfile = async () => {
 <p className="text-xs text-gray-400 mt-1">
   {form.about.length}/500
 </p>
+{/* Physical Details */}
+
+<h3 className="text-lg font-bold mt-6 mb-3">
+  📏 Physical Apparance
+</h3>
+<div className="grid grid-cols-2 gap-3">
+
+  {/* Height */}
+  <div>
+    <label className="block text-sm mb-1">Height</label>
+    <select
+      name="height"
+      value={form.height || ""}
+      onChange={handleChange}
+      className="w-full p-3 rounded-lg bg-gray-700 text-white"
+    >
+      <option value="">Height</option>
+      {Array.from({ length: 101 }, (_, i) => {
+        const cm = i + 120;
+        return (
+          <option key={cm} value={`${cm}`}>
+            {cm} cm
+          </option>
+        );
+      })}
+    </select>
+  </div>
+
+  {/* Weight */}
+  <div>
+    <label className="block text-sm mb-1">Weight</label>
+    <select
+      name="weight"
+      value={form.weight || ""}
+      onChange={handleChange}
+      className="w-full p-3 rounded-lg bg-gray-700 text-white"
+    >
+      <option value="">Weight</option>
+      {Array.from({ length: 171 }, (_, i) => {
+        const kg = i + 30;
+        return (
+          <option key={kg} value={`${kg}`}>
+            {kg} kg
+          </option>
+        );
+      })}
+    </select>
+  </div>
+  </div>
+
+<div className="mt-4">
+  <label className="block text-sm mb-1">Body Type</label>
+  <select
+    name="body_type"
+    value={form.body_type || ""}
+    onChange={handleChange}
+    className="w-full p-3 rounded-lg bg-gray-700 text-white"
+  >
+    <option value="">Select Body Type</option>
+    <option value="Slim">Slim</option>
+    <option value="Average">Average</option>
+    <option value="Athletic">Athletic</option>
+    <option value="Muscular">Muscular</option>
+    <option value="Heavy">Heavy</option>
+  </select>
+</div>
+
+{/* Social Links */}
+
+<h3 className="text-lg font-bold mt-6 mb-3">
+  🌐 Social Profiles
+</h3>
+
+<input
+  type="text"
+  name="insta"
+  value={form.insta || ""}
+  onChange={handleChange}
+  placeholder="Instagram Username"
+  className="w-full p-3 rounded-lg bg-gray-700 text-white mb-3"
+/>
 
   <button
     onClick={saveProfile}

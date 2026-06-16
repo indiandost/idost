@@ -196,32 +196,52 @@ const userName = user?.name
       {/* DETAILS */}
       <div className="p-4 space-y-3">
       <div className="space-y-1 text-gray-300 text-sm">
-         {user.mood && (
-          <p>
-            <span className="font-medium text-white">😊 Mood:</span>{" "}
-            {user.mood}
-          </p>
-        )}
-         {user.doingnow && (
-          <p>
-            <span className="font-medium text-white">🎯 Doing Now:</span>{" "}
-            {user.doingnow}
-          </p>
-        )}
-        {user.relationship_goal && (
-          <p>
-            <span className="font-medium text-white">💕 Looking For:</span>{" "}
-            {user.relationship_goal}
-          </p>
-        )}
+      <p>  {user.mood && (
+    <span className="bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded-full text-sm">
+      {user.mood}
+    </span>
+  )}
+  {user.relationship_goal && (
+    <span className="bg-pink-500/20 text-pink-300 px-3 py-1 rounded-full text-sm">
+      💕 {user.relationship_goal}
+    </span>
+  )}
+ 
+  {user.language && (
+    <span className="bg-cyan-500/20 text-cyan-300 px-3 py-1 rounded-full text-sm">
+      🌐 {user.language}
+    </span>
+  )}
+</p><p>
+  {user.height && (
+    <span className="bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-sm">
+      📏 {user.height} cm
+    </span>
+  )}
 
-        {user.language && (
-          <p>
-            <span className="font-medium text-white">🌐 Language:</span>{" "}
-            {user.language}
-          </p>
-        )}
+  {user.weight && (
+    <span className="bg-green-500/20 text-green-300 px-3 py-1 rounded-full text-sm">
+      ⚖️ {user.weight} kg
+    </span>
+  )}
 
+  {user.body_type && (
+    <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm">
+      💪 {user.body_type}
+    </span>
+  )}
+</p>
+
+     {user.doingnow && (
+  <div className="mt-4 bg-gray-800 border border-gray-700 rounded-xl p-3">
+    <span className="text-xs text-gray-400 mb-1">
+      Currently 
+    </span>
+    <span className="text-white">
+      🚀 {user.doingnow}
+    </span>
+  </div>
+)}
         {user.online && (
           <p>
             <span className="font-medium text-white">📝 </span>{" "}
@@ -351,6 +371,19 @@ const userName = user?.name
         </div>
       )}
       <p>{user.about}</p>
+       {user.insta && (
+  <div className="mt-4 my-4">
+    <a
+      href={`https://instagram.com/${user.insta}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 px-4 py-2 rounded-xl text-white text-sm font-medium"
+    >
+      📷 Instagram
+    </a>
+  </div>
+)}
+<p> </p><p> </p>
     </div>
     </>
   );

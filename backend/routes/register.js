@@ -13,6 +13,8 @@ router.post("/register", async (req, res) => {
     telephone= "",
     dob,
     city="",
+    state="",
+    country="",
     refcode="",
     latitude,
     longitude
@@ -31,12 +33,14 @@ const sql = `
     date,
     dob,
     city,
+    state,
+    country,
     refcode,
     latitude,
     longitude,
     status
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)`;
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?)`;
   const hashedPassword = await bcrypt.hash(pass, 10);
   const st='A';
   db.query(
@@ -51,6 +55,8 @@ const sql = `
     created_at,
     dob,
     city,
+    state,
+    country,
     refcode,
     latitude,
     longitude,

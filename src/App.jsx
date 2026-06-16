@@ -65,6 +65,7 @@ import {
   Gamepad2,
   Music,
 } from "lucide-react";
+import {  App as CapacitorApp } from "@capacitor/app";
 
 const API = import.meta.env.VITE_API_URL;
 // 🔐 Protected Route
@@ -591,6 +592,49 @@ export default function App() {
     location.pathname.startsWith("/reset-password/");
 
   const hideLayout = hideLayoutRoutes.includes(location.pathname);
+//check sockit connection
+useEffect(() => {
+  const listener = CapacitorApp.addListener(
+    "appStateChange",
+    ({ isActive }) => {
+      if (isActive) {
+        console.log("📱 App resumed");
+
+        if (!socket.connected) {
+          socket.connect();
+        }
+
+        if (user?.srno) {
+          socket.emit("register", Number(user.srno));
+        }
+      }
+    }
+  );
+
+  return () => {
+    listener.then((l) => l.remove());
+  };
+}, [user?.srno]);
+//health check 
+useEffect(() => {
+  const interval = setInterval(async () => {
+    try {
+      const res = await fetch(`${API}/health`, {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (!res.ok) {
+        console.log("⚠️ Health check failed:", res.status);
+      }
+    } catch (err) {
+      console.log("⚠️ Health check error");
+    }
+  }, 600000); // 10 minutes
+
+  return () => clearInterval(interval);
+}, []);
+
   useEffect(() => {
     incomingCallRef.current = incomingCall;
   }, [incomingCall]);

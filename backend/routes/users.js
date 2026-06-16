@@ -320,7 +320,7 @@ router.get("/",  (req, res) => {
   const db = req.app.get("db");
     const page = Number(req.query.page) || 1;
     //const limit = Number(req.query.limit) || 10;
-    const limit = Math.min( Number(req.query.limit) || 9,  56);
+    const limit = Math.min( Number(req.query.limit) || 10,  60);
     const offset = (page - 1) * limit;
   const myId = req.query.myId || 0;
 
@@ -1180,6 +1180,10 @@ router.get("/:id", verifyToken, (req, res) => {
       CURDATE()
     ) AS age,
     city,
+    country,
+    height,
+    weight,
+    body_type,
     doingnow,
     relationship_goal,
     coins,
@@ -1193,7 +1197,8 @@ router.get("/:id", verifyToken, (req, res) => {
     online,
     onst,
     live_status,
-    live_room
+    live_room,
+    insta 
   FROM users
   WHERE srno = ?
 

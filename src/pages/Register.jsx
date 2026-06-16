@@ -13,6 +13,8 @@ const [acceptedPolicy, setAcceptedPolicy] = useState(false);
     name: "",
     dob: "",
     city: "",
+    state: "",
+    country: "",
     email: "",
     refcode:""
   });
@@ -451,19 +453,28 @@ useEffect(() => {
         );
 
         const data = await res.json();
+            const city =
+            data.address.city ||
+            data.address.town ||
+            data.address.village ||
+            data.address.state_district ||
+            "";
 
-        const city =
-          data.address.city ||
-          data.address.town ||
-          data.address.state_district ||
-          "";
+          const state =
+            data.address.state ||
+            data.address.state_district ||
+            data.address.county ||
+            data.address.region ||
+            "";
 
-        if (city) {
+          const country = data.address.country || "";
+
           setForm((prev) => ({
             ...prev,
             city,
+            state,
+            country,
           }));
-        }
 
       } catch (err) {
         console.log(err);
@@ -1074,11 +1085,21 @@ useEffect(() => {
 
         {/* City */}
         <div>
-<input
-  type="hidden"
-  name="city"
-  value={form.city || ""}
-/>
+        <input
+          type="hidden"
+          name="city"
+          value={form.city || ""}
+        />
+        <input
+          type="hidden"
+          name="state"
+          value={form.state || ""}
+        />
+        <input
+          type="hidden"
+          name="country"
+          value={form.country || ""}
+        />
 
 </div>
   {/* Ref Code */}

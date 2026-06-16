@@ -243,7 +243,10 @@ app.post("/api/chat/delete", verifyToken, (req, res) => {
     res.json({ success: true });
   });
 });
-
+//health check
+app.get("/health", (req, res) => {
+  res.sendStatus(200);
+});
 // =============================
 // ✅ ROUTES
 // =============================
