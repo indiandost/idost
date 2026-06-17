@@ -118,81 +118,93 @@ AND status IN ('pending','accepted')
               if (err3) {
                 return res.status(500).json(err3);
               }
-              const io = req.app.get("io");
+             const io = req.app.get("io");
 
-            io.to(`user-${opponentId}`).emit(
-              "battleInvite",
-              {
-                battleId,
-                challengerId
-              }
-            );
+// socket notification (app open)
+io.to(`user-${opponentId}`).emit(
+  "battleInvite",
+  {
+    battleId,
+    challengerId
+  }
+);
 
-            // 🔔 FCM PUSH FOR CLOSED APP
-            try {
+// 🔔 FCM notification (background / closed app)
+db.query(
+  `
+  SELECT fcm_token
+  FROM users
+  WHERE srno=?
+  LIMIT 1
+  `,
+  [opponentId],
+  (errToken, tokenRows) => {
 
-              // opponent token
-              const [tokenRows] =
-                await db.promise().query(
-                  `
-                  SELECT fcm_token
-                  FROM users
-                  WHERE srno=?
-                  LIMIT 1
-                  `,
-                  [opponentId]
-                );
+    if (errToken) {
+      console.log("Battle FCM Token Error:", errToken);
+      return;
+    }
 
-              if (
-                tokenRows.length &&
-                tokenRows[0].fcm_token
-              ) {
+    if (
+      !tokenRows ||
+      !tokenRows.length ||
+      !tokenRows[0].fcm_token
+    ) {
+      return;
+    }
 
-                // challenger name
-                const [userRows] =
-                  await db.promise().query(
-                    `
-                    SELECT name
-                    FROM users
-                    WHERE srno=?
-                    LIMIT 1
-                    `,
-                    [challengerId]
-                  );
+    db.query(
+      `
+      SELECT name
+      FROM users
+      WHERE srno=?
+      LIMIT 1
+      `,
+      [challengerId],
+      async (errUser, userRows) => {
 
-                const challengerName =
-                  userRows[0]?.name ||
-                  "Someone";
+        if (errUser) {
+          console.log("Battle User Error:", errUser);
+          return;
+        }
 
-                await sendPushNotification(
-                  tokenRows[0].fcm_token,
-                  "⚔️ Quiz Battle Challenge",
-                  `${challengerName} challenged you`,
-                  {
-                    type: "battleInvite",
-                    battleId: String(battleId),
-                    challengerId: String(challengerId)
-                  }
-                );
+        const challengerName =
+          userRows?.[0]?.name || "Someone";
 
-                console.log(
-                  "✅ Battle push sent"
-                );
-              }
+        try {
 
-            } catch (e) {
-
-              console.log(
-                "Battle FCM Error:",
-                e
-              );
-
+          await sendPushNotification(
+            tokenRows[0].fcm_token,
+            "⚔️ Quiz Battle Challenge",
+            `${challengerName} challenged you`,
+            {
+              type: "battleInvite",
+              battleId: String(battleId),
+              challengerId: String(challengerId)
             }
+          );
 
-            res.json({
-              success: true,
-              battleId
-            });
+          console.log(
+            "✅ Battle push sent"
+          );
+
+        } catch (e) {
+
+          console.log(
+            "Battle FCM Error:",
+            e
+          );
+
+        }
+      }
+    );
+  }
+);
+
+res.json({
+  success: true,
+  battleId
+});
             }
           );
         }
