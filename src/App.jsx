@@ -663,20 +663,21 @@ useEffect(() => {
 //open chat onclick from notification
 useEffect(() => {
    if (Capacitor.getPlatform() === "web") return;
-  PushNotifications.addListener(
-    "pushNotificationActionPerformed",
-    (event) => {
-      const senderId =
-        event.notification
-          ?.data
-          ?.senderId;
-      if (senderId) {
-        navigate(
-          `/chat/${senderId}`
-        );
+    PushNotifications.addListener(
+      "pushNotificationActionPerformed",
+      (event) => {
+        const data = event.notification?.data || {};
+        // chat
+        if (data.senderId) {
+          navigate(`/chat/${data.senderId}`);
+          return;
+        }
+        // battle
+        if (data.type === "battleInvite") {
+          navigate("/quiz-battles");
+        }
       }
-    }
-  );
+    );
 }, [navigate]);
 
 
@@ -840,7 +841,7 @@ useEffect(() => {
   };
 }, [navigate]);
 
-  useEffect(() => {
+useEffect(() => {
     // initial check
     inMeetingRef.current = localStorage.getItem("in_meeting") === "1";
 

@@ -195,7 +195,6 @@ io.to(socket.id).emit("messageSent", {
           `,
           [fromId]
         );
-
       const senderName = senderRows[0]?.name || "New Message";  const senderPic = senderRows[0]?.pic || "";
       await sendPushNotification(tokenRows[0].fcm_token, senderName,  message || "📷 Photo", {
           senderId: String(fromId), senderName, senderPic,

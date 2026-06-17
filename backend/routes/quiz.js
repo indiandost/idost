@@ -2,6 +2,7 @@ import express from "express";
 import db from "../db.js";
 import { verifyToken } from "../middlewares/auth.js";
 import rewardUser from "../utils/rewardUser.js";
+import admin from "../firebase.js";
 
 const router = express.Router();
 
@@ -9,7 +10,7 @@ const router = express.Router();
 // ===========================
 // CREATE BATTLE
 // ===========================
-router.post("/create-battle", verifyToken, (req, res) => {
+router.post("/create-battle", verifyToken, async (req, res) => {
   const challengerId = req.user.id;
   const { opponentId } = req.body;
 if (Number(challengerId) === Number(opponentId)) {
@@ -117,19 +118,81 @@ AND status IN ('pending','accepted')
               if (err3) {
                 return res.status(500).json(err3);
               }
-                    const io = req.app.get("io");
+              const io = req.app.get("io");
 
-                    io.to(`user-${opponentId}`).emit(
-                    "battleInvite",
-                    {
-                        battleId,
-                        challengerId
-                    }
-                    );
-              res.json({
-                success: true,
-                battleId
-              });
+            io.to(`user-${opponentId}`).emit(
+              "battleInvite",
+              {
+                battleId,
+                challengerId
+              }
+            );
+
+            // 🔔 FCM PUSH FOR CLOSED APP
+            try {
+
+              // opponent token
+              const [tokenRows] =
+                await db.promise().query(
+                  `
+                  SELECT fcm_token
+                  FROM users
+                  WHERE srno=?
+                  LIMIT 1
+                  `,
+                  [opponentId]
+                );
+
+              if (
+                tokenRows.length &&
+                tokenRows[0].fcm_token
+              ) {
+
+                // challenger name
+                const [userRows] =
+                  await db.promise().query(
+                    `
+                    SELECT name
+                    FROM users
+                    WHERE srno=?
+                    LIMIT 1
+                    `,
+                    [challengerId]
+                  );
+
+                const challengerName =
+                  userRows[0]?.name ||
+                  "Someone";
+
+                await sendPushNotification(
+                  tokenRows[0].fcm_token,
+                  "⚔️ Quiz Battle Challenge",
+                  `${challengerName} challenged you`,
+                  {
+                    type: "battleInvite",
+                    battleId: String(battleId),
+                    challengerId: String(challengerId)
+                  }
+                );
+
+                console.log(
+                  "✅ Battle push sent"
+                );
+              }
+
+            } catch (e) {
+
+              console.log(
+                "Battle FCM Error:",
+                e
+              );
+
+            }
+
+            res.json({
+              success: true,
+              battleId
+            });
             }
           );
         }
@@ -141,7 +204,26 @@ AND status IN ('pending','accepted')
  }
 );
 
-
+    ///firebase msg notice
+async function sendPushNotification(
+  token,
+  title,
+  body,
+  data = {}
+) {
+  await admin.messaging().send({
+    token,
+    notification: {
+      title,
+      body,
+    },
+    data,
+    android: {
+      priority: "high",
+    },
+  });
+}
+// =========================
 // ===========================
 // ACCEPT BATTLE
 // ===========================
