@@ -16,6 +16,7 @@ export default function Home() {
   const [startIndex, setStartIndex] = useState(0);
   const API = import.meta.env.VITE_API_URL;
   const UserSwipeViewer = lazy(() => import("../components/UserSwipeViewer"));
+  const ActivityTicker = lazy(() => import("../components/ActivityTicker"));
   const BirthdayUsers = lazy(() => import("../components/BirthdayUsers"));
   const NewUsers = lazy(() => import("../components/NewUsers"));
   const MoodBar = lazy(() => import("../components/MoodBar"));
@@ -420,6 +421,7 @@ useEffect(() => {
   setCurrentMood(mood);
 }}
 /></Suspense>
+  <Suspense fallback={null}><ActivityTicker /></Suspense>
 
 {selectedMood && moodUsers.length > 0 && (
 
