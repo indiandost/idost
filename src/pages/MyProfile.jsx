@@ -885,15 +885,47 @@ const deleteProfile = async () => {
   </div>
 
 <button
- onClick={() => {
-  const referralLink = `https://indiandost.com/idost/register?ref=${user.user}`;
+  onClick={async () => {
 
-  navigator.share({
-    title: "IndianDost",
-    text: `🎁 Join IndianDost using my referral code ${user.user}`,
-    url: referralLink
-  });
-}}
+    const referralLink =
+      `https://indiandost.com/idost/register?ref=${user.user}`;
+
+    const shareData = {
+      title: "IndianDost",
+      text: `🎁 Join IndianDost using my referral code ${user.user}`,
+      url: referralLink,
+    };
+
+    try {
+
+      if (navigator.share) {
+
+        await navigator.share(
+          shareData
+        );
+
+      } else {
+
+        // WhatsApp fallback
+        window.open(
+          `https://wa.me/?text=${encodeURIComponent(
+            `${shareData.text}\n${referralLink}`
+          )}`,
+          "_blank"
+        );
+
+      }
+
+    } catch (err) {
+
+      console.log(
+        "SHARE ERROR:",
+        err
+      );
+
+    }
+
+  }}
   className="w-full mt-3 bg-white text-purple-700 font-bold py-3 rounded-xl"
 >
   📤 Share & Earn 500 Coins
