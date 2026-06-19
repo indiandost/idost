@@ -432,7 +432,7 @@ if (!user) {
       // =========================
 
       const postUrl =
-        `${window.location.origin}/idost/post/${post.id}`;
+        `https://indiandost.com/idost/post/${post.id}`;
 
       const shareData = {
 
