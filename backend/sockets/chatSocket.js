@@ -1,6 +1,7 @@
 import giveReward from "../utils/giveReward.js";
 import admin from "../firebase.js";
-import { users } from "../server.js";
+//import { users } from "../server.js";
+import users from "../users.js";
 //const users = {}; // shared memory
 const meetingRooms = {};
 const activeCalls = {};
@@ -10,7 +11,7 @@ export default function chatSocket(io, socket, db) {
      // =========================
     // ✅ REGISTER USER
     // =========================
-socket.on("register", (userId) => {
+/*socket.on("register", (userId) => {
   userId = Number(userId);
 
   socket.userId = userId;
@@ -30,7 +31,7 @@ socket.on("register", (userId) => {
     Object.keys(users)
   );
 });
-
+*/
   // =====================
   // GIFT
   // =====================
@@ -164,7 +165,7 @@ if (toSocket) {
 // optional: send ACK to sender (different event)
 const tempId = data.tempId || null;
 io.to(socket.id).emit("messageSent", {
-  tempId: payload.tempId,
+  tempId,
   status: "sent",
 });
      //firebase notification code here
@@ -1354,6 +1355,9 @@ socket.on("disconnect", (reason) => {
 
   const disconnectedUserId = Number(socket.userId);
 
+  if (disconnectedUserId) {
+   delete activeCalls[disconnectedUserId];
+  }
   //delete activeCalls[disconnectedUserId];
 /*
   if (disconnectedUserId) {

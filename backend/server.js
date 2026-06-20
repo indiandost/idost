@@ -11,7 +11,7 @@ import { Server } from "socket.io";
 import chatSocket from "./sockets/chatSocket.js";
 
 // ✅ Routes
-
+import users from "./users.js"; //for socket users
 import usersRoutes from "./routes/users.js";
 
 import callRoutes from "./routes/call.js";
@@ -328,7 +328,7 @@ app.set("io", io);
 // USERS MAP
 // =============================
 //const users = {}; // userId -> socketId
-export const users = {};
+//export const users = {};
 
 io.on("connection", (socket) => {
 
@@ -356,30 +356,54 @@ io.on("connection", (socket) => {
     }
   });
   
-  socket.on("register", (userId) => {
+socket.on("register", (userId) => {
 
-    userId = String(userId);
+  userId = String(userId);
 
-    socket.userId = userId;
+  socket.userId = userId;
 
-    socket.join(`user-${userId}`);
+  // same user already connected?
+  if (
+    users[userId] &&
+    users[userId] !== socket.id
+  ) {
 
-    users[userId] = socket.id;
+    const oldSocket =
+      io.sockets.sockets.get(
+        users[userId]
+      );
 
-    console.log(
-      `👤 User ${userId} registered`
-    );
+    if (oldSocket) {
 
-    console.log(
-      "ONLINE USERS:",
-      Object.keys(users)
-    );
+      console.log(
+        `♻️ Replacing old socket for user ${userId}`
+      );
 
-    io.emit(
-      "onlineUsers",
-      Object.keys(users)
-    );
-  });
+      oldSocket.disconnect(true);
+
+    }
+
+  }
+
+  users[userId] = socket.id;
+
+  socket.join(`user-${userId}`);
+
+  console.log(
+    `👤 User ${userId} registered -> ${socket.id}`
+  );
+
+  console.log(
+    "ONLINE USERS:",
+    Object.keys(users)
+  );
+
+  io.emit(
+    "onlineUsers",
+    Object.keys(users)
+  );
+
+});
 
   socket.on("disconnect", () => {
 

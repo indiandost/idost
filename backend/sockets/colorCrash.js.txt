@@ -10,21 +10,6 @@ const ENTRY_FEE = 10;
 const creatingRooms = {};
 
 
-function broadcastLiveRooms(io) {
-  const liveRooms = Object.values(rooms)
-    .filter(
-      room =>
-        room.players &&
-        room.players.length >= 1
-    )
-    .map(room => ({
-      roomId: room.roomId,
-      players: room.players.length,
-      gameStarted: room.gameStarted
-    }));
-
-  io.emit("live_rooms_update", liveRooms);
-}
 
   // ===================================
   // COIN UPDATE
@@ -137,11 +122,9 @@ const colorCrashSocket = (io, socket) => {
     socket.on(
       "create_room",
       async (data) => {
-
         let hostUserId = null;
-
         try {
-
+          console.log('created .....');
           hostUserId =
             data?.hostUserId;
 
@@ -202,7 +185,7 @@ const colorCrashSocket = (io, socket) => {
           }
 
           const user = users[0];
- // =========================
+          // =========================
           // DELETE HOST OLD ENDED ROOMS
           // =========================
           const [oldRooms] =
@@ -306,7 +289,6 @@ const colorCrashSocket = (io, socket) => {
               "Maximum 5 game rooms allowed. Please wait."
             );
           }
-          
           // =========================
           // ACTIVE ROOM CHECK
           // =========================
@@ -452,7 +434,7 @@ const colorCrashSocket = (io, socket) => {
             "room_update",
             rooms[roomId]
           );
-        broadcastLiveRooms(io);
+
           delete creatingRooms[
             hostUserId
           ];
@@ -522,39 +504,51 @@ const colorCrashSocket = (io, socket) => {
             );
           }
 
-          const dbRoom =
-            roomRows[0];
+          const dbRoom = roomRows[0];
+            const [dbPlayers] =
+              await db.promise().query(
+                `
+                SELECT
+                  grp.user_id,
+                  u.name
+                FROM game_room_players grp
+                LEFT JOIN users u
+                  ON grp.user_id=u.srno
+                WHERE grp.room_id=?
+                `,
+                [roomId]
+              );
 
-          rooms[roomId] = {
+            rooms[roomId] = {
+              roomId,
+              hostId: null,
+              hostUserId: dbRoom.host_user_id,
+              players: dbPlayers.map(p => ({
+                socketId: null,
+                userId: String(p.user_id),
+                name: p.name || "Player",
+                score: 0
+              })),
+              viewers: [],
+              currentColor: "gray",
+              gameStarted: dbRoom.status === "running",
+              gameTime: 60,
+              interval: null
+            };
+          
 
-            roomId,
-
-            hostId: null,
-
-            hostUserId:
-              dbRoom.host_user_id,
-
-            players: [],
-
-            viewers: [],
-
-            currentColor:
-              "gray",
-
-            gameStarted:
-              dbRoom.status ===
-              "running",
-
-            gameTime: 60,
-
-            interval:
-              null,
-          };
-
-          room =
-            rooms[roomId];
+          room = rooms[roomId];
         }
 
+         if ( room.gameStarted &&  !room.players.some(    p =>
+                String(p.userId) ===
+                String(userId)
+            )) {
+            return socket.emit(
+              "error_message",
+              "Game already started. Wait for next room."
+            );
+          }
         // =========================
         // USER EXISTS?
         // =========================
@@ -579,8 +573,7 @@ const colorCrashSocket = (io, socket) => {
           );
         }
 
-      const user =
-        users[0];
+      const user = users[0];
 
       // =========================
       // ALREADY JOINED IN DB?
@@ -588,11 +581,11 @@ const colorCrashSocket = (io, socket) => {
       const [existingPlayerRows] =
         await db.promise().query(
           `
-        SELECT id
-        FROM game_room_players
-        WHERE room_id=?
-        AND user_id=?
-        LIMIT 1
+          SELECT id
+          FROM game_room_players
+          WHERE room_id=?
+          AND user_id=?
+          LIMIT 1
           `,
           [
             roomId,
@@ -600,19 +593,8 @@ const colorCrashSocket = (io, socket) => {
           ]
         );
 
-      const alreadyJoined = existingPlayerRows.length > 0;
-      // =========================
-// BLOCK NEW PLAYER
-// =========================
-if (
-  room.gameStarted &&
-  !alreadyJoined
-) {
-  return socket.emit(
-    "error_message",
-    "Game already started. Wait for next round."
-  );
-}
+      const alreadyJoined =
+        existingPlayerRows.length > 0;
 
       // =========================
       // NOT JOINED BEFORE
@@ -753,7 +735,12 @@ if (
         "room_update",
         room
       );
-     broadcastLiveRooms(io);
+      io.to(roomId).emit(
+        "game_reset",
+        {
+          room
+        }
+      );
     } catch (err) {
 
       console.log(
@@ -797,10 +784,12 @@ if (
             return;
           }
 
-          room.gameStarted =   true;
+          room.gameStarted =
+            true;
 
-          room.gameTime =   45;
-broadcastLiveRooms(io);
+          room.gameTime =
+            45;
+
           await db.promise().query(
             `
             UPDATE game_rooms
@@ -846,8 +835,9 @@ io.to(roomId).emit("game_tick", {
                       room.interval
                     );
 
-                    room.gameStarted = false;
-                    broadcastLiveRooms(io);
+                    room.gameStarted =
+                      false;
+
                     // =========================
                     // UNIQUE PLAYERS
                     // =========================
@@ -881,19 +871,9 @@ io.to(roomId).emit("game_tick", {
                     // =========================
                     // POOL
                     // =========================
-                    //const totalPool =  uniquePlayers.length * ENTRY_FEE;
-                    const [countRows] =
-              await db.promise().query(
-                `
-                SELECT COUNT(*) total
-                FROM game_room_players
-                WHERE room_id=?
-                `,
-                [roomId]
-              );
-
-            const totalPlayers =  Number(countRows[0].total);
-            const totalPool =  totalPlayers *  ENTRY_FEE;
+                    const totalPool =
+                      uniquePlayers.length *
+                      ENTRY_FEE;
 
                     const appCommission =
                       Math.floor(
@@ -997,14 +977,58 @@ io.to(roomId).emit("game_tick", {
                       [roomId]
                     );
 
-                    io.to(roomId).emit(
+                   /* io.to(roomId).emit(
                       "game_ended",
                       {
                         winner,
                         leaderboard,
                         rewardCoins,
                       }
+                    );*/
+                    io.to(roomId).emit(
+                      "game_ended",
+                      {
+                        winner: winner
+                          ? {
+                              ...winner,
+                              rewardCoins
+                            }
+                          : null,
+                        leaderboard,
+                        rewardCoins,
+                      }
                     );
+
+                    // reset room for next round
+
+                      room.gameStarted = false;
+                      room.gameTime = 45;
+                      room.currentColor = "gray";
+
+                      // reset scores
+
+                      room.players = room.players.map((p) => ({
+                        ...p,
+                        score: 0
+                      }));
+
+                      // room status waiting
+
+                      await db.promise().query(
+                        `
+                        UPDATE game_rooms
+                        SET status='waiting'
+                        WHERE room_id=?
+                        `,
+                        [roomId]
+                      );
+
+                      // send fresh room
+
+                      io.to(roomId).emit(
+                        "room_update",
+                        room
+                      );
 
                     return;
                   }
@@ -1036,9 +1060,11 @@ io.to(roomId).emit("game_tick", {
                         room.gameTime,
                     }
                   );
-                  io.to(roomId).emit("room_sync", {
+                  socket.emit("room_sync", {
+                    gameStarted: room.gameStarted,
                     gameTime: room.gameTime,
-                    players: room.players,
+                    currentColor: room.currentColor,
+                    players: room.players
                   });
                 } catch (err) {
 
@@ -1183,7 +1209,8 @@ function safeRoom(room) {
 let lastEmit = {};
 function emitRoom(io, roomId, room) {
   const now = Date.now();
-    if (lastEmit[roomId] && now - lastEmit[roomId] < 200) return;
+
+  if (lastEmit[roomId] && now - lastEmit[roomId] < 200) return;
 
   lastEmit[roomId] = now;
 
@@ -1216,7 +1243,6 @@ function emitRoom(io, roomId, room) {
     if (!changed) continue; // 👈 IMPORTANT
 
    emitRoom(io, roomId, room);
-   broadcastLiveRooms(io);
 
     // delete room if empty
 /*  if (room.players.length === 0 && room.viewers.length === 0) {
@@ -1242,7 +1268,7 @@ function emitRoom(io, roomId, room) {
   }
 
   delete rooms[roomId];
-broadcastLiveRooms(io);
+
   console.log(
     "🗑 Room Deleted:",
     roomId
@@ -1258,21 +1284,20 @@ socket.on("leave_room", ({ roomId, userId }) => {
 
   if (!rooms[roomId]) return;
 
-  const player =
-    rooms[roomId].players.find(
-      p => String(p.userId) === String(userId)
-    );
+const player = rooms[roomId].players.find(
+  p => String(p.userId) === String(userId)
+);
 
-  if (player) {
-    player.socketId = null;
-  }
-
+if (player) {
+  player.socketId = null;
+}
   io.to(roomId).emit(
     "room_update",
     rooms[roomId]
   );
-broadcastLiveRooms(io);
+
 });
+
  // });
 };
 

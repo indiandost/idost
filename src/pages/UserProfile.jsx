@@ -27,6 +27,8 @@ fetch( `${API}/users/${id}?viewer=${myId}`,{
     }
   }) .then(res => res.json())
   .then(data => {
+    console.log(id +"---"+ myId);
+     console.log("USER DATA =>", data);
     // 🚫 blocked
     if (data.blocked) {
       setBlocked(true);

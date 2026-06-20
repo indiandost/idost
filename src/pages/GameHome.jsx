@@ -188,32 +188,6 @@ export default function Home() {
       </div>
 
 
-      {/* CREATE BUTTON */}
-      <button
-        onClick={createRoom}
-        disabled={loading} 
-        className="
-          bg-green-500
-          hover:bg-green-600
-          transition
-          px-6
-          py-4
-          rounded-2xl
-          font-bold
-          text-lg
-          disabled:opacity-50
-        "
-      >
-
-        {
-          loading
-            ? "Creating..."
-            : "Create Room (FREE)"
-        }
-
-      </button>
-
-
       {/* ROOMS */}
       <div className="mt-10 grid gap-4">
 
@@ -300,6 +274,32 @@ export default function Home() {
         ))}
 
       </div>
+      <div className="bg-gray-900 text-white rounded-xl p-4 mb-4 border border-gray-700">
+      {/* CREATE BUTTON */}
+      <button
+        onClick={createRoom}
+        disabled={loading} 
+        className="
+          bg-green-500
+          hover:bg-green-600
+          transition
+          px-6
+          py-4
+          rounded-2xl
+          font-bold
+          text-lg
+          disabled:opacity-50
+        "
+      >
+
+        {
+          loading
+            ? "Creating..."
+            : "Create Room (FREE)"
+        }
+
+      </button></div>
+
 <div className="bg-gray-900 text-white rounded-xl p-4 mb-4 border border-gray-700">
   <h2 className="text-xl font-bold mb-3 text-white">
     🎨 Color Crash - Rules & Prize Distribution

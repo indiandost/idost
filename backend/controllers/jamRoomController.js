@@ -1,26 +1,13 @@
 import { v4 as uuidv4 } from "uuid";
-
-
-
 import db from "../db.js";
-
-
-
 import rewardJamWinner from "../utils/rewardJamWinner.js";
 
-
-
-
-
 // =======================================
-
 // CREATE ROOM
-
 // =======================================
 export const createJamRoom = async (req, res) => {
-
     try {
-
+      console.log('creating room......');
         const {
             hostId,
             title,
@@ -29,13 +16,53 @@ export const createJamRoom = async (req, res) => {
         } = req.body;
 
         if (!hostId || !title) {
-
             return res.status(400).json({
                 success: false,
                 message: "Missing fields",
             });
-
         }
+// =========================
+// MAX 2 LIVE ROOMS CHECK
+// =========================
+
+const [liveRooms] = await db.promise().query(
+  `
+  SELECT COUNT(*) total
+  FROM jam_rooms
+  WHERE is_live = 1
+  `
+);
+
+if (Number(liveRooms[0].total) >= 3) {
+  return res.status(400).json({
+    success: false,
+    message:
+      "Maximum 3 live rooms are already running"
+  });
+}
+
+// =========================
+// HOST ALREADY HAS ROOM?
+// =========================
+
+const [hostRooms] = await db.promise().query(
+  `
+  SELECT room_id
+  FROM jam_rooms
+  WHERE host_id = ?
+  AND is_live = 1
+  LIMIT 1
+  `,
+  [hostId]
+);
+
+if (hostRooms.length) {
+  return res.status(400).json({
+    success: false,
+    message:
+      "You already have an active room"
+  });
+}
 
         // =========================
         // ROOM ID
@@ -124,9 +151,7 @@ export const createJamRoom = async (req, res) => {
             success: false,
             message: "Server error",
         });
-
     }
-
 };
 
 // =======================================

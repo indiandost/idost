@@ -49,6 +49,7 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { HelmetProvider } from "react-helmet-async";
 import socket from "./socket";
+import LiveRoomsAlert from "./components/LiveRoomsAlert";
 import {
   Home as HomeIcon,
   Users,
@@ -86,6 +87,8 @@ const viewer = user?.srno || 0;
   const [searchResults, setSearchResults] = useState([]);
 const location = useLocation();
   const { coins, setCoins } = useCoins();
+  const [pendingQuizCount, setPendingQuizCount] = useState(0);
+  const [liveCount, setLiveCount] = useState(0);
 // ✅ custom hook
 useLoadCoins(user?.srno);
 // ✅ socket listener
@@ -100,6 +103,71 @@ useEffect(() => {
     socket.off("coinUpdate", handleCoinUpdate);
   };
 }, [setCoins]);
+//my quiz alert pending
+useEffect(() => {
+  loadPendingQuizCount();
+  loadLiveRooms();
+
+  const interval = setInterval(() => {
+    loadLiveRooms();
+    loadPendingQuizCount();
+  }, 30000);
+
+  return () => clearInterval(interval);
+
+}, []);
+
+
+//live rooms
+const loadLiveRooms = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch(
+      `${API}/api/jam-room/live`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    const data = await res.json();
+    if (data.success) {
+      setLiveCount(data.rooms?.length || 0);
+    }
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+const loadPendingQuizCount = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(
+      `${API}/api/quiz/my-battles`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await res.json();
+
+    const pending =
+      (data.battles || []).filter(
+        (b) =>
+          b.status === "accepted" &&
+          Number(b.my_answers) < 5
+      ).length;
+
+    setPendingQuizCount(pending);
+
+  } catch (err) {
+    console.log(err);
+  }
+};
+
   //reward popup
   useEffect(() => {
     socket.on("rewardReceived", (data) => {
@@ -182,7 +250,65 @@ useEffect(() => {
           <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-orange-500 px-3 py-1 rounded-full text-black font-bold shadow-md">
             💰 {coins}
           </div>
+           {liveCount > 0 && (
+    <button
+      onClick={() => navigate("/create-jam")}
+      className="
+        relative
+        text-xl
+        animate-pulse
+      "
+    >
+      🔴
 
+      <span
+        className="
+          absolute
+          -top-2
+          -right-2
+          bg-red-600
+          text-white
+          text-[10px]
+          rounded-full
+          px-1
+        "
+      >
+        {liveCount}
+      </span>
+    </button>
+  )}
+  {/* ⚔️ QUIZ ALERT */}
+  {pendingQuizCount > 0 && (
+    <button
+      onClick={() => navigate("/quiz-battles")}
+      className="relative text-xl"
+      title="Pending Quiz Battles"
+    >
+      ⚔️
+
+      <span
+        className="
+          absolute
+          -top-2
+          -right-2
+          bg-red-500
+          text-white
+          text-[10px]
+          min-w-[18px]
+          h-[18px]
+          rounded-full
+          flex
+          items-center
+          justify-center
+          font-bold
+        "
+      >
+        {pendingQuizCount > 9
+          ? "9+"
+          : pendingQuizCount}
+      </span>
+    </button>
+  )}
           {/* SEARCH AREA */}
 
           <button onClick={() => setSearchOpen(true)}>🔍</button>
@@ -597,24 +723,22 @@ useEffect(() => {
   const listener = CapacitorApp.addListener(
     "appStateChange",
     ({ isActive }) => {
-      if (isActive) {
-        console.log("📱 App resumed");
 
-        if (!socket.connected) {
-          socket.connect();
-        }
+      if (!isActive) return;
 
-        if (user?.srno) {
-          socket.emit("register", Number(user.srno));
-        }
+      console.log("📱 App resumed");
+
+      if (!socket.connected) {
+        socket.connect();
       }
+
     }
   );
 
   return () => {
     listener.then((l) => l.remove());
   };
-}, [user?.srno]);
+}, []);
 //health check 
 useEffect(() => {
   const interval = setInterval(async () => {
@@ -976,9 +1100,11 @@ useEffect(() => {
   }, [user?.srno]); 
   */
  useEffect(() => {
+
   if (!user?.srno) return;
 
   const registerUser = () => {
+
     if (!socket.connected) return;
 
     console.log(
@@ -988,38 +1114,67 @@ useEffect(() => {
       socket.id
     );
 
-    socket.emit("register", Number(user.srno));
+    socket.emit(
+      "register",
+      Number(user.srno)
+    );
+
   };
 
   const handleConnect = () => {
-    console.log("🔌 Socket Connected:", socket.id);
+
+    console.log(
+      "🔌 Socket Connected:",
+      socket.id
+    );
+
     registerUser();
+
   };
 
   const handleDisconnect = (reason) => {
-    console.log("❌ Socket Disconnected:", reason);
+
+    console.log(
+      "❌ Socket Disconnected:",
+      reason
+    );
+
   };
 
-  const handleReconnect = (attempt) => {
-    console.log("🔄 Socket Reconnected:", attempt);
-    registerUser();
+  const handleConnectError = (err) => {
+    console.log(
+      "⚠️ Socket Error:",
+      err?.message
+    );
+
   };
 
+  // Already connected on page load
   if (socket.connected) {
     registerUser();
   }
 
-  socket.on("connect", handleConnect);
-  socket.on("disconnect", handleDisconnect);
-  socket.on("connect_error", console.error);
+  socket.on(
+    "connect",
+    handleConnect
+  );
 
-  socket.io.on("reconnect", handleReconnect);
+  socket.on(
+    "disconnect",
+    handleDisconnect
+  );
+
+  socket.on(
+    "connect_error",
+    handleConnectError
+  );
 
   return () => {
     socket.off("connect", handleConnect);
     socket.off("disconnect", handleDisconnect);
-    socket.io.off("reconnect", handleReconnect);
+    socket.off("connect_error", handleConnectError);
   };
+
 }, [user?.srno]);
   // 📞 Incoming call ringtone
   const ringtoneRef = useRef(null);
@@ -1167,6 +1322,7 @@ useEffect(() => {
 
       <div className="flex-grow">
        <HelmetProvider>
+         <LiveRoomsAlert />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

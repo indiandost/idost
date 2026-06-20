@@ -313,23 +313,53 @@ router.get("/my-battles", verifyToken, (req, res) => {
   const userId = req.user.id;
 
   const sql = `
-SELECT
-    qb.*,
-    u1.name AS challenger_name,
-    u2.name AS opponent_name
-FROM quiz_battles qb
-LEFT JOIN users u1
-ON qb.challenger_id=u1.srno
-LEFT JOIN users u2
-ON qb.opponent_id=u2.srno
-WHERE qb.challenger_id=?
-   OR qb.opponent_id=?
-ORDER BY qb.id DESC
-`;
+  SELECT
+      qb.*,
+
+      u1.name AS challenger_name,
+      u2.name AS opponent_name,
+
+      (
+        SELECT COUNT(*)
+        FROM quiz_answers qa
+        WHERE qa.battle_id = qb.id
+        AND qa.user_id = ?
+      ) AS my_answers,
+
+      CASE
+        WHEN (
+          SELECT COUNT(*)
+          FROM quiz_answers qa
+          WHERE qa.battle_id = qb.id
+          AND qa.user_id = ?
+        ) >= 5
+        THEN 1
+        ELSE 0
+      END AS quiz_finished
+
+  FROM quiz_battles qb
+
+  LEFT JOIN users u1
+    ON qb.challenger_id = u1.srno
+
+  LEFT JOIN users u2
+    ON qb.opponent_id = u2.srno
+
+  WHERE
+    qb.challenger_id = ?
+    OR qb.opponent_id = ?
+
+  ORDER BY qb.id DESC
+  `;
 
   db.query(
     sql,
-    [userId, userId],
+    [
+      userId, // my_answers
+      userId, // quiz_finished
+      userId, // challenger
+      userId  // opponent
+    ],
     (err, rows) => {
 
       if (err) {
@@ -340,11 +370,11 @@ ORDER BY qb.id DESC
         success: true,
         battles: rows
       });
+
     }
   );
+
 });
-
-
 // ===========================
 // GET QUESTIONS
 // ===========================

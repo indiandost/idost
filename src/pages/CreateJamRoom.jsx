@@ -173,127 +173,6 @@ export default function CreateJamRoom() {
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-6">
 
         {/* ===================================== */}
-        {/* CREATE ROOM */}
-        {/* ===================================== */}
-
-        <div className="bg-gray-900 rounded-3xl p-6 border border-gray-800 h-fit">
-
-          {/* TITLE */}
-
-          <h1 className="text-3xl font-bold mb-2 text-white">
-
-            🎤 Create Jam Room
-
-          </h1>
-
-          <p className="text-gray-400 mb-6">
-
-            Start your live music or voice room
-
-          </p>
-
-          {/* ROOM TITLE */}
-
-          <div className="mb-4">
-
-            <label className="block mb-2 text-sm text-gray-300">
-
-              Room Title
-
-            </label>
-
-            <input
-              value={title}
-              onChange={(e) =>
-                setTitle(
-                  e.target.value
-                )
-              }
-              placeholder="Enter room title"
-              className="w-full bg-gray-800 rounded-xl p-4 outline-none border border-gray-700"
-            />
-
-          </div>
-
-          {/* DESCRIPTION */}
-
-          <div className="hidden mb-4">
-
-            <label className="block mb-2 text-sm text-gray-300">
-
-              Description
-
-            </label>
-
-            <textarea
-              value={description}
-              onChange={(e) =>
-                setDescription(
-                  e.target.value
-                )
-              }
-              placeholder="Room description..."
-              rows={4}
-              className="w-full bg-gray-800 rounded-xl p-4 outline-none border border-gray-700 resize-none"
-            />
-
-          </div>
-
-          {/* ROOM TYPE */}
-
-          <div className="mb-6">
-
-            <label className="block mb-2 text-sm text-gray-300">
-
-              Room Type
-
-            </label>
-
-            <select
-              value={roomType}
-              onChange={(e) =>
-                setRoomType(
-                  e.target.value
-                )
-              }
-              className="w-full bg-gray-800 rounded-xl p-4 outline-none border border-gray-700"
-            >
-
-              <option value="jam">
-                🎵 Jam Session
-              </option>
-
-              <option value="battle">
-                ⚔️ Music Battle
-              </option>
-
-              <option value="karaoke">
-                🎤 Karaoke
-              </option>
-
-            </select>
-
-          </div>
-
-          {/* BUTTON */}
-
-          <button
-            onClick={createRoom}
-            disabled={loading}
-            className="bg-pink-600 hover:bg-pink-700 transition-all px-5 py-4 rounded-xl w-full font-semibold"
-          >
-
-            {
-              loading
-                ? "Creating..."
-                : "Create Room"
-            }
-
-          </button>
-
-        </div>
-
-        {/* ===================================== */}
         {/* LIVE ROOMS */}
         {/* ===================================== */}
 
@@ -468,6 +347,129 @@ export default function CreateJamRoom() {
           </div>
 
         </div>
+
+
+  {/* ===================================== */}
+        {/* CREATE ROOM */}
+        {/* ===================================== */}
+
+        <div className="bg-gray-900 rounded-3xl p-6 border border-gray-800 h-fit">
+
+          {/* TITLE */}
+
+          <h1 className="text-3xl font-bold mb-2 text-white">
+
+            🎤 Create Jam Room
+
+          </h1>
+
+          <p className="text-gray-400 mb-6">
+
+            Start your live music or voice room
+
+          </p>
+
+          {/* ROOM TITLE */}
+
+          <div className="mb-4">
+
+            <label className="block mb-2 text-sm text-gray-300">
+
+              Room Title
+
+            </label>
+
+            <input
+              value={title}
+              onChange={(e) =>
+                setTitle(
+                  e.target.value
+                )
+              }
+              placeholder="Enter room title"
+              className="w-full bg-gray-800 rounded-xl p-4 outline-none border border-gray-700"
+            />
+
+          </div>
+
+          {/* DESCRIPTION */}
+
+          <div className="hidden mb-4">
+
+            <label className="block mb-2 text-sm text-gray-300">
+
+              Description
+
+            </label>
+
+            <textarea
+              value={description}
+              onChange={(e) =>
+                setDescription(
+                  e.target.value
+                )
+              }
+              placeholder="Room description..."
+              rows={4}
+              className="w-full bg-gray-800 rounded-xl p-4 outline-none border border-gray-700 resize-none"
+            />
+
+          </div>
+
+          {/* ROOM TYPE */}
+
+          <div className="mb-6">
+
+            <label className="block mb-2 text-sm text-gray-300">
+
+              Room Type
+
+            </label>
+
+            <select
+              value={roomType}
+              onChange={(e) =>
+                setRoomType(
+                  e.target.value
+                )
+              }
+              className="w-full bg-gray-800 rounded-xl p-4 outline-none border border-gray-700"
+            >
+
+              <option value="jam">
+                🎵 Jam Session
+              </option>
+
+              <option value="battle">
+                ⚔️ Music Battle
+              </option>
+
+              <option value="karaoke">
+                🎤 Karaoke
+              </option>
+
+            </select>
+
+          </div>
+
+          {/* BUTTON */}
+
+          <button
+            onClick={createRoom}
+            disabled={loading}
+            className="bg-pink-600 hover:bg-pink-700 transition-all px-5 py-4 rounded-xl w-full font-semibold"
+          >
+
+            {
+              loading
+                ? "Creating..."
+                : "Create Room"
+            }
+
+          </button>
+
+        </div>
+
 
       </div>
 

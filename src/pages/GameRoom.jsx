@@ -149,7 +149,7 @@ const handleGameEnd = (data) => {
     setError(msg);
   };
 
-  socket.off(); // 🔥 IMPORTANT: clears old duplicates
+  //socket.off(); // 🔥 IMPORTANT: clears old duplicates
 
   socket.on("room_update", handleRoomUpdate);
   socket.on("new_color", handleNewColor);
@@ -624,21 +624,24 @@ const myScore =
         </p>
 
         <button
-          onClick={() => navigate("/game")}
-          className="
-                mt-8
-                bg-yellow-500
-                hover:bg-yellow-600
-                text-black
-                px-6
-                py-3
-                rounded-2xl
-                font-black
-                w-full
-              "
-        >
-          Back To Lobby
-        </button>
+  onClick={() => {
+    setWinner(null);
+    setRewardCoins(0);
+  }}
+  className="
+    mt-8
+    bg-yellow-500
+    hover:bg-yellow-600
+    text-black
+    px-6
+    py-3
+    rounded-2xl
+    font-black
+    w-full
+  "
+>
+  Play Next Round
+</button>
       </div>
     </div>
   )}

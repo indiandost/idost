@@ -1080,7 +1080,7 @@ router.get("/:id", verifyToken, (req, res) => {
   //console.log("PROFILE API CALLED");
 
   const db = req.app.get("db");
-
+console.log('profile api--');
   const profileId = parseInt(req.params.id) || 0;
 
   // 👁 current logged-in viewer

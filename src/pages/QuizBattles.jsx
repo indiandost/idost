@@ -177,16 +177,24 @@ useEffect(() => {
   </span>
 )}
 
-  {battle.status === "accepted" && (
-    <button
-      onClick={() =>
-        navigate(`/quiz/${battle.id}`)
-      }
-      className="bg-blue-500 text-white px-4 py-2 rounded"
-    >
-      Play Quiz
-    </button>
-  )}
+{battle.status === "accepted" &&
+ Number(battle.my_answers) < 5 && (
+  <button
+    onClick={() =>
+      navigate(`/quiz/${battle.id}`)
+    }
+    className="bg-blue-500 text-white px-4 py-2 rounded"
+  >
+    Play Quiz
+  </button>
+)}
+
+{battle.status === "accepted" &&
+ Number(battle.my_answers) >= 5 && (
+  <span className="text-yellow-500 font-semibold">
+    ⏳ Waiting for opponent...
+  </span>
+)}
 
   {battle.status === "completed" && (
     <button
