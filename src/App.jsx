@@ -65,6 +65,7 @@ import {
   Coins,
   Gamepad2,
   Music,
+  Search,
 } from "lucide-react";
 import {  App as CapacitorApp } from "@capacitor/app";
 
@@ -77,15 +78,21 @@ function PrivateRoute({ children }) {
 const user = JSON.parse(localStorage.getItem("user") || "null");
 const viewer = user?.srno || 0;
 // 🔝 Navbar
-function Navbar({ menuOpen, setMenuOpen }) {
+function Navbar({
+  menuOpen,
+  setMenuOpen,
+  searchOpen,
+  setSearchOpen,
+  search,
+  setSearch
+}) {
   const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("user") || "null");
 const viewer = user?.srno || 0;
  const token = localStorage.getItem("token");
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [search, setSearch] = useState("");
+ // const [searchOpen, setSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
-const location = useLocation();
+  const location = useLocation();
   const { coins, setCoins } = useCoins();
   const [pendingQuizCount, setPendingQuizCount] = useState(0);
   const [liveCount, setLiveCount] = useState(0);
@@ -179,34 +186,53 @@ const loadPendingQuizCount = async () => {
     };
   }, []);
 
-  //search api call
-  useEffect(() => {
-    console.log("viewer", viewer);
-    if (!search.trim()) {
-      setSearchResults([]);
-      return;
+ useEffect(() => {
+
+  const controller = new AbortController();
+
+  if (!search.trim()) {
+    setSearchResults([]);
+    return;
+  }
+
+  const delay = setTimeout(async () => {
+
+    try {
+
+      const res = await fetch(
+        `${API}/users/search?q=${encodeURIComponent(search)}&viewer=${viewer}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          signal: controller.signal
+        }
+      );
+
+      const data = await res.json();
+
+      setSearchResults(
+        Array.isArray(data.users)
+          ? data.users
+          : []
+      );
+
+    } catch (err) {
+
+      if (err.name !== "AbortError") {
+        console.log(err);
+      }
+
     }
-    const delay = setTimeout(() => {
-      fetch(`${API}/users/search?q=${search}&viewer=${viewer}`,{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  })
-        .then((res) => res.json())
-        .then((data) => {
-          console.log(data);
 
-          setSearchResults(Array.isArray(data.users) ? data.users : []);
-        })
-        .catch((err) => {
-          console.log(err);
-          setSearchResults([]);
-        });
-    }, 300);
+  }, 300);
 
-    return () => clearTimeout(delay);
-  }, [search]);
+  return () => {
+    clearTimeout(delay);
+    controller.abort();
+  };
 
+}, [search, viewer, token]); 
   const logout = () => {
       const u = JSON.parse(localStorage.getItem("user"));
         setMenuOpen(false);
@@ -311,7 +337,17 @@ const loadPendingQuizCount = async () => {
   )}
           {/* SEARCH AREA */}
 
-          <button onClick={() => setSearchOpen(true)}>🔍</button>
+         <button
+          onClick={() => setSearchOpen(true)}
+          className="
+            p-2
+            rounded-full
+            hover:bg-zinc-800
+            transition
+          "
+        >
+          <Search size={20} />
+        </button>
         </div>
 
         {searchOpen && (
@@ -552,7 +588,7 @@ const loadPendingQuizCount = async () => {
 }
 
 // 🔽 Bottom Nav
-function BottomNav({ setMenuOpen }) {
+function BottomNav({ setMenuOpen, setSearchOpen, setSearch }) {
   const location = useLocation();
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const token = localStorage.getItem("token"); 
@@ -646,10 +682,11 @@ function BottomNav({ setMenuOpen }) {
                   location.pathname.startsWith("/meeting"));
 
               return (
-                <Link
+     <Link
   key={item.name}
   to={item.path}
   onClick={(e) => {
+
     if (
       item.path === "/" &&
       location.pathname === "/"
@@ -659,11 +696,16 @@ function BottomNav({ setMenuOpen }) {
     }
 
     setMenuOpen(false);
+                    setSearchOpen(false);
+                    setSearch("");
+   
   }}
-className={`flex flex-col items-center min-w-[65px] transition-all duration-300 ${
-                    active ? "text-pink-400" : "text-gray-400 hover:text-white"
-                  }`}
-                >
+  className={`flex flex-col items-center min-w-[65px] transition-all duration-300 ${
+    active
+      ? "text-pink-400"
+      : "text-gray-400 hover:text-white"
+  }`}
+>
                   <div
                     className={`p-2 rounded-xl transition-all duration-300 ${
                       active
@@ -703,6 +745,8 @@ export default function App() {
   const viewer = user?.srno || 0;
    const token = localStorage.getItem("token"); 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const [chatNotice, setChatNotice] = useState(null);
 
   const [incomingCall, setIncomingCall] = useState(null);
@@ -718,6 +762,14 @@ export default function App() {
     location.pathname.startsWith("/reset-password/");
 
   const hideLayout = hideLayoutRoutes.includes(location.pathname);
+   //const location = useLocation();
+
+  const hideAlert =
+    location.pathname.startsWith("/game/room/") ||
+    location.pathname.startsWith("/login") ||
+    location.pathname.startsWith("/register") ||
+    location.pathname.startsWith("/register") ||
+    location.pathname.startsWith("/quiz/");
 //check sockit connection
 useEffect(() => {
   const listener = CapacitorApp.addListener(
@@ -1318,11 +1370,19 @@ useEffect(() => {
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col">
       {/* search function */}
-      {!shouldHideLayout && <Navbar menuOpen={menuOpen} setMenuOpen={setMenuOpen}/>}
+      {!shouldHideLayout && <Navbar
+  menuOpen={menuOpen}
+  setMenuOpen={setMenuOpen}
+  searchOpen={searchOpen}
+  setSearchOpen={setSearchOpen}
+  search={search}
+  setSearch={setSearch}
+/>}
+
 
       <div className="flex-grow">
        <HelmetProvider>
-         <LiveRoomsAlert />
+          {!hideAlert && <LiveRoomsAlert />}
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -1527,7 +1587,9 @@ useEffect(() => {
         </HelmetProvider>
       </div>
       {/*!shouldHideLayout && <BottomNav  setMenuOpen={setMenuOpen} />*/}
- <BottomNav  setMenuOpen={setMenuOpen} />
+ <BottomNav  setMenuOpen={setMenuOpen} 
+      setSearchOpen={setSearchOpen}
+      setSearch={setSearch} />
       {/* 📞 GLOBAL CALL POPUP (FIXED POSITION) */}
 
       {incomingCall && (

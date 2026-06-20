@@ -27,79 +27,182 @@ export default function LiveRoomsAlert() {
   if (!rooms.length) return null;
 
   return (
-    <div className="fixed left-3 top-24 z-50">
+   <div className="fixed left-56 top-2 z-50">
 
-      <button
-        onClick={() => setShow(!show)}
+  {/* Toggle Button */}
+  <button
+    onClick={() => setShow(!show)}
+    className="
+      flex
+      items-center
+      gap-2
+      bg-gradient-to-r
+      from-green-500
+      to-emerald-600
+      text-white
+      px-3
+      py-2
+      rounded-full
+      shadow-xl
+      text-sm
+      font-semibold
+      hover:scale-105
+      transition-all
+    "
+  >
+    <span className="animate-pulse">
+      🎮
+    </span>
+
+    <span>
+      {rooms.length}
+    </span>
+  </button>
+
+  {/* Room List */}
+  {show && (
+
+    <div
+      className="
+        mt-2
+        w-64
+        max-h-80
+        overflow-y-auto
+        bg-zinc-900/95
+        backdrop-blur-md
+        border
+        border-zinc-700
+        rounded-2xl
+        shadow-2xl
+      "
+    >
+
+      {/* Header */}
+      <div
         className="
-          bg-green-600
-          text-white
+          sticky
+          top-0
+          bg-zinc-950
           px-4
-          py-2
-          rounded-full
-          shadow-lg
-          font-bold
+          py-3
+          border-b
+          border-zinc-800
+          flex
+          justify-between
+          items-center
         "
       >
-        🎮 Live Games ({rooms.length})
-      </button>
+        <span
+          className="
+            text-white
+            font-bold
+            text-sm
+          "
+        >
+          🎮 Live Games
+        </span>
 
-      {show && (
+        <span
+          className="
+            bg-green-500
+            text-black
+            text-xs
+            px-2
+            py-0.5
+            rounded-full
+            font-bold
+          "
+        >
+          {rooms.length}
+        </span>
+      </div>
+
+      {/* Rooms */}
+      {rooms.map((room) => (
 
         <div
+          key={room.roomId}
+          onClick={() => {
+            navigate(
+              `/game/room/${room.roomId}`
+            );
+            setShow(false);
+          }}
           className="
-            mt-2
-            w-72
-            bg-zinc-900
-            border
-            border-zinc-700
-            rounded-xl
-            shadow-2xl
-            overflow-hidden
+            p-3
+            border-b
+            border-zinc-800
+            cursor-pointer
+            hover:bg-zinc-800
+            transition
           "
         >
 
-          {rooms.map(room => (
+          <div
+            className="
+              flex
+              justify-between
+              items-center
+            "
+          >
 
             <div
-              key={room.roomId}
-              onClick={() =>
-                navigate(
-                  `/game/room/${room.roomId}`
-                )
-              }
               className="
-                p-3
-                border-b
-                border-zinc-800
-                cursor-pointer
-                hover:bg-zinc-800
                 text-white
+                font-semibold
+                text-sm
               "
             >
-
-              <div className="font-bold">
-                Room {room.roomId}
-              </div>
-
-              <div className="text-sm text-zinc-400">
-                👥 {room.players} Players
-              </div>
-
-              <div className="text-xs">
-                {room.gameStarted
-                  ? "🔥 Playing"
-                  : "⏳ Waiting"}
-              </div>
-
+              #{room.roomId}
             </div>
 
-          ))}
+            <div
+              className={`
+                text-[10px]
+                px-2
+                py-1
+                rounded-full
+                font-bold
+                ${
+                  room.gameStarted
+                    ? "bg-green-500/20 text-green-400"
+                    : "bg-yellow-500/20 text-yellow-400"
+                }
+              `}
+            >
+              {room.gameStarted
+                ? "LIVE"
+                : "WAIT"}
+            </div>
+
+          </div>
+
+          <div
+            className="
+              mt-1
+              text-xs
+              text-zinc-400
+              flex
+              justify-between
+            "
+          >
+            <span>
+              👥 {room.players} Players
+            </span>
+
+            <span>
+              Join →
+            </span>
+          </div>
 
         </div>
 
-      )}
+      ))}
 
     </div>
+
+  )}
+
+</div>
   );
 }
