@@ -27,7 +27,7 @@ export default function LiveRoomsAlert() {
   if (!rooms.length) return null;
 
   return (
-   <div className="fixed left-56 top-2 z-50">
+   <div className="fixed left-36 top-2 z-50">
 
   {/* Toggle Button */}
   <button
