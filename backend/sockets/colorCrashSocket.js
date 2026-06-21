@@ -604,7 +604,7 @@ const colorCrashSocket = (io, socket) => {
       // =========================
 // BLOCK NEW PLAYER
 // =========================
-if (
+/*if (
   room.gameStarted &&
   !alreadyJoined
 ) {
@@ -613,7 +613,27 @@ if (
     "Game already started. Wait for next round."
   );
 }
+*/
+if (
+  room.gameStarted &&
+  !alreadyJoined
+) {
 
+  socket.join(roomId);
+
+  room.viewers.push({
+    socketId: socket.id,
+    userId: String(userId),
+    name: name || "Viewer"
+  });
+
+  io.to(socket.id).emit(
+    "room_update",
+    room
+  );
+
+  return;
+}
       // =========================
       // NOT JOINED BEFORE
       // =========================
@@ -798,6 +818,11 @@ if (
           }
 
           room.gameStarted =   true;
+          room.gameStarted = true;
+//new added
+room.activePlayers = room.players.map(
+  p => String(p.userId)
+);
 
           room.gameTime =   45;
 broadcastLiveRooms(io);
@@ -851,7 +876,7 @@ io.to(roomId).emit("game_tick", {
                     // =========================
                     // UNIQUE PLAYERS
                     // =========================
-                    const uniquePlayers =
+                    /*const uniquePlayers =
                       [
                         ...new Map(
                           room.players.map(
@@ -861,7 +886,23 @@ io.to(roomId).emit("game_tick", {
                             ]
                           )
                         ).values(),
-                      ];
+                      ];*/
+                      //new added
+                      const uniquePlayers =
+[
+  ...new Map(
+    room.players
+      .filter(p =>
+        room.activePlayers.includes(
+          String(p.userId)
+        )
+      )
+      .map(p => [
+        p.userId,
+        p
+      ])
+  ).values()
+];
 
                     // =========================
                     // LEADERBOARD
@@ -881,8 +922,13 @@ io.to(roomId).emit("game_tick", {
                     // =========================
                     // POOL
                     // =========================
-                    //const totalPool =  uniquePlayers.length * ENTRY_FEE;
-                    const [countRows] =
+                    console.log(
+  "POOL PLAYERS",
+  uniquePlayers.map(p => p.userId)
+);
+                    console.log(uniquePlayers.length +"===V===="+room.viewers.length +"===P===="+room.players.length);
+                    const totalPool =  (uniquePlayers.length -room.viewers.length ) * ENTRY_FEE;
+                  /*  const [countRows] =
               await db.promise().query(
                 `
                 SELECT COUNT(*) total
@@ -893,7 +939,7 @@ io.to(roomId).emit("game_tick", {
               );
 
             const totalPlayers =  Number(countRows[0].total);
-            const totalPool =  totalPlayers *  ENTRY_FEE;
+            const totalPool =  totalPlayers *  ENTRY_FEE;*/
 
                     const appCommission =
                       Math.floor(
@@ -988,7 +1034,7 @@ io.to(roomId).emit("game_tick", {
                     // =========================
                     // END ROOM
                     // =========================
-                    await db.promise().query(
+                   await db.promise().query(
                       `
                       UPDATE game_rooms
                       SET status='ended'
@@ -996,15 +1042,91 @@ io.to(roomId).emit("game_tick", {
                       `,
                       [roomId]
                     );
+                    
 
-                    io.to(roomId).emit(
-                      "game_ended",
-                      {
-                        winner,
-                        leaderboard,
-                        rewardCoins,
-                      }
+                 /* io.to(roomId).emit(
+                    "game_ended",
+                    {
+                      winner,
+                      leaderboard,
+                      rewardCoins,
+                    }
+                  );*/
+                  io.to(roomId).emit(
+  "game_ended",
+  {
+    winner: winner
+      ? {
+          ...winner,
+          rewardCoins
+        }
+      : null,
+    leaderboard,
+    rewardCoins,
+  }
+);
+
+                  setTimeout(() => {
+
+                   // delete rooms[roomId];
+                   room.gameStarted = false;
+room.gameTime = 45;
+
+room.players.forEach(p => {
+  p.score = 0;
+});
+
+room.viewers.forEach(v => {
+
+  const exists =
+    room.players.some(
+      p =>
+        String(p.userId) ===
+        String(v.userId)
+    );
+
+  if (!exists) {
+
+    room.players.push({
+      socketId: v.socketId,
+      userId: v.userId,
+      name: v.name,
+      score: 0
+    });
+
+  }
+
+});
+
+room.viewers = [];
+
+io.to(roomId).emit(
+  "room_update",
+  room
+);
+const viewers = [...room.viewers];
+
+room.viewers = [];
+
+for (const v of viewers) {
+
+  room.players.push({
+    socketId: v.socketId,
+    userId: v.userId,
+    name: v.name,
+    score: 0
+  });
+
+}
+
+                    broadcastLiveRooms(io);
+
+                    console.log(
+                      "🗑 Ended Room Deleted:",
+                      roomId
                     );
+
+                  }, 15000);
 
                     return;
                   }
@@ -1258,20 +1380,17 @@ socket.on("leave_room", ({ roomId, userId }) => {
 
   if (!rooms[roomId]) return;
 
-  const player =
-    rooms[roomId].players.find(
-      p => String(p.userId) === String(userId)
+  rooms[roomId].players =
+    rooms[roomId].players.filter(
+      p => String(p.userId) !== String(userId)
     );
-
-  if (player) {
-    player.socketId = null;
-  }
 
   io.to(roomId).emit(
     "room_update",
     rooms[roomId]
   );
-broadcastLiveRooms(io);
+
+  broadcastLiveRooms(io);
 });
  // });
 };
