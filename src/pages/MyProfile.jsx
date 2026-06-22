@@ -1099,7 +1099,7 @@ const deleteProfile = async () => {
       <div className="d-flex gap-2 mt-3">
 
         {hireProfile.payment_status ===
-          "Not Submitted" && (
+          "" && (
           <button
             className="btn btn-warning flex-fill"
             onClick={() =>
