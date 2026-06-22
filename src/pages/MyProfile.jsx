@@ -21,6 +21,8 @@ const params = new URLSearchParams(window.location.search);
 const ref = params.get("ref");
 const [hireProfile, setHireProfile] = useState(null);
 const [loadingHire, setLoadingHire] = useState(true);
+const API = import.meta.env.VITE_API_URL;
+const navigate = useNavigate();
 
 useEffect(() => {
   const params = new URLSearchParams(window.location.search);
@@ -41,13 +43,14 @@ useEffect(() => {
 const loadHireProfile = async () => {
   try {
     const res = await axios.get(
-      `${API_URL}/hireme/my-profile`,
+      `${API}/hireme/my-profile`,
       {
         headers: {
           Authorization: `Bearer ${token}`
         }
       }
     );
+    console.log("HIRE PROFILE =>", res.data);
     setHireProfile(res.data);
   } catch (err) {
     console.error(err);
@@ -75,8 +78,7 @@ const [form, setForm] = useState({
   language: "",
   insta: ""
 });
-const API = import.meta.env.VITE_API_URL;
-const navigate = useNavigate();
+
 const indiaCities = [
   "Adilabad",
   "Agartala",
@@ -908,16 +910,13 @@ const deleteProfile = async () => {
       </div>
         <button
           onClick={async () => {
-
             const referralLink =
               `https://indiandost.com/idost/register?ref=${user.user}`;
-
             const shareData = {
               title: "IndianDost",
               text: `🎁 Join IndianDost using my referral code ${user.user}`,
               url: referralLink,
             };
-
             try {
               if (navigator.share) {
                 await navigator.share(
@@ -946,86 +945,192 @@ const deleteProfile = async () => {
         </button>
 </div>
 
+{/* =========================
+   HIRE ME ENROLL CARD
+========================= */}
+{/* ================= HIRE ME ================= */}
+
 {!loadingHire && !hireProfile && (
+  <div
+    className="card border-0 mt-3"
+    style={{
+      borderRadius: "22px",
+      background:
+        "linear-gradient(35deg,#ec4899,#7c3aed)",
+      boxShadow:
+        "0 10px 25px rgba(124,58,237,.35)",
+    }}
+  >
+    <div className="card-body p-3 text-white">
 
-<div className="card border-0 shadow-sm rounded-4 mt-3">
+      <div className="d-flex justify-content-between align-items-center">
+        <div>
+          <h5 className="fw-bold mb-1">
+            💼 Hire Me Service
+          </h5>
 
-  <div className="card-body text-center p-4">
+          <small
+            style={{
+              color: "rgba(255,255,255,.85)",
+            }}
+          >
+            Get verified & receive job offers
+          </small>
+        </div>
 
-    <h4 className="fw-bold text-warning">
-      💼 Hire Me Service
-    </h4>
+        <div style={{ fontSize: 38 }}>
+          🚀
+        </div>
+      </div>
 
-    <p className="text-muted">
-      Get verified and receive job offers from employers.
-    </p>
-
-    <button
-      className="btn btn-warning"
-      onClick={() =>
-        navigate("/hire-me-enroll")
-      }
-    >
-      Enroll Now ₹49
-    </button>
-
+  <button
+  onClick={() =>
+    navigate("/hire-me-enroll")
+  }
+  className="w-100 mt-3 fw-bold border-0"
+  style={{
+    borderRadius: "16px",
+    background:
+      "linear-gradient(135deg,#f59e0b,#f97316)",
+    color: "#fff",
+    padding: "12px"
+  }}
+>
+  🚀 Enroll Now • ₹49
+</button>
+    </div>
   </div>
-
-</div>
-
 )}
 
 {hireProfile && (
+  <div
+    className="card border-0 mt-3"
+    style={{
+      borderRadius: "22px",
+      background:
+        "linear-gradient(135deg,#1e293b,#0f172a)",
+      boxShadow:
+        "0 8px 20px rgba(0,0,0,.25)",
+    }}
+  >
+    <div className="card-body p-3 text-white">
 
-<div className="card border-0 shadow-sm rounded-4 mt-3">
+      <div className="d-flex justify-content-between align-items-center">
 
-  <div className="card-body">
+        <div>
 
-    <h4 className="fw-bold text-warning">
-      💼 Hire Me Profile
-    </h4>
+          <h5 className="fw-bold mb-1">
+            💼 Hire Me Profile
+          </h5>
 
-    <p>
-      Profession:
-      <strong>
-        {" "}
-        {hireProfile.profession}
-      </strong>
-    </p>
+          <small
+            style={{
+              color: "#94a3b8"
+            }}
+          >
+            {hireProfile.service_title}
+          </small>
 
-    {hireProfile.profile_status ===
-      "Pending" && (
+        </div>
 
-      <div className="alert alert-warning">
-        ⏳ Verification Pending
+        <div style={{ fontSize: 38 }}>
+          👨‍💼
+        </div>
+
       </div>
 
-    )}
+      <div className="mt-3">
 
-    {hireProfile.profile_status ===
-      "Approved" && (
+        <div className="mb-2">
+          <strong>Category:</strong>{" "}
+          {hireProfile.service_category}
+        </div>
 
-      <div className="alert alert-success">
-        ✅ Verified Hire Me Profile
+        {/* Profile Status */}
+
+        {hireProfile.profile_status === "Pending" && (
+          <div className="mb-2">
+            <span className="badge bg-warning text-dark px-3 py-2 rounded-pill">
+              ⏳ Verification Pending
+            </span>
+          </div>
+        )}
+
+        {hireProfile.profile_status === "Approved" && (
+          <div className="mb-2">
+            <span className="badge bg-success px-3 py-2 rounded-pill">
+              ✅ Verified Profile
+            </span>
+          </div>
+        )}
+
+        {hireProfile.profile_status === "Rejected" && (
+          <div className="mb-2">
+            <span className="badge bg-danger px-3 py-2 rounded-pill">
+              ❌ Verification Rejected
+            </span>
+          </div>
+        )}
+
+        {/* Payment Status */}
+
+        {hireProfile.payment_status === "Not Submitted" && (
+          <div className="alert alert-warning py-2 mt-2 mb-2">
+            💳 Verification fee not submitted
+          </div>
+        )}
+
+        {hireProfile.payment_status === "Pending" && (
+          <div className="alert alert-info py-2 mt-2 mb-2">
+            💳 Payment verification pending
+          </div>
+        )}
+
+        {hireProfile.payment_status === "Approved" && (
+          <div className="alert alert-success py-2 mt-2 mb-2">
+            ✅ Payment verified
+          </div>
+        )}
+
       </div>
 
-    )}
+      {/* Actions */}
 
-    {hireProfile.profile_status ===
-      "Rejected" && (
+      <div className="d-flex gap-2 mt-3">
 
-      <div className="alert alert-danger">
-        ❌ Verification Rejected
+        {hireProfile.payment_status ===
+          "Not Submitted" && (
+          <button
+            className="btn btn-warning flex-fill"
+            onClick={() =>
+              navigate(
+                "/hireme-payment"
+              )
+            }
+          >
+            💳 Complete Payment
+          </button>
+        )}
+
+        {hireProfile.profile_status !==
+          "Approved" && (
+          <button
+            className="btn btn-light flex-fill"
+            onClick={() =>
+              navigate(
+                "/hire-me-edit"
+              )
+            }
+          >
+            ✏️ Edit Profile
+          </button>
+        )}
+
       </div>
 
-    )}
-
+    </div>
   </div>
-
-</div>
-
 )}
-
 
 
       {/* UPLOAD BOX */}

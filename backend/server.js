@@ -283,7 +283,7 @@ app.use("/api", blockRoutes);
 app.use("/api/game", gameRoutes);
 app.use("/api/jam-room", jamRoutes);
 app.use("/api/quiz", quizRoutes);
-app.use("/api/hireme",hiremeRoutes);
+app.use("/hireme",hiremeRoutes);
 
 // =============================
 

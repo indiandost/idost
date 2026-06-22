@@ -24,9 +24,12 @@ const [front, setFront] = useState(null);
 const [back, setBack] = useState(null);
 
 const [errors, setErrors] = useState({});
-const [agree, setAgree] = useState(false);
+//const [agree, setAgree] = useState(false);
+const [agreeTerms, setAgreeTerms] = useState(false);
+const [showAgreement, setShowAgreement] = useState(false);
+const [paymentOption, setPaymentOption] = useState("later"); // now / later
 const [paymentScreenshot, setPaymentScreenshot] =  useState(null);
-
+const [message, setMessage] = useState("");
 const [transactionId, setTransactionId] = useState("");
   const handleChange = (e) => {
     setForm({
@@ -38,7 +41,8 @@ const [transactionId, setTransactionId] = useState("");
   const handleSubmit = async () => {
 
   // Validation
-
+ console.log("SUBMIT CLICK");
+  console.log("agreeTerms =", agreeTerms);
   if (!form.service_category) {
     alert("Please select service category");
     return;
@@ -85,11 +89,11 @@ const [transactionId, setTransactionId] = useState("");
     return;
   }
 
-  if (!agree) {
-    alert("Please accept terms");
+if (!agreeTerms) {
+ alert("Please accept agreement");
     return;
-  }
-
+ }
+if (paymentOption === "now") {
   if (!transactionId.trim()) {
 
   alert(
@@ -108,7 +112,7 @@ if (!paymentScreenshot) {
 
   return;
 
-}
+} }
   try {
 
     setLoading(true);
@@ -117,31 +121,33 @@ if (!paymentScreenshot) {
       localStorage.getItem("token");
 
     // STEP 1
-    await axios.post(
-      `${API_URL}/hireme/enroll`,
-      {
-        service_category:
-          form.service_category,
+await axios.post(
+  `${API_URL}/hireme/enroll`,
+  {
+    service_category: form.service_category,
+    service_title: form.service_title,
+    rate_type: form.rate_type,
+    rate_amount: form.rate_amount,
+    description: form.description,
 
-        service_title:
-          form.service_title,
+    transaction_id:
+      paymentOption === "now"
+        ? transactionId
+        : "",
 
-        rate_type:
-          form.rate_type,
+    payment_verify_option:
+      paymentOption,
 
-        rate_amount:
-          form.rate_amount,
-
-        description:
-          form.description
-      },
-      {
-        headers: {
-          Authorization:
-            `Bearer ${token}`
-        }
-      }
-    );
+    agreement_accepted:
+      agreeTerms
+  },
+  {
+    headers: {
+      Authorization:
+        `Bearer ${token}`
+    }
+  }
+);
 
     // STEP 2 Upload Files
 
@@ -448,25 +454,27 @@ formData.append(
 
       {/* Fee */}
 
-      <div className="bg-orange-900/30 border border-orange-500 rounded-xl p-4 mt-6">
+ <div className="bg-orange-900/20 border border-orange-500 rounded-xl p-4 mt-6">
 
-        <div className="text-center">
+  <div className="text-center">
 
-          <div className="text-gray-300">
-            Verification Fee
-          </div>
+    <div className="text-gray-300">
+      Verification Fee
+    </div>
 
-          <div className="text-4xl font-bold text-orange-400">
-            ₹49
-          </div>
+    <div className="text-4xl font-bold text-orange-400">
+      ₹49
+    </div>
 
-          <div className="text-gray-400 text-sm">
-            One Time Payment
-          </div>
+    <div className="text-gray-400 text-sm">
+      One Time Verification Fee
+    </div>
 
-        </div>
+  </div>
 
-      </div>
+</div>
+
+{paymentOption === "now" && (
 
 <div className="bg-gray-900 rounded-xl p-5 mt-6">
 
@@ -481,26 +489,35 @@ formData.append(
       alt="UPI QR"
       className="mx-auto rounded-lg mb-4"
       style={{
-        maxWidth: "250px"
+        maxWidth: "220px"
       }}
     />
 
     <p className="text-gray-300">
-      Scan and pay ₹49 verification fee
+      Scan and Pay ₹49
     </p>
 
   </div>
 
   <input
     type="text"
-    placeholder="UPI Transaction ID *"
+    placeholder="Transaction ID"
     value={transactionId}
     onChange={(e) =>
       setTransactionId(
         e.target.value
       )
     }
-    className="w-full mt-4 p-3 rounded-lg bg-gray-700 border border-gray-600 text-white"
+    className="
+      w-full
+      mt-4
+      p-3
+      rounded-lg
+      bg-gray-700
+      border
+      border-gray-600
+      text-white
+    "
   />
 
   <div className="mt-4">
@@ -517,27 +534,220 @@ formData.append(
           e.target.files[0]
         )
       }
-      className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 text-white"
+      className="
+        w-full
+        p-3
+        rounded-lg
+        bg-gray-700
+        border
+        border-gray-600
+        text-white
+      "
     />
 
   </div>
 
 </div>
 
-      {/* Submit */}
+)}
 
-      <button
-        disabled={loading}
-        onClick={handleSubmit}
-        className="w-full mt-6 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg transition"
-      >
-        {loading
-          ? "Please Wait..."
-          : "Continue & Pay ₹49"}
-      </button>
+<div className="bg-gray-900 rounded-xl p-4 mt-5">
+
+  <div className="flex items-start gap-3">
+
+<input
+  type="checkbox"
+  checked={agreeTerms}
+  onChange={(e) =>
+    setAgreeTerms(e.target.checked)
+  }
+     className="mt-1"
+    />
+
+    <div>
+
+      <div className="text-white text-sm">
+
+        I agree to the
+
+        <button
+          type="button"
+          onClick={() =>
+            setShowAgreement(true)
+          }
+          className="
+            text-orange-400
+            ml-1
+            underline
+          "
+        >
+          Hire Me Terms & Verification Agreement {String(agreeTerms)}
+        </button>
+
+      </div>
 
     </div>
 
   </div>
-);
+
+</div>
+
+
+
+      {/* Submit */}
+<div className="bg-gray-900 rounded-xl p-5 mt-5">
+
+  <h3 className="text-orange-400 font-bold mb-4">
+    Payment Option
+  </h3>
+
+  <div className="grid grid-cols-2 gap-3">
+
+    <button
+      type="button"
+      onClick={() =>
+        setPaymentOption("now")
+      }
+      className={`
+        p-3 rounded-lg border
+        ${
+          paymentOption === "now"
+            ? "border-orange-500 bg-orange-500 text-white"
+            : "border-gray-600 text-gray-300"
+        }
+      `}
+    >
+      Pay Now
+    </button>
+
+    <button
+      type="button"
+      onClick={() =>
+        setPaymentOption("later")
+      }
+      className={`
+        p-3 rounded-lg border
+        ${
+          paymentOption === "later"
+            ? "border-orange-500 bg-orange-500 text-white"
+            : "border-gray-600 text-gray-300"
+        }
+      `}
+    >
+      Pay Later
+    </button>
+
+  </div>
+
+  <div className="text-xs text-gray-400 mt-3">
+
+    You can submit payment
+    details anytime later from
+    your Hire Me profile.
+
+  </div>
+
+</div>
+      <button
+  disabled={loading}
+  onClick={handleSubmit}
+  className="
+    w-full
+    mt-6
+    bg-orange-500
+    hover:bg-orange-600
+    text-white
+    font-bold
+    py-3
+    rounded-xl
+  "
+>
+  {loading
+    ? "Please Wait..."
+    : "Submit Verification Request"}
+</button>
+    </div>
+{showAgreement && (
+
+<div
+  className="
+    fixed inset-0
+    bg-black/70
+    flex items-center
+    justify-center
+    z-50
+    p-4
+  "
+>
+
+  <div
+    className="
+      bg-gray-800
+      rounded-xl
+      max-w-lg
+      w-full
+      p-5
+    "
+  >
+
+    <h3 className="text-xl font-bold text-orange-400 mb-4">
+      Hire Me Agreement
+    </h3>
+
+    <div
+      className="
+        text-sm
+        text-gray-300
+        max-h-72
+        overflow-auto
+      "
+    >
+
+      • Information provided must be genuine.
+
+      <br /><br />
+
+      • Fake profiles may be permanently banned.
+
+      <br /><br />
+
+      • Verification fee is non-refundable.
+
+      <br /><br />
+
+      • IndianDost only verifies identity and does not guarantee any employment.
+
+      <br /><br />
+
+      • User is responsible for services offered.
+
+      <br /><br />
+
+      • Admin may reject incomplete or suspicious applications.
+
+    </div>
+
+    <button
+      onClick={() =>
+        setShowAgreement(false)
+      }
+      className="
+        w-full
+        mt-4
+        bg-orange-500
+        py-2
+        rounded-lg
+        text-white
+      "
+    >
+      I Understand
+    </button>
+
+  </div>
+
+</div>
+
+)}
+  </div>
+  );
 }

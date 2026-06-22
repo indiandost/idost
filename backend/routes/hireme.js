@@ -15,7 +15,7 @@ const UPLOAD_DIR =
 
 const FILE_URL =  process.env.FILE_URL ||  `${process.env.BASE_URL}/uploads`;
 router.post("/enroll", verifyToken, (req, res) => {
-
+ const db = req.app.get("db");
   const userId = req.user.id;
 
   const {
@@ -24,10 +24,27 @@ router.post("/enroll", verifyToken, (req, res) => {
     rate_type,
     rate_amount,
     description,
-    transaction_id
+    transaction_id,
+    payment_verify_option,
+    agreement_accepted
   } = req.body;
 
-  // Validation
+  if (!agreement_accepted) {
+    return res.status(400).json({
+      success: false,
+      message: "Please accept agreement"
+    });
+  }
+
+  if (
+    !payment_verify_option ||
+    !["now", "later"].includes(payment_verify_option)
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid payment option"
+    });
+  }
 
   if (!service_category?.trim()) {
     return res.status(400).json({
@@ -57,100 +74,200 @@ router.post("/enroll", verifyToken, (req, res) => {
     });
   }
 
-  if (!transaction_id?.trim()) {
+  // ONLY FOR VERIFY NOW
+ /* if (
+    payment_verify_option === "now" &&
+    !transaction_id?.trim()
+  ) {
     return res.status(400).json({
       success: false,
       message: "Transaction ID required"
     });
-  }
+  }*/
 
   const checkSql = `
     SELECT id
     FROM hire_me_profiles
-    WHERE user_id = ?
+    WHERE user_id=?
     LIMIT 1
   `;
 
-  db.query(
-    checkSql,
-    [userId],
-    (err, rows) => {
+  db.query(checkSql, [userId], (err, rows) => {
 
-      if (err)
-        return res.status(500).json({
-          success: false,
-          message: err.message
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    if (rows.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Already enrolled"
+      });
+    }
+
+    const sql = `
+      INSERT INTO hire_me_profiles
+      (
+        user_id,
+        service_category,
+        service_title,
+        rate_type,
+        rate_amount,
+        description,
+        transaction_id,
+        payment_verify_option,
+        agreement_accepted,
+        payment_status,
+        profile_status
+      )
+      VALUES
+      (
+        ?,?,?,?,?,?,
+        ?,?,?,?,
+        ?
+      )
+    `;
+
+    db.query(
+      sql,
+      [
+        userId,
+        service_category,
+        service_title,
+        rate_type,
+        rate_amount,
+        description,
+        transaction_id || "",
+        payment_verify_option,
+        1,
+        payment_verify_option === "now"
+          ? "Pending"
+          : "Not Submitted",
+        "Pending"
+      ],
+      (err, result) => {
+
+        if (err) {
+          return res.status(500).json({
+            success: false,
+            message: err.message
+          });
+        }
+
+        return res.json({
+          success: true,
+          profileId: result.insertId,
+          message:
+            payment_verify_option === "now"
+              ? "Enrollment submitted. Payment verification pending."
+              : "Enrollment submitted. You can upload payment details later."
         });
 
-      if (rows.length > 0) {
+      }
+    );
 
+  });
+
+});
+
+router.post(
+  "/submit-payment",
+  verifyToken,
+  upload.single("payment_screenshot"),
+  async (req, res) => {
+
+    try {
+ const db = req.app.get("db");
+      const userId = req.user.id;
+      const { transaction_id } = req.body;
+
+      if (!transaction_id?.trim()) {
         return res.status(400).json({
           success: false,
-          message: "Already enrolled"
+          message: "Transaction ID required"
         });
+      }
+
+      let paymentScreenshotUrl = null;
+
+      if (req.file) {
+
+        paymentScreenshotUrl =
+          await new Promise((resolve, reject) => {
+
+            const stream =
+              cloudinary.uploader.upload_stream(
+                {
+                  folder: "hireme/payment",
+                  resource_type: "auto"
+                },
+                (error, result) => {
+
+                  if (error)
+                    reject(error);
+                  else
+                    resolve(result.secure_url);
+
+                }
+              );
+
+            streamifier
+              .createReadStream(req.file.buffer)
+              .pipe(stream);
+
+          });
 
       }
 
       const sql = `
-        INSERT INTO hire_me_profiles
-        (
-          user_id,
-          service_category,
-          service_title,
-          rate_type,
-          rate_amount,
-          description,
-          transaction_id,
-          payment_status,
-          profile_status
-        )
-        VALUES
-        (
-          ?,?,?,?,?,?,
-          ?,
-          'Pending',
-          'Pending'
-        )
+        UPDATE hire_me_profiles
+        SET
+          transaction_id=?,
+          payment_screenshot=?,
+          payment_status='Pending',
+          updated_at=NOW()
+        WHERE user_id=?
       `;
 
       db.query(
         sql,
         [
-          userId,
-          service_category,
-          service_title,
-          rate_type,
-          rate_amount,
-          description,
-          transaction_id
+          transaction_id,
+          paymentScreenshotUrl,
+          userId
         ],
-        (err, result) => {
+        (err) => {
 
           if (err) {
-
-            console.error(err);
-
             return res.status(500).json({
               success: false,
               message: err.message
             });
-
           }
 
           return res.json({
             success: true,
-            profileId: result.insertId,
             message:
-              "Enrollment submitted successfully. Waiting for verification."
+              "Payment submitted successfully"
           });
 
         }
       );
 
-    }
-  );
+    } catch (err) {
 
-});
+      return res.status(500).json({
+        success: false,
+        message: err.message
+      });
+
+    }
+
+  }
+);
 
 router.post(
   "/upload-documents",
@@ -164,7 +281,7 @@ router.post(
   async (req, res) => {
 
     try {
-
+ const db = req.app.get("db");
       const userId = req.user.id;
 
       const profileCheckSql = `
@@ -411,7 +528,7 @@ router.post(
   "/payment-success",
   verifyToken,
   (req, res) => {
-
+ const db = req.app.get("db");
     const userId = req.user.id;
 
     const {
@@ -451,18 +568,18 @@ router.get(
   "/my-profile",
   verifyToken,
   (req, res) => {
-
+ const db = req.app.get("db");
     const sql = `
       SELECT
         h.*,
 
         u.name,
         u.email,
-        u.mobile,
+        u.telephone,
         u.pic,
         u.city,
         u.state,
-        u.gender,
+        u.sex as gender,
         u.dob
 
       FROM hire_me_profiles h
@@ -501,6 +618,7 @@ router.get(
 router.get(
   "/list",
   (req, res) => {
+     const db = req.app.get("db");
 
     const sql = `
       SELECT
@@ -536,6 +654,7 @@ router.get(
 router.get(
   "/profile/:id",
   (req, res) => {
+     const db = req.app.get("db");
 
     const sql = `
       SELECT
@@ -578,6 +697,7 @@ router.get(
   "/admin/hireme",
   verifyToken,
   (req, res) => {
+     const db = req.app.get("db");
 
     const sql = `
      SELECT
@@ -608,6 +728,7 @@ router.post(
   "/hire-request",
   verifyToken,
   (req, res) => {
+     const db = req.app.get("db");
 
     const employerId = req.user.id;
 
@@ -686,7 +807,7 @@ router.get(
   "/hire-requests/my",
   verifyToken,
   (req, res) => {
-
+ const db = req.app.get("db");
     const sql = `
       SELECT
 
@@ -727,7 +848,7 @@ router.put(
   "/hire-request/:id/accept",
   verifyToken,
   (req, res) => {
-
+ const db = req.app.get("db");
     const sql = `
       UPDATE hire_requests
       SET status='Accepted'
@@ -762,7 +883,7 @@ router.put(
   "/hire-request/:id/reject",
   verifyToken,
   (req, res) => {
-
+ const db = req.app.get("db");
     const sql = `
       UPDATE hire_requests
       SET status='Rejected'
@@ -797,7 +918,7 @@ router.get(
   "/hire-requests/sent",
   verifyToken,
   (req, res) => {
-
+ const db = req.app.get("db");
     const sql = `
       SELECT
 
@@ -836,7 +957,7 @@ router.put(
   "/admin/hireme/approve/:id",
   verifyToken,
   (req, res) => {
-
+ const db = req.app.get("db");
     const sql = `
       UPDATE hire_me_profiles
       SET
@@ -867,7 +988,7 @@ router.put(
   "/admin/hireme/reject/:id",
   verifyToken,
   (req, res) => {
-
+ const db = req.app.get("db");
     const sql = `
       UPDATE hire_me_profiles
       SET profile_status='Rejected'
