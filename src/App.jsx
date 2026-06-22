@@ -50,6 +50,11 @@ import { Capacitor } from '@capacitor/core';
 import { HelmetProvider } from "react-helmet-async";
 import socket from "./socket";
 import LiveRoomsAlert from "./components/LiveRoomsAlert";
+import HireMeEnroll from "./pages/HireMeEnroll";
+import HireMeDirectory from "./pages/HireMeDirectory";
+import HireMeProfile from "./pages/HireMeProfile";
+import HireMeAdmin from "./pages/HireMeAdmin";
+
 import {
   Home as HomeIcon,
   Users,
@@ -1579,8 +1584,12 @@ useEffect(() => {
           />
 
           <Route path="/quiz-battles"  element={<PrivateRoute> {" "}<QuizBattles /></PrivateRoute>} />
-            <Route path="/quiz-result/:battleId" element={<PrivateRoute>{" "}<QuizResult /></PrivateRoute>}/>           
-            <Route  path="/quiz/:battleId" element={<PrivateRoute> {" "} <QuizPlay /></PrivateRoute>}/>
+          <Route path="/quiz-result/:battleId" element={<PrivateRoute>{" "}<QuizResult /></PrivateRoute>}/>           
+           <Route  path="/quiz/:battleId" element={<PrivateRoute> {" "} <QuizPlay /></PrivateRoute>}/>            
+            <Route path="/hire-me-enroll" element={<PrivateRoute> {" "} <HireMeEnroll /></PrivateRoute>} />
+            <Route path="/hire-me-directory" element={<PrivateRoute> {" "} <HireMeDirectory /></PrivateRoute>} />
+            <Route path="/hire-me/:id" element={<PrivateRoute> {" "} <HireMeProfile /></PrivateRoute>} />
+            <Route path="/admin/hire-me" element={<PrivateRoute> {" "} <HireMeAdmin /></PrivateRoute>} />
           <Route path="/timeline" element={<Timeline />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

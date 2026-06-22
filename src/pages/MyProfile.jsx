@@ -19,6 +19,8 @@ const [uploadProgress, setUploadProgress] = useState(0);
 const token = localStorage.getItem("token"); 
 const params = new URLSearchParams(window.location.search);
 const ref = params.get("ref");
+const [hireProfile, setHireProfile] = useState(null);
+const [loadingHire, setLoadingHire] = useState(true);
 
 useEffect(() => {
   const params = new URLSearchParams(window.location.search);
@@ -31,6 +33,28 @@ useEffect(() => {
     }));
   }
 }, []);
+
+useEffect(() => {
+  loadHireProfile();
+}, []);
+
+const loadHireProfile = async () => {
+  try {
+    const res = await axios.get(
+      `${API_URL}/hireme/my-profile`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+    setHireProfile(res.data);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoadingHire(false);
+  }
+};
 
 const [form, setForm] = useState({
   name: "",
@@ -856,81 +880,153 @@ const deleteProfile = async () => {
         </div>
       </div>
       <div className="bg-gradient-to-r from-pink-600 to-purple-600 rounded-2xl p-4 mt-4 shadow-lg">
-  <h3 className="text-white font-bold text-lg">
-    🎁 Refer Friends & Earn 500 Coins
-  </h3>
+          <h3 className="text-white font-bold text-lg">
+            🎁 Refer Friends & Earn 500 Coins
+          </h3>
 
-  <p className="text-white/90 text-sm mt-1">
-    Invite your friends to IndianDost. When they join using your referral code,
-    you get <b>500 bonus coins</b>.
-  </p>
+          <p className="text-white/90 text-sm mt-1">
+            Invite your friends to IndianDost. When they join using your referral code,
+            you get <b>500 bonus coins</b>.
+          </p>
 
-  <div className="mt-3 bg-white/20 rounded-lg p-3 flex items-center justify-between">
-    <div>
-      <div className="text-xs text-white/80">Your Referral Code</div>
-      <div className="text-xl font-bold text-white">
-        {user.user}
+          <div className="mt-3 bg-white/20 rounded-lg p-3 flex items-center justify-between">
+            <div>
+              <div className="text-xs text-white/80">Your Referral Code</div>
+              <div className="text-xl font-bold text-white">
+                {user.user}
+              </div>
+            </div>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(user.user);
+              alert("Referral code copied!");
+            }}
+            className="bg-white text-purple-700 px-3 py-2 rounded-lg font-semibold"
+          >
+            Copy
+          </button>
       </div>
-    </div>
+        <button
+          onClick={async () => {
+
+            const referralLink =
+              `https://indiandost.com/idost/register?ref=${user.user}`;
+
+            const shareData = {
+              title: "IndianDost",
+              text: `🎁 Join IndianDost using my referral code ${user.user}`,
+              url: referralLink,
+            };
+
+            try {
+              if (navigator.share) {
+                await navigator.share(
+                  shareData
+                );
+              } else {
+                // WhatsApp fallback
+                window.open(
+                  `https://wa.me/?text=${encodeURIComponent(
+                    `${shareData.text}\n${referralLink}`
+                  )}`,
+                  "_blank"
+                    );
+              }
+
+            } catch (err) {
+              console.log(
+                "SHARE ERROR:",
+                err
+              );
+            }
+
+          }}
+          className="w-full mt-3 bg-white text-purple-700 font-bold py-3 rounded-xl"
+        >   📤 Share & Earn 500 Coins
+        </button>
+</div>
+
+{!loadingHire && !hireProfile && (
+
+<div className="card border-0 shadow-sm rounded-4 mt-3">
+
+  <div className="card-body text-center p-4">
+
+    <h4 className="fw-bold text-warning">
+      💼 Hire Me Service
+    </h4>
+
+    <p className="text-muted">
+      Get verified and receive job offers from employers.
+    </p>
 
     <button
-      onClick={() => {
-        navigator.clipboard.writeText(user.user);
-        alert("Referral code copied!");
-      }}
-      className="bg-white text-purple-700 px-3 py-2 rounded-lg font-semibold"
+      className="btn btn-warning"
+      onClick={() =>
+        navigate("/hire-me-enroll")
+      }
     >
-      Copy
+      Enroll Now ₹49
     </button>
+
   </div>
 
-<button
-  onClick={async () => {
-
-    const referralLink =
-      `https://indiandost.com/idost/register?ref=${user.user}`;
-
-    const shareData = {
-      title: "IndianDost",
-      text: `🎁 Join IndianDost using my referral code ${user.user}`,
-      url: referralLink,
-    };
-
-    try {
-
-      if (navigator.share) {
-
-        await navigator.share(
-          shareData
-        );
-
-      } else {
-
-        // WhatsApp fallback
-        window.open(
-          `https://wa.me/?text=${encodeURIComponent(
-            `${shareData.text}\n${referralLink}`
-          )}`,
-          "_blank"
-        );
-
-      }
-
-    } catch (err) {
-
-      console.log(
-        "SHARE ERROR:",
-        err
-      );
-
-    }
-
-  }}
-  className="w-full mt-3 bg-white text-purple-700 font-bold py-3 rounded-xl"
->
-  📤 Share & Earn 500 Coins
-</button>
 </div>
+
+)}
+
+{hireProfile && (
+
+<div className="card border-0 shadow-sm rounded-4 mt-3">
+
+  <div className="card-body">
+
+    <h4 className="fw-bold text-warning">
+      💼 Hire Me Profile
+    </h4>
+
+    <p>
+      Profession:
+      <strong>
+        {" "}
+        {hireProfile.profession}
+      </strong>
+    </p>
+
+    {hireProfile.profile_status ===
+      "Pending" && (
+
+      <div className="alert alert-warning">
+        ⏳ Verification Pending
+      </div>
+
+    )}
+
+    {hireProfile.profile_status ===
+      "Approved" && (
+
+      <div className="alert alert-success">
+        ✅ Verified Hire Me Profile
+      </div>
+
+    )}
+
+    {hireProfile.profile_status ===
+      "Rejected" && (
+
+      <div className="alert alert-danger">
+        ❌ Verification Rejected
+      </div>
+
+    )}
+
+  </div>
+
+</div>
+
+)}
+
+
 
       {/* UPLOAD BOX */}
       <label className="block border-2 border-dashed border-gray-600 p-5 text-center rounded-xl cursor-pointer hover:border-pink-400 transition">
