@@ -595,7 +595,7 @@ router.get("/me/:id", verifyToken, (req, res) => {
       });
     }
 
-    console.log(result[0]);
+   // console.log(result[0]);
 
     return res.json(result[0]);
   });
