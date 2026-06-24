@@ -629,7 +629,7 @@ if (
 
   io.to(socket.id).emit(
     "room_update",
-    room
+    safeRoom(room)
   );
 
   return;
@@ -771,7 +771,7 @@ if (
 
       io.to(roomId).emit(
         "room_update",
-        room
+        safeRoom(room)
       );
      broadcastLiveRooms(io);
     } catch (err) {
@@ -1102,7 +1102,7 @@ room.viewers = [];
 
 io.to(roomId).emit(
   "room_update",
-  room
+  safeRoom(room)
 );
 const viewers = [...room.viewers];
 
