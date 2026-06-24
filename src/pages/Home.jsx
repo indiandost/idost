@@ -580,7 +580,7 @@ useEffect(() => {
   {/* ONLINE DOT */}
   <div
     className={`
-      absolute
+      absolute*/}
       top-2
       right-2
       w-3
@@ -644,9 +644,9 @@ useEffect(() => {
         text-gray-200
       "
     >
-       {onlineUsers.some(id => String(id) === String(u.id))
+     {/*  {onlineUsers.some(id => String(id) === String(u.id))
         ? "🟢 Online"
-        : "⚪ Offline"}
+        : "⚪ Offline"}*/}
     </div>
   </div>
 </div>

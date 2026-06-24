@@ -77,7 +77,8 @@ import {
   Inbox,
 } from "lucide-react";
 import {  App as CapacitorApp } from "@capacitor/app";
-
+import notificationSound from "./assets/sounds/notification.mp3";
+import notificationSound2 from "./assets/sounds/notification2.mp3";
 const API = import.meta.env.VITE_API_URL;
 // 🔐 Protected Route
 function PrivateRoute({ children }) {
@@ -1082,10 +1083,8 @@ useEffect(() => {
         return;
       }
 
-      // 🔔 PLAY SOUND
-      const audio = new Audio("/icon/notification.mp3");
-
-      audio.play().catch(() => {});
+const audio = new Audio(notificationSound);
+audio.play().catch(() => {});
 
       try {
         const res = await fetch(`${API}/users/${data.from}`,{
@@ -1258,8 +1257,7 @@ useEffect(() => {
 
   // 🔊 create ringtone ONCE
   useEffect(() => {
-    ringtoneRef.current = new Audio("/icon/notification2.mp3");
-
+    ringtoneRef.current = new Audio(notificationSound2);
     ringtoneRef.current.loop = true;
 
     return () => {

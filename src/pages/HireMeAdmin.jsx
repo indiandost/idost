@@ -21,6 +21,7 @@ export default function HireMeAdmin() {
           }
         }
       );
+      console.log(res.data.data);
       setProfiles(res.data.data || []);
     } catch (err) {
       console.error(err);

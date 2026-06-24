@@ -112,6 +112,12 @@ const blockUser = async () => {
     navigate("/");
   }
 };
+const normalizeString = (str = "") =>
+  String(str)
+    .trim()
+    .toLowerCase();
+const bodyType = normalizeString(user?.body_type);
+const isValid = bodyType && bodyType !== "0" && bodyType !== "null" && bodyType !== "undefined";
 
 if (blocked) {
   return (
@@ -227,13 +233,12 @@ const userName = user?.name
     </span>
   )}
 
-{user.body_type &&
- user.body_type.trim() !== "" &&
- user.body_type !== "0" && (
-    <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm">
-      💪 {user.body_type}
-    </span>
-  )}
+{isValid && (
+  <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm">
+    💪 {bodyType}
+  </span>
+)}
+
 </p>
 
      {user.doingnow && (
