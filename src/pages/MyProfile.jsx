@@ -415,6 +415,8 @@ const deleteProfile = async () => {
     hireProfile?.payment_status === "" ||
     hireProfile?.payment_status === "Not Submitted";
 
+  const paymentRejected = hireProfile?.payment_status === "Rejected";
+
   const paymentUnderReview =
     hireProfile?.payment_status === "Pending";
 
@@ -549,7 +551,7 @@ const deleteProfile = async () => {
 
           }}
           className="w-full mt-3 bg-white text-purple-700 font-bold py-3 rounded-xl"
-        >   📤 Share & Earn 500 Coins
+        >   📤 Share & Earn 1000 Coins
         </button>
 </div>
 
@@ -689,6 +691,11 @@ const deleteProfile = async () => {
           </div>
         )}
 
+      {paymentRejected && (
+          <div className="alert alert-warning py-2 mt-2 mb-2">
+            ❌ Payment Rejected
+          </div>
+        )}
       {/* Payment Status */}
         {paymentPending && (
           <div className="alert alert-warning py-2 mt-2 mb-2">
@@ -717,7 +724,7 @@ const deleteProfile = async () => {
 
   {/* Payment */}
 
-  {paymentPending && (
+  {paymentPending || (paymentRejected && (
     <button
       onClick={() =>
         navigate("/hireme-payment")
@@ -737,7 +744,7 @@ const deleteProfile = async () => {
 >
       💳 Complete Payment
     </button>
-  )}
+  ))}
 
   {/* Edit */}
 

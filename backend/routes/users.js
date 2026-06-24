@@ -847,7 +847,7 @@ router.get("/validate_referrals", (req, res) => {
         db.query(
           `
           UPDATE users
-          SET coins = coins + 500
+          SET coins = coins + 1000
           WHERE srno = ?
           `,
           [parentSrno]
@@ -867,7 +867,7 @@ router.get("/validate_referrals", (req, res) => {
         )
         VALUES (?,?,?,?,?)
         `,
-        [parentSrno, "refer", reward_value, "500","0"]
+        [parentSrno, "refer", reward_value, "1000","0"]
       );
         
         // 2. Child refcode ko parent srno me convert

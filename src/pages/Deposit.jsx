@@ -61,9 +61,12 @@ export default function Deposit() {
 </div>
 
 <img
-src="/dummy-qr.png"
+src="/qr.png"
 alt=""
 className="w-64 mx-auto rounded-xl mb-4"
+ style={{
+        maxWidth: "220px"
+      }}
 />
 
 <div className="text-center mb-4">
@@ -71,7 +74,7 @@ className="w-64 mx-auto rounded-xl mb-4"
 UPI ID:
 
 <b>
-yourupi@okaxis
+indiandost2-1@okicici
 </b>
 
 </div>
@@ -117,12 +120,12 @@ Submit Deposit Request
     <div className="flex justify-between py-1">
       <span>₹100 Deposit</span>
       <span className="font-bold">
-        10,500 Coins
+        11000 Coins
       </span>
     </div>
 
     <div className="text-xs opacity-80 mb-2">
-      Includes 500 Bonus Coins
+      Includes 1000 Bonus Coins
     </div>
 
     <hr className="border-white/20 my-2" />

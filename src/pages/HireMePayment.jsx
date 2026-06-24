@@ -196,16 +196,15 @@ export default function HireMePayment() {
                   borderRadius: "20px"
                 }}
               >
-                <img
-                  src="/images/hireme-qr.jpg"
-                  alt="UPI QR"
-                  className="img-fluid rounded shadow"
-                  style={{
-                    maxWidth: "260px",
-                    border: "4px solid #fff"
-                  }}
-                />
-
+                    <img
+                      src="/qr.png"
+                      alt="UPI QR"
+                      className="mx-auto rounded-lg mb-4"
+                      style={{
+                        maxWidth: "220px"
+                      }}
+                    />
+                    <p className="text-white">indiandost2-1@okicici</p>
                 <div className="mt-4">
                   <h4
                     className="fw-bold"

@@ -485,14 +485,14 @@ formData.append(
   <div className="text-center">
 
     <img
-      src="/images/hireme-qr.jpg"
+      src="qr.jpg"
       alt="UPI QR"
       className="mx-auto rounded-lg mb-4"
       style={{
         maxWidth: "220px"
       }}
     />
-
+    <p className="text-white">indiandost2-1@okicici</p>
     <p className="text-gray-300">
       Scan and Pay ₹49
     </p>

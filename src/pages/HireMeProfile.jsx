@@ -10,7 +10,9 @@ export default function HireMeProfile() {
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-
+const [reviews, setReviews] = useState([]);
+const [showReviews, setShowReviews] = useState(false);
+const [loadingReviews, setLoadingReviews] = useState(false);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -30,6 +32,22 @@ export default function HireMeProfile() {
     }
   };
 
+  const loadReviews = async (userId) => {
+  try {
+    setLoadingReviews(true);
+    const res = await fetch(
+      `${API_URL}/hireme/hire-reviews/${userId}`
+    );
+    const data = await res.json();
+    setReviews(data.reviews || []);
+    setShowReviews(true);
+
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoadingReviews(false);
+  }
+};
   const sendHireRequest = async () => {
     if (!message.trim()) {
       alert("Please enter a message");
@@ -178,7 +196,96 @@ return (
                     {profile.service_title}
                   </div>
                 </div>
+            <div className="flex items-center justify-center gap-2 mt-2">
+              <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-amber-50 border border-amber-200">
+                <span className="text-yellow-500">⭐</span>
 
+                <span className="font-semibold text-slate-700">
+                  {Number(profile.avg_rating || 0).toFixed(1)}
+                </span>
+              </div>
+
+              <span className="text-sm text-slate-500">
+                ({profile.total_reviews || 0} Reviews)
+              </span>
+
+            </div>
+      {profile?.total_reviews > 0 && (
+  <button
+    onClick={() => loadReviews(profile.user_id)}
+    className="text-blue-600 text-sm font-medium mt-2"
+  >
+    View Reviews ({profile.total_reviews})
+  </button>
+)}
+
+{showReviews && (
+  <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+
+    <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-5">
+
+      <div className="flex justify-between items-center mb-4">
+
+        <h3 className="font-bold text-lg">
+          Customer Reviews
+        </h3>
+
+        <button
+          onClick={() => setShowReviews(false)}
+          className="text-red-500 text-xl"
+        >
+          ✕
+        </button>
+
+      </div>
+
+      {!reviews || reviews.length === 0 ? (
+
+        <p className="text-gray-500">
+          No reviews found.
+        </p>
+
+      ) : (
+
+        reviews.map((review, index) => (
+
+          <div
+            key={review?.id || index}
+            className="border-b py-3"
+          >
+
+            <div className="flex justify-between">
+
+              <h4 className="font-semibold">
+                {review?.reviewer_name || "Anonymous"}
+              </h4>
+
+              <span className="text-yellow-500">
+                ⭐ {review?.rating || 0}
+              </span>
+
+            </div>
+
+            <p className="text-sm text-gray-600 mt-1">
+              {review?.comment || ""}
+            </p>
+
+            <p className="text-xs text-gray-400 mt-2">
+              {review?.created_at
+                ? new Date(review.created_at).toLocaleDateString()
+                : ""}
+            </p>
+
+          </div>
+
+        ))
+
+      )}
+
+    </div>
+
+  </div>
+)}
                 <div>
                   <div className="text-sm text-slate-500">
                     Rate

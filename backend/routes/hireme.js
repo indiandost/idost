@@ -809,34 +809,25 @@ router.get(
 
     const sql = `
     SELECT
-
     h.*,
-
     u.name,
     u.pic,
     u.city,
     u.state,
     u.sex AS gender,
-
     ROUND(
       COALESCE(AVG(hr.rating),0),
       1
     ) AS avg_rating,
-
     COUNT(hr.id) AS total_reviews
-
 FROM hire_me_profiles h
-
 INNER JOIN users u
 ON u.srno = h.user_id
-
 LEFT JOIN hire_reviews hr
 ON hr.to_user = h.user_id
-
 WHERE
     h.profile_status='Approved'
     AND h.payment_status='Approved'
-
 GROUP BY h.id
 
 ORDER BY h.id DESC;
@@ -943,6 +934,56 @@ ON hr.to_user=h.user_id
   }
 );
 
+// GET /api/hire-reviews/:userId
+
+router.get("/hire-reviews/:userId", (req, res) => {
+
+    const db = req.app.get("db");
+    const { userId } = req.params;
+
+    const sql = `
+        SELECT
+            hr.id,
+            hr.request_id,
+            hr.rating,
+            hr.comment,
+            hr.created_at,
+
+            u.srno,
+            u.name AS reviewer_name,
+            u.pic AS reviewer_pic,
+            u.city
+
+        FROM hire_reviews hr
+
+        LEFT JOIN users u
+            ON u.srno = hr.from_user
+
+        WHERE hr.to_user = ?
+
+        ORDER BY hr.created_at DESC
+    `;
+
+    db.query(sql, [userId], (err, rows) => {
+
+        if (err) {
+            console.error("Hire Reviews Error:", err);
+
+            return res.status(500).json({
+                success: false,
+                message: "Failed to fetch reviews"
+            });
+        }
+
+        res.json({
+            success: true,
+            total: rows.length,
+            reviews: rows
+        });
+
+    });
+
+});
 
 router.get(
   "/admin/hireme",
@@ -1211,7 +1252,7 @@ router.get(
 
       }
     );*/
-    const sql = `
+   const sql = `
 SELECT
 
   hr.id,
@@ -1236,7 +1277,10 @@ SELECT
 
   r.rating,
   r.comment,
-  r.created_at AS review_date
+  r.created_at AS review_date,
+
+  COALESCE(rv.avg_rating, 0) AS avg_rating,
+  COALESCE(rv.total_reviews, 0) AS total_reviews
 
 FROM hire_requests hr
 
@@ -1246,6 +1290,16 @@ ON u.srno = hr.employer_id
 LEFT JOIN hire_reviews r
 ON r.request_id = hr.id
 AND r.from_user = ?
+
+LEFT JOIN (
+    SELECT
+        to_user,
+        ROUND(AVG(rating), 1) AS avg_rating,
+        COUNT(*) AS total_reviews
+    FROM hire_reviews
+    GROUP BY to_user
+) rv
+ON rv.to_user = hr.employer_id
 
 WHERE hr.candidate_id = ?
 
@@ -1382,38 +1436,50 @@ router.get(
 
     const db = req.app.get("db");
 
-    const sql = `
-      SELECT
+  const sql = `
+SELECT
 
-        hr.id,
-        hr.message,
-        hr.status,
-        hr.created_at,
-        hr.action_at,
-        u.name,
-        u.pic,
-        u.city,
-        u.state,
-        u.telephone as mobile,
-        h.service_title,
-        h.service_category
+  hr.id,
+  hr.message,
+  hr.status,
+  hr.created_at,
+  hr.action_at,
 
-      FROM hire_requests hr
+  u.name,
+  u.pic,
+  u.city,
+  u.state,
+  u.telephone AS mobile,
 
-      INNER JOIN users u
-      ON u.srno = hr.candidate_id
+  h.service_title,
+  h.service_category,
 
-      LEFT JOIN hire_me_profiles h
-      ON h.user_id = hr.candidate_id
+  IF(r.id IS NULL, 0, 1) AS reviewed,
 
-      WHERE hr.employer_id=?
+  r.rating,
+  r.comment,
+  r.created_at AS review_date
 
-      ORDER BY hr.id DESC
-    `;
+FROM hire_requests hr
+
+INNER JOIN users u
+ON u.srno = hr.candidate_id
+
+LEFT JOIN hire_me_profiles h
+ON h.user_id = hr.candidate_id
+
+LEFT JOIN hire_reviews r
+ON r.request_id = hr.id
+AND r.from_user = ?
+
+WHERE hr.employer_id = ?
+
+ORDER BY hr.id DESC
+`;
 
     db.query(
       sql,
-      [req.user.id],
+      [req.user.id, req.user.id],
       (err, rows) => {
 
         if (err) {

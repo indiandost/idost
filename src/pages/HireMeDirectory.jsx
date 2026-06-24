@@ -7,7 +7,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 export default function HireMeDirectory() {
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [openReviews, setOpenReviews] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -136,10 +136,25 @@ return (
                 <h4 className="mt-3 font-semibold text-slate-700 min-h-[48px]">
                   {item.service_title}
                 </h4>
+            <div className="flex items-center justify-center gap-2 mt-2">
 
-                <p className="text-sm text-slate-500 mt-2 line-clamp-3 min-h-[60px]">
-                  {item.description}
-                </p>
+              <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-amber-50 border border-amber-200">
+                <span className="text-yellow-500">⭐</span>
+
+                <span className="font-semibold text-slate-700">
+                  {Number(item.avg_rating || 0).toFixed(1)}
+                </span>
+              </div>
+
+              <span className="text-sm text-slate-500">
+                ({item.total_reviews || 0} Reviews)
+              </span>
+
+            </div>
+      
+<p className="text-sm text-slate-500 mt-2 line-clamp-3 min-h-[60px]">
+  {item.description}
+</p>
 
                 {/* Rate */}
 

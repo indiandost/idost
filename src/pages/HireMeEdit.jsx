@@ -213,77 +213,57 @@ export default function HireMeEdit() {
 
   return (
     <>
-    <div className="container py-4">
+   <div className="max-w-5xl mx-auto px-4 py-8">
 
-      <div
-        className="card border-0"
-        style={{
-          borderRadius: "22px",
-          background:
-            "#0f172a",
-          color: "#fff"
-        }}
-      >
+  <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden">
 
-        <div className="card-body p-4">
+    <div className="p-6 md:p-8">
 
-          <h3
-            className="fw-bold mb-4"
-            style={{
-              color: "#f97316"
-            }}
+      <h3 className="text-3xl font-bold text-orange-500 mb-6">
+        ✏️ Edit Hire Me Profile
+      </h3>
+
+      {profile.profile_status === "Rejected" && (
+        <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4">
+          <h4 className="font-bold text-red-400">
+            Verification Rejected
+          </h4>
+
+          <p className="text-red-200 mt-2">
+            {profile.rejection_reason}
+          </p>
+        </div>
+      )}
+
+      {approved && (
+        <div className="mb-6 rounded-2xl border border-green-500/30 bg-green-500/10 p-4">
+          <p className="font-semibold text-green-400">
+            ✅ Your profile is approved
+          </p>
+        </div>
+      )}
+
+      {/* Service Information */}
+
+      <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 mb-6">
+
+        <h4 className="text-xl font-bold text-orange-500 mb-6">
+          Service Information
+        </h4>
+
+        <div className="mb-5">
+          <label className="block text-sm font-semibold text-gray-300 mb-2">
+            Service Category
+          </label>
+
+          <select
+            disabled={approved}
+            name="service_category"
+            value={profile.service_category}
+            onChange={handleChange}
+            className="w-full rounded-xl bg-slate-900 border border-slate-700 px-4 py-3 text-white focus:border-orange-500 focus:outline-none disabled:opacity-50"
           >
-            ✏️ Edit Hire Me Profile
-          </h3>
-
-          {profile.profile_status ===
-            "Rejected" && (
-            <div className="alert alert-danger">
-
-              <strong>
-                Verification Rejected
-              </strong>
-
-              <br />
-
-              {
-                profile.rejection_reason
-              }
-
-            </div>
-          )}
-
-          {approved && (
-            <div className="alert alert-success">
-
-              Your profile is approved.
-
-            </div>
-          )}
-
-          <div className="section-card mb-4">
-
-  <h5
-    className="fw-bold mb-4"
-    style={{ color:"#f97316" }}
-  >
-    Service Information
-  </h5>
-
-  <div className="mb-3">
-
-    <label className="form-label text-light fw-semibold">
-      Service Category
-    </label>
-
-    <select
-      disabled={approved}
-      name="service_category"
-      value={profile.service_category}
-      onChange={handleChange}
-      className="form-select dark-input"
-    >
-      <option>House Cleaning</option>
+            <option>House Cleaning</option>
             <option>Laundry Service</option>
             <option>Shopping Helper</option>
             <option>Driver</option>
@@ -301,221 +281,175 @@ export default function HireMeEdit() {
             <option>Mobile Repair</option>
             <option>Computer Repair</option>
             <option>Other</option>
-    </select>
+          </select>
+        </div>
 
-  </div>
+        <div className="mb-5">
+          <label className="block text-sm font-semibold text-gray-300 mb-2">
+            Service Title
+          </label>
 
-  <div className="mb-3">
+          <input
+            disabled={approved}
+            name="service_title"
+            value={profile.service_title}
+            onChange={handleChange}
+            placeholder="Enter service title"
+            className="w-full rounded-xl bg-slate-900 border border-slate-700 px-4 py-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none disabled:opacity-50"
+          />
+        </div>
 
-    <label className="form-label text-light fw-semibold">
-      Service Title
-    </label>
+        <div className="grid md:grid-cols-2 gap-5 mb-5">
 
-    <input
-      disabled={approved}
-      name="service_title"
-      value={profile.service_title}
-      onChange={handleChange}
-      className="form-control dark-input"
-      placeholder="Enter service title"
-    />
+          <div>
+            <label className="block text-sm font-semibold text-gray-300 mb-2">
+              Rate Type
+            </label>
 
-  </div>
+            <select
+              disabled={approved}
+              name="rate_type"
+              value={profile.rate_type}
+              onChange={handleChange}
+              className="w-full rounded-xl bg-slate-900 border border-slate-700 px-4 py-3 text-white focus:border-orange-500 focus:outline-none disabled:opacity-50"
+            >
+              <option>Per Hour</option>
+              <option>Per Day</option>
+              <option>Fixed Price</option>
+            </select>
+          </div>
 
-  <div className="row">
+          <div>
+            <label className="block text-sm font-semibold text-gray-300 mb-2">
+              Price (₹)
+            </label>
 
-    <div className="col-md-6 mb-3">
+            <input
+              type="number"
+              disabled={approved}
+              name="rate_amount"
+              value={profile.rate_amount}
+              onChange={handleChange}
+              placeholder="Enter amount"
+              className="w-full rounded-xl bg-slate-900 border border-slate-700 px-4 py-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none disabled:opacity-50"
+            />
+          </div>
 
-      <label className="form-label text-light fw-semibold">
-        Rate Type
-      </label>
+        </div>
 
-      <select
-        disabled={approved}
-        name="rate_type"
-        value={profile.rate_type}
-        onChange={handleChange}
-        className="form-select dark-input"
-      >
-        <option>Per Hour</option>
-        <option>Per Day</option>
-        <option>Fixed Price</option>
-      </select>
+        <div>
+          <label className="block text-sm font-semibold text-gray-300 mb-2">
+            Description
+          </label>
+
+          <textarea
+            rows="5"
+            disabled={approved}
+            name="description"
+            value={profile.description}
+            onChange={handleChange}
+            placeholder="Describe your service..."
+            className="w-full rounded-xl bg-slate-900 border border-slate-700 px-4 py-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none resize-none disabled:opacity-50"
+          />
+        </div>
+
+      </div>
+
+      {/* Documents */}
+
+      {!approved && (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6">
+
+          <h4 className="text-xl font-bold text-green-500 mb-6">
+            📄 Update Documents
+          </h4>
+
+          <div className="space-y-5">
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                Service Photo
+              </label>
+
+              <input
+                type="file"
+                onChange={(e) =>
+                  setServicePhoto(e.target.files[0])
+                }
+                className="w-full rounded-xl border border-dashed border-slate-600 bg-slate-900 p-3 text-gray-300 file:bg-orange-500 file:text-white file:border-0 file:px-4 file:py-2 file:rounded-lg file:mr-4 cursor-pointer"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                Govt ID Front
+              </label>
+
+              <input
+                type="file"
+                onChange={(e) =>
+                  setFront(e.target.files[0])
+                }
+                className="w-full rounded-xl border border-dashed border-slate-600 bg-slate-900 p-3 text-gray-300 file:bg-orange-500 file:text-white file:border-0 file:px-4 file:py-2 file:rounded-lg file:mr-4 cursor-pointer"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                Govt ID Back
+              </label>
+
+              <input
+                type="file"
+                onChange={(e) =>
+                  setBack(e.target.files[0])
+                }
+                className="w-full rounded-xl border border-dashed border-slate-600 bg-slate-900 p-3 text-gray-300 file:bg-orange-500 file:text-white file:border-0 file:px-4 file:py-2 file:rounded-lg file:mr-4 cursor-pointer"
+              />
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
+      {/* Buttons */}
+
+      <div className="flex flex-wrap gap-4 mt-8">
+
+        {!approved && (
+          <button
+            disabled={loading}
+            onClick={handleUpdate}
+            className="px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 shadow-lg shadow-orange-500/30 hover:scale-105 transition-all duration-300 disabled:opacity-50"
+          >
+            💾 Save Changes
+          </button>
+        )}
+
+        {profile.profile_status === "Rejected" && (
+          <button
+            onClick={handleResubmit}
+            className="px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg shadow-green-500/30 hover:scale-105 transition-all duration-300"
+          >
+            🔄 Resubmit
+          </button>
+        )}
+
+        <button
+          onClick={() => navigate("/me")}
+          className="px-6 py-3 rounded-xl font-bold bg-white text-red-500 hover:scale-105 transition-all duration-300 shadow-lg"
+        >
+          ← Back
+        </button>
+
+      </div>
 
     </div>
-
-    <div className="col-md-6 mb-3">
-
-      <label className="form-label text-light fw-semibold">
-        Price (₹)
-      </label>
-
-      <input
-        disabled={approved}
-        type="number"
-        name="rate_amount"
-        value={profile.rate_amount}
-        onChange={handleChange}
-        className="form-control dark-input"
-        placeholder="Enter amount"
-      />
-
-    </div>
-
-  </div>
-
-  <div>
-
-    <label className="form-label text-light fw-semibold">
-      Description
-    </label>
-
-    <textarea
-      rows="5"
-      disabled={approved}
-      name="description"
-      value={profile.description}
-      onChange={handleChange}
-      className="form-control dark-input"
-      placeholder="Describe your service..."
-    />
 
   </div>
 
 </div>
-
-         {!approved && (
-
-<div className="section-card">
-
-  <h5
-    className="fw-bold mb-4"
-    style={{ color:"#22c55e" }}
-  >
-    📄 Update Documents
-  </h5>
-
-  <div className="upload-box mb-3">
-
-    <label className="form-label fw-semibold text-light">
-      Service Photo
-    </label>
-
-    <input
-      type="file"
-      className="form-control dark-input"
-      onChange={(e)=>
-        setServicePhoto(
-          e.target.files[0]
-        )
-      }
-    />
-
-  </div>
-
-  <div className="upload-box mb-3">
-
-    <label className="form-label fw-semibold text-light">
-      Govt ID Front
-    </label>
-
-    <input
-      type="file"
-      className="form-control dark-input"
-      onChange={(e)=>
-        setFront(
-          e.target.files[0]
-        )
-      }
-    />
-
-  </div>
-
-  <div className="upload-box">
-
-    <label className="form-label fw-semibold text-light">
-      Govt ID Back
-    </label>
-
-    <input
-      type="file"
-      className="form-control dark-input"
-      onChange={(e)=>
-        setBack(
-          e.target.files[0]
-        )
-      }
-    />
-
-  </div>
-
-</div>
-
-)}
- <div className="d-flex flex-wrap gap-3 mt-4">
-
-  {!approved && (
-    <button
-      className="btn btn-warning px-4 py-2 fw-bold"
-      disabled={loading}
-      onClick={handleUpdate}
-      style={{
-                    background:
-                    "linear-gradient(35deg,#ff9800,#ff5722)",
-                    color: "#fff",
-                    borderRadius: "16px",
-                    padding: "14px",
-                    fontSize: "16px",
-                    letterSpacing: ".3px",
-                    boxShadow:
-                    "0 8px 20px rgba(255,152,0,.35)"
-                }}
-    >
-      💾 Save Changes
-    </button>
-  )}
-
-  {profile.profile_status === "Rejected" && (
-    <button
-      className="btn btn-success px-4 py-2 fw-bold"
-      onClick={handleResubmit}
-      style={{
-                    background:
-                    "linear-gradient(35deg,#ff9800,#ff5722)",
-                    color: "#fff",
-                    borderRadius: "16px",
-                    padding: "14px",
-                    fontSize: "16px",
-                    letterSpacing: ".3px",
-                    boxShadow:
-                    "0 8px 20px rgba(255,152,0,.35)"
-                }}
-    >
-      🔄 Resubmit
-    </button>
-  )}
-
-  <button
-    className="btn btn-outline-light px-4 py-2"
-   style={{
-                    background:
-                    "linear-gradient(35deg,#cccccc,#ffffff)",
-                    color: "#fa0e0e",
-                    borderRadius: "16px",
-                    padding: "14px",
-                    fontSize: "16px",
-                    letterSpacing: ".3px",
-                    boxShadow:
-                    "0 8px 20px rgba(255,152,0,.35)"
-                }}
-    onClick={() =>
-      navigate("/me")
-    }
-  >
-    ← Back
-  </button>
-
-</div></div></div></div>
 </>
   );
 

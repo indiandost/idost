@@ -10,29 +10,19 @@ const API =
 
 export default function HireRequests() {
 
-  const token =
-    localStorage.getItem("token");
-
-  const [tab, setTab] =
-    useState("received");
-
-  const [received,
-    setReceived] =
-    useState([]);
-
-  const [sent,
-    setSent] =
-    useState([]);
-
-  const [loading,
-    setLoading] =
-    useState(true);
+  const token = localStorage.getItem("token");
+  const [tab, setTab] =  useState("received");
+  const [received,  setReceived] =  useState([]);
+  const [sent,   setSent] =  useState([]);
+  const [loading, setLoading] =  useState(true);    
+    const [reviews, setReviews] = useState([]);
+    const [showReviews, setShowReviews] = useState(false);
+    const [loadingReviews, setLoadingReviews] = useState(false);
 const [rating, setRating] = useState({});
 const [comment, setComment] = useState({});
+
   useEffect(() => {
-
     loadData();
-
   }, []);
 
   const loadData =
@@ -71,7 +61,8 @@ const [comment, setComment] = useState({});
         setSent(
           sentRes.data.requests || []
         );
-
+console.log(rec.data.requests);
+console.log(sentRes.data.requests);
       } catch (err) {
 
         console.log(err);
@@ -83,6 +74,23 @@ const [comment, setComment] = useState({});
       }
 
     };
+
+  const loadReviews = async (userId) => {
+  try {
+    setLoadingReviews(true);
+    const res = await fetch(
+      `${API}/hireme/hire-reviews/${userId}`
+    );
+    const data = await res.json();
+    setReviews(data.reviews);
+    setShowReviews(true);
+
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoadingReviews(false);
+  }
+};
 
 const submitReview = async (requestId) => {
 
@@ -279,6 +287,95 @@ const submitReview = async (requestId) => {
                           <h3 className="font-bold text-lg">
                             {item.name}
                           </h3>
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                              <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-amber-50 border border-amber-200">
+                                <span className="text-yellow-500">⭐</span>
+
+                                <span className="font-semibold text-slate-700">
+                                  {Number(item.avg_rating || 0).toFixed(1)}
+                                </span>
+                              </div>
+
+                              <span className="text-sm text-slate-500">
+                                ({item.total_reviews || 0} Reviews)
+                              </span>
+
+                         </div>
+                          {item?.total_reviews > 0 && (
+                          <button
+                            onClick={() => loadReviews(item.srno)}
+                            className="text-blue-600 text-sm font-medium mt-2"
+                          >
+                            View Reviews ({item.total_reviews})
+                          </button>
+                        )}
+{showReviews && (
+  <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+
+    <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-5">
+
+      <div className="flex justify-between items-center mb-4">
+
+        <h3 className="font-bold text-lg"  style={{ color: "#222" }}>
+          Customer Reviews
+        </h3>
+
+        <button
+          onClick={() => setShowReviews(false)}
+          className="text-red-500 text-xl"  style={{ color: "#222" }}
+        >
+          ✕
+        </button>
+
+      </div>
+
+      {!reviews || reviews.length === 0 ? (
+
+        <p className="text-gray-500">
+          No reviews found.
+        </p>
+
+      ) : (
+
+        reviews.map((review, index) => (
+
+          <div
+            key={review?.id || index}
+            className="border-b py-3"
+          >
+
+            <div className="flex justify-between">
+
+              <h4 className="font-semibold"  style={{ color: "#222" }}>
+                {review?.reviewer_name || "Anonymous"}
+              </h4>
+
+              <span className="text-yellow-500">
+                ⭐ {review?.rating || 0}
+              </span>
+
+            </div>
+
+            <p className="text-sm text-gray-600 mt-1">
+              {review?.comment || ""}
+            </p>
+
+            <p className="text-xs text-gray-400 mt-2">
+              {review?.created_at
+                ? new Date(review.created_at).toLocaleDateString()
+                : ""}
+            </p>
+
+          </div>
+
+        ))
+
+      )}
+
+    </div>
+
+  </div>
+)}
 
                           <p className="text-slate-400 text-sm">
                             {item.city}
@@ -310,12 +407,12 @@ const submitReview = async (requestId) => {
                                 </a>
                                 </div>
                             </div>
-                             {item.reviewed > 0 && (
+                             {item.reviewed > 0 ? (
   <div className="text-green-500">
     ✅ Review Submitted
   </div>
-)}
-                              <div className="mt-4 border border-slate-700 rounded-2xl p-4 bg-slate-900">
+): (
+<div className="mt-4 border border-slate-700 rounded-2xl p-4 bg-slate-900">
                                     <h4 className="text-white font-semibold mb-3">
                                     ⭐ Leave Review
                                     </h4>
@@ -417,6 +514,7 @@ const submitReview = async (requestId) => {
                                     </button>
 
                                 </div>
+)}                              
                             </>
                             )}
                         <p className="text-xs text-slate-400 mt-2">
@@ -537,12 +635,12 @@ const submitReview = async (requestId) => {
                                 </a>
                                 </div>
                             </div>
-                              {item.reviewed > 0 && (
+                              {item.reviewed > 0 ? (
   <div className="text-green-500">
     ✅ Review Submitted
   </div>
-)}
-                              <div className="mt-4 border border-slate-700 rounded-2xl p-4 bg-slate-900">
+):(
+   <div className="mt-4 border border-slate-700 rounded-2xl p-4 bg-slate-900">
                                 <h4 className="text-white font-semibold mb-3">
                                 ⭐ Leave Review
                                 </h4>
@@ -644,6 +742,8 @@ const submitReview = async (requestId) => {
                                 </button>
 
                             </div>
+)}
+                             
                             </>
                             )}
                         <div className="mt-3 text-slate-300">

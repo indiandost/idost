@@ -520,12 +520,13 @@ const loadPendingQuizCount = async () => {
             🎥 Friends
           </Link>
           <Link
-            to="/hire-requests"
-            onClick={() => setMenuOpen(false)}
-            className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
-          >
-            <Inbox size={20} /> <span> Hire Requests</span>
-          </Link>
+  to="/hire-requests"
+  onClick={() => setMenuOpen(false)}
+  className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-800 text-left"
+>
+  <Inbox size={20} />
+  <span>Hire Requests</span>
+</Link>
          
            <Link
             to="/my-refer"
@@ -576,7 +577,7 @@ const loadPendingQuizCount = async () => {
            <Link
             to="/hire-me-directory"
             onClick={() => setMenuOpen(false)}
-            className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
+            className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-800 text-left"
           >
             <BriefcaseBusiness  size={20} /> <span> Hire Me</span>
           </Link>
