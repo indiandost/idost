@@ -137,3 +137,35 @@ code {
 .animate-fade {
   animation: fadeTicker 3s ease-in-out;
 }
+.dark-input{
+  background:#1e293b !important;
+  border:1px solid #334155 !important;
+  color:#fff !important;
+  border-radius:14px !important;
+  padding:12px 15px;
+}
+
+.dark-input:focus{
+  background:#1e293b !important;
+  color:#fff !important;
+  border-color:#f97316 !important;
+  box-shadow:0 0 0 .2rem rgba(249,115,22,.25) !important;
+}
+
+.dark-input::placeholder{
+  color:#94a3b8 !important;
+}
+
+.section-card{
+  background:#111827;
+  border:1px solid #1f2937;
+  border-radius:18px;
+  padding:20px;
+}
+
+.upload-box{
+  background:#1e293b;
+  border:2px dashed #475569;
+  border-radius:16px;
+  padding:15px;
+}

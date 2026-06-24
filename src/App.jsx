@@ -51,10 +51,12 @@ import { HelmetProvider } from "react-helmet-async";
 import socket from "./socket";
 import LiveRoomsAlert from "./components/LiveRoomsAlert";
 import HireMeEnroll from "./pages/HireMeEnroll";
+import HireMeEdit from "./pages/HireMeEdit";
+import HireMePayment from "./pages/HireMePayment";
 import HireMeDirectory from "./pages/HireMeDirectory";
 import HireMeProfile from "./pages/HireMeProfile";
 import HireMeAdmin from "./pages/HireMeAdmin";
-
+import HireRequests from "./pages/HireRequests";
 import {
   Home as HomeIcon,
   Users,
@@ -71,6 +73,8 @@ import {
   Gamepad2,
   Music,
   Search,
+  BriefcaseBusiness,
+  Inbox,
 } from "lucide-react";
 import {  App as CapacitorApp } from "@capacitor/app";
 
@@ -515,6 +519,14 @@ const loadPendingQuizCount = async () => {
           >
             🎥 Friends
           </Link>
+          <Link
+            to="/hire-requests"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
+          >
+            <Inbox size={20} /> <span> Hire Requests</span>
+          </Link>
+         
            <Link
             to="/my-refer"
             onClick={() => setMenuOpen(false)}
@@ -561,6 +573,13 @@ const loadPendingQuizCount = async () => {
             🪙 Withdraw Request
           </Link>
           </>)}
+           <Link
+            to="/hire-me-directory"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center p-3 rounded-lg hover:bg-gray-800 text-left"
+          >
+            <BriefcaseBusiness  size={20} /> <span> Hire Me</span>
+          </Link>
            <Link
             to="/withdraw"
             onClick={() => setMenuOpen(false)}
@@ -1587,9 +1606,12 @@ useEffect(() => {
           <Route path="/quiz-result/:battleId" element={<PrivateRoute>{" "}<QuizResult /></PrivateRoute>}/>           
            <Route  path="/quiz/:battleId" element={<PrivateRoute> {" "} <QuizPlay /></PrivateRoute>}/>            
             <Route path="/hire-me-enroll" element={<PrivateRoute> {" "} <HireMeEnroll /></PrivateRoute>} />
-            <Route path="/hire-me-directory" element={<PrivateRoute> {" "} <HireMeDirectory /></PrivateRoute>} />
+            <Route path="/hire-me-directory" element={<HireMeDirectory />}/>
             <Route path="/hire-me/:id" element={<PrivateRoute> {" "} <HireMeProfile /></PrivateRoute>} />
+             <Route path="/hireme-edit" element={<PrivateRoute> {" "} <HireMeEdit /></PrivateRoute>} />
+              <Route path="/hireme-payment" element={<PrivateRoute> {" "} <HireMePayment /></PrivateRoute>} />
             <Route path="/admin/hire-me" element={<PrivateRoute> {" "} <HireMeAdmin /></PrivateRoute>} />
+                  <Route path="/hire-requests" element={<PrivateRoute> {" "} <HireRequests /></PrivateRoute>} />
           <Route path="/timeline" element={<Timeline />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

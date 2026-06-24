@@ -79,414 +79,6 @@ const [form, setForm] = useState({
   insta: ""
 });
 
-const indiaCities = [
-  "Adilabad",
-  "Agartala",
-  "Agra",
-  "Ahmedabad",
-  "Ahmednagar",
-  "Aizawl",
-  "Ajmer",
-  "Akola",
-  "Alappuzha",
-  "Aligarh",
-  "Alipurduar",
-  "Allahabad",
-  "Almora",
-  "Alwar",
-  "Ambala",
-  "Ambikapur",
-  "Amravati",
-  "Amreli",
-  "Amritsar",
-  "Anand",
-  "Anantapur",
-  "Angul",
-  "Arrah",
-  "Asansol",
-  "Aurangabad",
-  "Azamgarh",
-
-  "Badlapur",
-  "Bagalkot",
-  "Bahadurgarh",
-  "Bahraich",
-  "Balasore",
-  "Ballia",
-  "Balrampur",
-  "Banda",
-  "Bangalore",
-  "Bankura",
-  "Barabanki",
-  "Baramati",
-  "Baran",
-  "Barasat",
-  "Bareilly",
-  "Bargarh",
-  "Barmer",
-  "Barnala",
-  "Baroda",
-  "Barpeta",
-  "Barwani",
-  "Basti",
-  "Batala",
-  "Bathinda",
-  "Beawar",
-  "Begusarai",
-  "Belgaum",
-  "Bellary",
-  "Berhampore",
-  "Berhampur",
-  "Betul",
-  "Bhadrak",
-  "Bhagalpur",
-  "Bharatpur",
-  "Bharuch",
-  "Bhatinda",
-  "Bhavnagar",
-  "Bhilai",
-  "Bhilwara",
-  "Bhimavaram",
-  "Bhind",
-  "Bhiwadi",
-  "Bhiwani",
-  "Bhopal",
-  "Bhubaneswar",
-  "Bhuj",
-  "Bidar",
-  "Bijapur",
-  "Bijnor",
-  "Bikaner",
-  "Bilaspur",
-  "Bokaro",
-  "Botad",
-  "Budaun",
-  "Bulandshahr",
-  "Buldhana",
-  "Bundi",
-  "Burhanpur",
-
-  "Calicut",
-  "Chandigarh",
-  "Chandrapur",
-  "Chennai",
-  "Chhapra",
-  "Chhindwara",
-  "Chikmagalur",
-  "Chitradurga",
-  "Chittoor",
-  "Coimbatore",
-  "Cooch Behar",
-  "Cuddalore",
-  "Cuttack",
-
-  "Dahod",
-  "Damoh",
-  "Darbhanga",
-  "Darjeeling",
-  "Datia",
-  "Dausa",
-  "Davangere",
-  "Dehradun",
-  "Deoghar",
-  "Deoria",
-  "Dewas",
-  "Dhanbad",
-  "Dhar",
-  "Dharmapuri",
-  "Dharwad",
-  "Dhenkanal",
-  "Dholpur",
-  "Dhule",
-  "Dibrugarh",
-  "Dimapur",
-  "Dindigul",
-  "Dispur",
-  "Diu",
-  "Durg",
-  "Durgapur",
-
-  "Eluru",
-  "Ernakulam",
-  "Erode",
-  "Etah",
-  "Etawah",
-
-  "Faizabad",
-  "Faridabad",
-  "Farrukhabad",
-  "Fatehabad",
-  "Fatehpur",
-  "Fazilka",
-  "Firozabad",
-  "Firozpur",
-
-  "Gadag",
-  "Gandhidham",
-  "Gandhinagar",
-  "Gangtok",
-  "Gaya",
-  "Ghaziabad",
-  "Ghazipur",
-  "Giridih",
-  "Goa",
-  "Godhra",
-  "Gonda",
-  "Gondia",
-  "Gopalganj",
-  "Gorakhpur",
-  "Greater Noida",
-  "Gulbarga",
-  "Guna",
-  "Guntur",
-  "Gurgaon",
-  "Guwahati",
-  "Gwalior",
-
-  "Hajipur",
-  "Haldwani",
-  "Hamirpur",
-  "Hanumangarh",
-  "Hapur",
-  "Hardoi",
-  "Haridwar",
-  "Hassan",
-  "Hathras",
-  "Hazaribagh",
-  "Himatnagar",
-  "Hisar",
-  "Hoshiarpur",
-  "Hospet",
-  "Howrah",
-  "Hubli",
-  "Hyderabad",
-
-  "Ichalkaranji",
-  "Imphal",
-  "Indore",
-  "Itanagar",
-
-  "Jabalpur",
-  "Jagdalpur",
-  "Jaipur",
-  "Jaisalmer",
-  "Jalandhar",
-  "Jalgaon",
-  "Jalna",
-  "Jalpaiguri",
-  "Jammu",
-  "Jamnagar",
-  "Jamshedpur",
-  "Jaunpur",
-  "Jehanabad",
-  "Jhansi",
-  "Jhunjhunu",
-  "Jind",
-  "Jodhpur",
-  "Jorhat",
-  "Junagadh",
-
-  "Kaithal",
-  "Kakinada",
-  "Kalimpong",
-  "Kalyan",
-  "Kanchipuram",
-  "Kannur",
-  "Kanpur",
-  "Kanyakumari",
-  "Kapurthala",
-  "Karaikudi",
-  "Karimnagar",
-  "Karnal",
-  "Karur",
-  "Kasaragod",
-  "Katihar",
-  "Katni",
-  "Kharagpur",
-  "Khargone",
-  "Kochi",
-  "Kohima",
-  "Kolhapur",
-  "Kolkata",
-  "Kollam",
-  "Korba",
-  "Kota",
-  "Kottayam",
-  "Kozhikode",
-  "Krishnanagar",
-  "Kurnool",
-  "Kurukshetra",
-
-  "Lakhimpur",
-  "Lalitpur",
-  "Latur",
-  "Leh",
-  "Lucknow",
-  "Ludhiana",
-
-  "Madurai",
-  "Mahbubnagar",
-  "Malappuram",
-  "Malegaon",
-  "Mandi",
-  "Mandya",
-  "Mangalore",
-  "Mathura",
-  "Meerut",
-  "Mehsana",
-  "Mirzapur",
-  "Modinagar",
-  "Moga",
-  "Mohali",
-  "Moradabad",
-  "Morbi",
-  "Motihari",
-  "Mumbai",
-  "Munger",
-  "Murshidabad",
-  "Muzaffarnagar",
-  "Muzaffarpur",
-  "Mysore",
-
-  "Nadiad",
-  "Nagaon",
-  "Nagapattinam",
-  "Nagaur",
-  "Nagercoil",
-  "Nagpur",
-  "Nainital",
-  "Nalanda",
-  "Nalgonda",
-  "Namakkal",
-  "Nanded",
-  "Nandurbar",
-  "Narasaraopet",
-  "Nashik",
-  "Navsari",
-  "Neemuch",
-  "Nellore",
-  "New Delhi",
-  "Nizamabad",
-  "Noida",
-
-  "Ongole",
-
-  "Palakkad",
-  "Palanpur",
-  "Pali",
-  "Panaji",
-  "Panchkula",
-  "Panipat",
-  "Parbhani",
-  "Pathanamthitta",
-  "Pathankot",
-  "Patiala",
-  "Patna",
-  "Perambalur",
-  "Phagwara",
-  "Pilibhit",
-  "Pondicherry",
-  "Porbandar",
-  "Port Blair",
-  "Pratapgarh",
-  "Prayagraj",
-  "Pudukkottai",
-  "Pune",
-  "Puri",
-
-  "Raebareli",
-  "Raichur",
-  "Raigarh",
-  "Raipur",
-  "Rajahmundry",
-  "Rajkot",
-  "Rajnandgaon",
-  "Rajsamand",
-  "Ramagundam",
-  "Rameswaram",
-  "Rampur",
-  "Ranchi",
-  "Ratlam",
-  "Ratnagiri",
-  "Rewa",
-  "Rohtak",
-  "Roorkee",
-  "Rourkela",
-  "Rudrapur",
-
-  "Sagar",
-  "Saharanpur",
-  "Salem",
-  "Sambalpur",
-  "Sambhal",
-  "Sangli",
-  "Satara",
-  "Satna",
-  "Secunderabad",
-  "Shahjahanpur",
-  "Shillong",
-  "Shimla",
-  "Shivpuri",
-  "Sikar",
-  "Silchar",
-  "Siliguri",
-  "Silvassa",
-  "Sindhudurg",
-  "Sirohi",
-  "Sirsa",
-  "Sitamarhi",
-  "Sitapur",
-  "Solapur",
-  "Sonipat",
-  "Sri Ganganagar",
-  "Srinagar",
-  "Surat",
-  "Surendranagar",
-
-  "Tadepalligudem",
-  "Tamluk",
-  "Tenkasi",
-  "Tezpur",
-  "Thane",
-  "Thanjavur",
-  "Thiruvananthapuram",
-  "Thoothukudi",
-  "Thrissur",
-  "Tinsukia",
-  "Tiruchirappalli",
-  "Tirunelveli",
-  "Tirupati",
-  "Tiruppur",
-  "Tonk",
-  "Tumkur",
-
-  "Udaipur",
-  "Udhampur",
-  "Udupi",
-  "Ujjain",
-  "Ulhasnagar",
-  "Unnao",
-
-  "Vadodara",
-  "Valsad",
-  "Varanasi",
-  "Vasco da Gama",
-  "Vellore",
-  "Veraval",
-  "Vidisha",
-  "Vijayawada",
-  "Viluppuram",
-  "Virar",
-  "Visakhapatnam",
-  "Vizianagaram",
-
-  "Warangal",
-  "Wardha",
-
-  "Yamunanagar",
-
-  "Zirakpur"
-];
 const startLiveMeeting = () => {
 
  const roomId =  Math.random().toString(36).substring(2, 8);
@@ -818,6 +410,22 @@ const deleteProfile = async () => {
   }
 
 };
+  const paymentPending =
+    !hireProfile?.payment_status ||
+    hireProfile?.payment_status === "" ||
+    hireProfile?.payment_status === "Not Submitted";
+
+  const paymentUnderReview =
+    hireProfile?.payment_status === "Pending";
+
+  const paymentApproved =
+    hireProfile?.payment_status === "Approved";
+
+  const profileApproved =
+    hireProfile?.profile_status === "Approved";
+
+  const profileRejected =
+    hireProfile?.profile_status === "Rejected";
 
   if (!user) return <div className="text-white p-4">Loading...</div>;
 
@@ -1002,6 +610,7 @@ const deleteProfile = async () => {
   </div>
 )}
 
+
 {hireProfile && (
   <div
     className="card border-0 mt-3"
@@ -1046,6 +655,14 @@ const deleteProfile = async () => {
           {hireProfile.service_category}
         </div>
 
+{/*profile.profile_status === "Rejected" && (
+  <div className="alert alert-danger">
+    <strong>Verification Rejected</strong>
+    <br />
+    {profile.rejection_reason ||
+      "Please update details and resubmit."}
+  </div>
+)*/}
         {/* Profile Status */}
 
         {hireProfile.profile_status === "Pending" && (
@@ -1072,21 +689,20 @@ const deleteProfile = async () => {
           </div>
         )}
 
-        {/* Payment Status */}
-
-        {hireProfile.payment_status === "Not Submitted" && (
+      {/* Payment Status */}
+        {paymentPending && (
           <div className="alert alert-warning py-2 mt-2 mb-2">
             💳 Verification fee not submitted
           </div>
         )}
 
-        {hireProfile.payment_status === "Pending" && (
+        {paymentUnderReview && (
           <div className="alert alert-info py-2 mt-2 mb-2">
             💳 Payment verification pending
           </div>
         )}
 
-        {hireProfile.payment_status === "Approved" && (
+        {paymentApproved && (
           <div className="alert alert-success py-2 mt-2 mb-2">
             ✅ Payment verified
           </div>
@@ -1097,34 +713,69 @@ const deleteProfile = async () => {
       {/* Actions */}
 
       <div className="d-flex gap-2 mt-3">
+<div className="d-flex flex-column gap-3 mt-3">
 
-        {hireProfile.payment_status ===
-          "" && (
-          <button
-            className="btn btn-warning flex-fill"
-            onClick={() =>
-              navigate(
-                "/hireme-payment"
-              )
-            }
-          >
-            💳 Complete Payment
-          </button>
-        )}
+  {/* Payment */}
 
-        {hireProfile.profile_status !==
-          "Approved" && (
-          <button
-            className="btn btn-light flex-fill"
-            onClick={() =>
-              navigate(
-                "/hire-me-edit"
-              )
-            }
-          >
-            ✏️ Edit Profile
-          </button>
-        )}
+  {paymentPending && (
+    <button
+      onClick={() =>
+        navigate("/hireme-payment")
+      }
+    className="btn w-100 fw-bold d-flex align-items-center justify-content-center gap-3"
+  style={{
+    background:
+      "linear-gradient(35deg,#ff9800,#ff5722)",
+    color: "#fff",
+    borderRadius: "16px",
+    padding: "14px",
+    fontSize: "16px",
+    letterSpacing: ".3px",
+    boxShadow:
+      "0 8px 20px rgba(255,152,0,.35)"
+  }}
+>
+      💳 Complete Payment
+    </button>
+  )}
+
+  {/* Edit */}
+
+  {!profileApproved && (
+    <button
+      onClick={() =>
+        navigate("/hireme-edit")
+      }
+      className="w-100 border-0 fw-bold"
+  style={{
+    background:
+      "linear-gradient(135deg,#ff9800,#ff5722)",
+    color: "#fff",
+    borderRadius: "16px",
+    padding: "14px",
+    fontSize: "16px",
+    letterSpacing: ".3px",
+    boxShadow:
+      "0 8px 20px rgba(255,152,0,.35)"
+  }}
+>
+      ✏️ Edit Profile
+    </button>
+  )}
+
+</div>
+
+  {/* Edit */}
+{profileApproved && (
+  <div className="alert alert-success mt-2 mb-2">
+    🎉 Your Hire Me profile is live and visible in directory.
+  </div>
+)}
+{profileRejected && (
+  <div className="alert alert-danger mt-2 mb-2">
+    ❌ Verification rejected. Please update details and resubmit.
+  </div>
+)}
 
       </div>
 
@@ -1336,29 +987,6 @@ const deleteProfile = async () => {
   <option value="Other">Other</option>
 
 </select>
- {/*<select
-  name="city"
-  value={form.city}
-  onChange={handleChange}
-  className="w-full p-3 rounded bg-gray-700 text-white"
->
-
-  <option value="">
-    Select City
-  </option>
-
-  {indiaCities.map((city, index) => (
-
-    <option
-      key={index}
-      value={city}
-    >
-      {city}
-    </option>
-
-  ))}
-
-</select>*/}
  <input
     name="city"
     value={form.city}
