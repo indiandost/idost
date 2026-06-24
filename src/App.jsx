@@ -78,7 +78,8 @@ import {
 } from "lucide-react";
 import {  App as CapacitorApp } from "@capacitor/app";
 import notificationSound from "./assets/sounds/notification.mp3";
-import notificationSound2 from "./assets/sounds/notification2.mp3";
+//import notificationSound2 from "./assets/sounds/notification2.mp3";
+import notificationSound2 from "./assets/sounds/notification-mini.mp3";
 const API = import.meta.env.VITE_API_URL;
 // 🔐 Protected Route
 function PrivateRoute({ children }) {
