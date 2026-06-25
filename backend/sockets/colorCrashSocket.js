@@ -928,7 +928,7 @@ io.to(roomId).emit("game_tick", {
 );
                     console.log(uniquePlayers.length +"===V===="+room.viewers.length +"===P===="+room.players.length);
                     const totalPool =  ((uniquePlayers.length+1) - room.viewers.length ) * ENTRY_FEE; //+1 cause of bot user
-                  /*  const [countRows] =
+                  /* const [countRows] =
               await db.promise().query(
                 `
                 SELECT COUNT(*) total
