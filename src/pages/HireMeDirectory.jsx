@@ -1,20 +1,46 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 
 const API_URL = import.meta.env.VITE_API_URL;
-
 export default function HireMeDirectory() {
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openReviews, setOpenReviews] = useState(null);
   const navigate = useNavigate();
+const [filters, setFilters] = useState({
+  keyword: "",
+  category: "",
+  city: "",
+  minRating: "",
+  sort: "",
+  lat: "",
+  lng: "",
+  radius: ""
+});
 
-  useEffect(() => {
-    fetchProfiles();
-  }, []);
-
-  const fetchProfiles = async () => {
+useEffect(() => {
+navigator.geolocation.getCurrentPosition((pos) => {
+  setFilters(prev => ({
+    ...prev,
+    lat: pos.coords.latitude,
+    lng: pos.coords.longitude,
+    sort: "nearest"
+   }));
+  });
+});
+const getMyLocation = () => {
+  navigator.geolocation.getCurrentPosition((pos) => {
+    setFilters(prev => ({
+      ...prev,
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude,
+      sort: "nearest"
+    }));
+  });
+};
+ /* const fetchProfiles = async () => {
     try {
       const res = await axios.get(
         `${API_URL}/hireme/list`
@@ -27,6 +53,31 @@ export default function HireMeDirectory() {
       setLoading(false);
     }
   };
+*/
+const fetchProfiles = async () => {
+  try {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.append(key, value);
+    });
+
+    const res = await axios.get(
+      `${API_URL}/hireme/list?${params.toString()}`
+    );
+
+    setProfiles(res.data || []);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
+  
+useEffect(() => {
+    fetchProfiles();
+}, [filters]);
+
+
 
   if (loading) {
     return (
@@ -37,6 +88,17 @@ export default function HireMeDirectory() {
   }
 
 return (
+  <>
+  <Helmet>
+  <title>
+    Hire Trusted Professionals Near You | IndianDost Hire Me Directory
+  </title>
+
+  <meta
+    name="description"
+    content="Browse verified service providers on IndianDost Hire Me Directory. Find cleaners, drivers, tutors, plumbers, electricians, fitness trainers, photographers, and more near you."
+  />
+</Helmet>
   <div className="min-h-screen bg-slate-50 py-10">
 
     {/* Header */}
@@ -57,11 +119,185 @@ return (
           Discover trusted service providers near you.
           Browse verified professionals and hire with confidence.
         </p>
+<div
+  className="mt-2 mb-3 px-3 py-2 d-flex align-items-center justify-content-between"
+  style={{
+    background: "linear-gradient(135deg,#ec4899,#7c3aed)",
+    borderRadius: "14px"
+  }}
+>
+  <div
+    className="text-white"
+    style={{
+      fontSize: "14px",
+      fontWeight: 600
+    }}
+  >
+    💼 Offer Your Services & Get Direct Hire Requests
+  </div>
 
+  <button
+    onClick={() => navigate("/hire-me-enroll")}
+    className="border-0"
+    style={{
+      background: "#fff",
+      color: "#7c3aed",
+      borderRadius: "10px",
+      padding: "5px 12px",
+      fontSize: "12px",
+      fontWeight: 600
+    }}
+  >
+    ₹49 Enroll
+  </button>
+</div>
       </div>
 
     </div>
+<div className="max-w-7xl mx-auto px-4 mb-6">
 
+  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+
+    <div className="flex flex-wrap gap-3 items-center">
+
+      {/* Near Me Button */}
+
+      <button
+        onClick={getMyLocation}
+        className="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium whitespace-nowrap"
+      >
+        📍 Near Me
+      </button>
+
+      {/* Category */}
+
+      <select
+        className="px-3 py-2 rounded-xl border border-slate-300 text-sm min-w-[180px]"
+        value={filters.category}
+        onChange={(e) =>
+          setFilters({
+            ...filters,
+            category: e.target.value
+          })
+        }
+      >
+        <option value="">All Categories</option>
+        <option>House Cleaning</option>
+        <option>Laundry Service</option>
+        <option>Shopping Helper</option>
+        <option>Driver</option>
+        <option>Elder Care</option>
+        <option>Massage Service</option>
+        <option>Yoga Trainer</option>
+        <option>Fitness Trainer</option>
+        <option>Home Cook</option>
+        <option>Babysitter</option>
+        <option>Tutor</option>
+        <option>Electrician</option>
+        <option>Plumber</option>
+        <option>Beautician</option>
+        <option>Photographer</option>
+        <option>Mobile Repair</option>
+        <option>Computer Repair</option>
+        <option>Other</option>
+      </select>
+
+      {/* Distance */}
+
+      <select
+        className="px-3 py-2 rounded-xl border border-slate-300 text-sm"
+        value={filters.radius}
+        onChange={(e) =>
+          setFilters({
+            ...filters,
+            radius: e.target.value
+          })
+        }
+      >
+        <option value="">Distance</option>
+        <option value="5">5 KM</option>
+        <option value="10">10 KM</option>
+        <option value="25">25 KM</option>
+        <option value="50">50 KM</option>
+        <option value="100">100 KM</option>
+      </select>
+
+      {/* Rating */}
+
+      <select hidden
+        className="px-3 py-2 rounded-xl border border-slate-300 text-sm"
+        value={filters.minRating}
+        onChange={(e) =>
+          setFilters({
+            ...filters,
+            minRating: e.target.value
+          })
+        }
+      >
+        <option value="">Rating</option>
+        <option value="4">⭐ 4+ Stars</option>
+        <option value="3">⭐ 3+ Stars</option>
+      </select>
+
+      {/* Sort */}
+
+      <select hidden
+        className="px-3 py-2 rounded-xl border border-slate-300 text-sm"
+        value={filters.sort}
+        onChange={(e) =>
+          setFilters({
+            ...filters,
+            sort: e.target.value
+          })
+        }
+      >
+        <option value="">Sort By</option>
+        <option value="nearest">Nearest</option>
+        <option value="rating">Top Rated</option>
+        <option value="price_low">Lowest Price</option>
+        <option value="price_high">Highest Price</option>
+      </select>
+
+      {/* City */}
+
+      <input
+        type="text"
+        placeholder="City"
+        value={filters.city}
+        onChange={(e) =>
+          setFilters({
+            ...filters,
+            city: e.target.value
+          })
+        }
+        className="px-3 py-2 rounded-xl border border-slate-300 text-sm w-[140px]"
+      />
+
+      {/* Clear */}
+
+      <button
+        onClick={() =>
+          setFilters({
+            keyword: "",
+            category: "",
+            city: "",
+            minRating: "",
+            sort: "",
+            radius: "",
+            lat: "",
+            lng: ""
+          })
+        }
+        className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm"
+      >
+        Reset
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
     {/* Empty State */}
 
     {profiles.length === 0 ? (
@@ -148,6 +384,9 @@ return (
 
               <span className="text-sm text-slate-500">
                 ({item.total_reviews || 0} Reviews)
+              </span>  
+              <span className="text-sm text-slate-500">
+                📍 {Number(item.distance).toFixed(1)} KM away
               </span>
 
             </div>
@@ -219,5 +458,6 @@ return (
     )}
 
   </div>
+  </>
 );
 }

@@ -5,6 +5,7 @@ import React, {
 
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import qrImage from "../assets/qr.png";
 
 const API =
   import.meta.env.VITE_API_URL;
@@ -196,14 +197,14 @@ export default function HireMePayment() {
                   borderRadius: "20px"
                 }}
               >
-                    <img
-                      src="/qr.png"
-                      alt="UPI QR"
-                      className="mx-auto rounded-lg mb-4"
-                      style={{
-                        maxWidth: "220px"
-                      }}
-                    />
+                   <img
+                    src={qrImage}
+                    alt="QR Code"
+                   className="w-64 mx-auto rounded-xl mb-4"
+                    style={{
+                           maxWidth: "220px"
+                         }}
+                   />
                     <p className="text-white">indiandost2-1@okicici</p>
                 <div className="mt-4">
                   <h4

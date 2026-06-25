@@ -801,7 +801,7 @@ router.get(
   }
 );
 
-router.get(
+/*router.get(
   "/list",
   (req, res) => {
 
@@ -847,7 +847,169 @@ ORDER BY h.id DESC;
     });
 
   }
-);
+);*/
+router.get("/list", (req, res) => {
+  const db = req.app.get("db");
+
+  const {
+    keyword,
+    category,
+    city,
+    state,
+    minRating,
+    minPrice,
+    maxPrice,
+    sort,
+    lat,
+    lng,
+    radius
+  } = req.query;
+
+  let where = `
+    h.profile_status='Approved'
+    AND h.payment_status='Approved'
+  `;
+
+  if (keyword) {
+    where += `
+      AND (
+        u.name LIKE '%${keyword}%'
+        OR h.service_title LIKE '%${keyword}%'
+        OR h.description LIKE '%${keyword}%'
+      )
+    `;
+  }
+
+  if (category) {
+    where += ` AND h.service_category='${category}'`;
+  }
+
+  if (city) {
+    where += ` AND u.city LIKE '%${city}%'`;
+  }
+
+  if (state) {
+    where += ` AND u.state LIKE '%${state}%'`;
+  }
+
+  if (minPrice) {
+    where += ` AND h.rate_amount >= ${Number(minPrice)}`;
+  }
+
+  if (maxPrice) {
+    where += ` AND h.rate_amount <= ${Number(maxPrice)}`;
+  }
+
+  // Distance Calculation
+  let distanceSelect = "";
+
+  if (lat && lng) {
+    distanceSelect = `
+      ,
+      (
+        6371 * acos(
+          cos(radians(${lat}))
+          * cos(radians(u.latitude))
+          * cos(radians(u.longitude) - radians(${lng}))
+          + sin(radians(${lat}))
+          * sin(radians(u.latitude))
+        )
+      ) AS distance
+    `;
+  }
+
+  // HAVING conditions
+  let havingConditions = [];
+
+  if (minRating) {
+    havingConditions.push(
+      `ROUND(COALESCE(AVG(hr.rating),0),1) >= ${Number(minRating)}`
+    );
+  }
+
+  if (radius && lat && lng) {
+    havingConditions.push(
+      `distance <= ${Number(radius)}`
+    );
+  }
+
+  const havingClause =
+    havingConditions.length > 0
+      ? `HAVING ${havingConditions.join(" AND ")}`
+      : "";
+
+  // Sorting
+  let orderBy = "h.id DESC";
+
+  switch (sort) {
+    case "rating":
+      orderBy = "avg_rating DESC";
+      break;
+
+    case "price_low":
+      orderBy = "h.rate_amount ASC";
+      break;
+
+    case "price_high":
+      orderBy = "h.rate_amount DESC";
+      break;
+
+    case "nearest":
+      if (lat && lng) {
+        orderBy = "distance ASC";
+      }
+      break;
+
+    default:
+      orderBy = "h.id DESC";
+  }
+
+  const sql = `
+    SELECT
+      h.*,
+      u.name,
+      u.pic,
+      u.city,
+      u.state,
+      u.latitude,
+      u.longitude,
+      ROUND(COALESCE(AVG(hr.rating),0),1) AS avg_rating,
+      COUNT(hr.id) AS total_reviews
+      ${distanceSelect}
+
+    FROM hire_me_profiles h
+
+    INNER JOIN users u
+      ON u.srno = h.user_id
+
+    LEFT JOIN hire_reviews hr
+      ON hr.to_user = h.user_id
+
+    WHERE ${where}
+
+    GROUP BY h.id
+
+    ${havingClause}
+
+    ORDER BY ${orderBy}
+  `;
+
+  console.log(sql);
+
+  db.query(sql, (err, rows) => {
+    if (err) {
+      console.error(err);
+
+      return res.status(500).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    res.json(rows);
+  });
+});
+
 router.get(
   "/profile/:id",
   (req, res) => {

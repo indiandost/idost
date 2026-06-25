@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import qrImage from "../assets/qr.png";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -485,8 +486,8 @@ formData.append(
   <div className="text-center">
 
     <img
-      src="qr.jpg"
-      alt="UPI QR"
+      src={qrImage}
+      alt="QR Code"
       className="mx-auto rounded-lg mb-4"
       style={{
         maxWidth: "220px"

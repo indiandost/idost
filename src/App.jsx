@@ -649,6 +649,11 @@ function BottomNav({ setMenuOpen, setSearchOpen, setSearch }) {
         icon: HomeIcon,
       },
       {
+        name: "Hire Me",
+        path: "/hire-me-directory",
+        icon: BriefcaseBusiness,
+      },
+      {
         name: "Friends",
         path: "/friends",
         icon: Users,
@@ -663,7 +668,7 @@ function BottomNav({ setMenuOpen, setSearchOpen, setSearch }) {
         path: "/timeline",
         icon: Newspaper,
       },
-    ]
+    ] 
   : [
       {
         name: "Home",
@@ -684,6 +689,11 @@ function BottomNav({ setMenuOpen, setSearchOpen, setSearch }) {
         name: "Games",
         path: "/games",
         icon: Gamepad2,
+      },
+       {
+        name: "Hire Me",
+        path: "/hire-me-directory",
+        icon: BriefcaseBusiness,
       },
       {
         name: "Post",
@@ -792,7 +802,6 @@ export default function App() {
    //const location = useLocation();
 
   const hideAlert =
-    location.pathname.startsWith("/game/room/") ||
     location.pathname.startsWith("/login") ||
     location.pathname.startsWith("/register") ||
     location.pathname.startsWith("/register") ||
@@ -1609,9 +1618,9 @@ audio.play().catch(() => {});
             <Route path="/hire-me-directory" element={<HireMeDirectory />}/>
             <Route path="/hire-me/:id" element={<PrivateRoute> {" "} <HireMeProfile /></PrivateRoute>} />
              <Route path="/hireme-edit" element={<PrivateRoute> {" "} <HireMeEdit /></PrivateRoute>} />
-              <Route path="/hireme-payment" element={<PrivateRoute> {" "} <HireMePayment /></PrivateRoute>} />
+             <Route path="/hireme-payment" element={<PrivateRoute> {" "} <HireMePayment /></PrivateRoute>} />
             <Route path="/admin/hire-me" element={<PrivateRoute> {" "} <HireMeAdmin /></PrivateRoute>} />
-                  <Route path="/hire-requests" element={<PrivateRoute> {" "} <HireRequests /></PrivateRoute>} />
+             <Route path="/hire-requests" element={<PrivateRoute> {" "} <HireRequests /></PrivateRoute>} />
           <Route path="/timeline" element={<Timeline />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
@@ -1633,13 +1642,13 @@ audio.play().catch(() => {});
             {/* ================= ACCEPT ================= */}
             <button
               className="
-    bg-green-500
-    hover:bg-green-600
-    px-5 py-2
-    rounded-lg
-    text-white
-    font-semibold
-  "
+              bg-green-500
+              hover:bg-green-600
+              px-5 py-2
+              rounded-lg
+              text-white
+              font-semibold
+            "
               onClick={async () => {
                 try {
                   if (!incomingCall) return;

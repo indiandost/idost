@@ -560,7 +560,7 @@ const deleteProfile = async () => {
 ========================= */}
 {/* ================= HIRE ME ================= */}
 
-{!loadingHire && !hireProfile && (
+{/*!loadingHire && !hireProfile && (
   <div
     className="card border-0 mt-3"
     style={{
@@ -610,7 +610,7 @@ const deleteProfile = async () => {
 </button>
     </div>
   </div>
-)}
+)*/}
 
 
 {hireProfile && (

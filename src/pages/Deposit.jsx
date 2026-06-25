@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
+import qrImage from "../assets/qr.png";
 const API = import.meta.env.VITE_API_URL;
 
 export default function Deposit() {
@@ -61,8 +62,8 @@ export default function Deposit() {
 </div>
 
 <img
-src="/qr.png"
-alt=""
+ src={qrImage}
+ alt="QR Code"
 className="w-64 mx-auto rounded-xl mb-4"
  style={{
         maxWidth: "220px"

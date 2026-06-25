@@ -187,7 +187,7 @@ export default function LiveRoomsAlert() {
             "
           >
             <span>
-              👥 {room.players} Players
+              👥 {(Number(room.players) || 0) + 1} Players
             </span>
 
             <span>

@@ -17,84 +17,38 @@ export default function GameRoom() {
   const user = JSON.parse(
     localStorage.getItem("user")
   );
-  const [rewardCoins, setRewardCoins] =  useState(0);
-  const [room, setRoom] =  useState(null);
-  const [players, setPlayers] =   useState([]);
-  const [messages, setMessages] =   useState([]);
-  const [currentColor, setCurrentColor] =   useState("gray");
-  const [gameTime, setGameTime] =   useState(45);
-  const [winner, setWinner] =   useState(null);
-  const [clicked, setClicked] =   useState(false);
-  const [gameStarted, setGameStarted] =   useState(false);
-  const [loading, setLoading] =   useState(true);
-  const [error, setError] =  useState("");
-  /* bot games */
-const [bots, setBots] = useState([]);
-const generateBots = () => {
-  const names = [
-   "🤖 Alex",
-  "🤖 Maya",
-  "🤖 Rohan",
-  "🤖 Emma pr",
-  "🤖 Jack",
-  "🤖 Sophia",
-  "🤖 Arjun",
-  "🤖 Ava",
-  "🤖 Sandhya",
-  "🤖 Zara"
-  ];
-  const count = Math.floor(Math.random() * 3) + 1;
+const [rewardCoins, setRewardCoins] =  useState(0);
+  const [room, setRoom] =
+    useState(null);
 
-  return names
-    .sort(() => 0.5 - Math.random())
-    .slice(0, 2)
-    .map((name, i) => ({
-      userId: `bot_${i}`,
-      name,
-      score: 0
-    }));
-};
+  const [players, setPlayers] =
+    useState([]);
 
-useEffect(() => {
-  setBots(generateBots());
-}, []);
+  const [messages, setMessages] =
+    useState([]);
 
-useEffect(() => {
-  if (!gameStarted) return;
+  const [currentColor, setCurrentColor] =
+    useState("gray");
 
-  const interval = setInterval(() => {
-    setBots(prev =>
-      prev.map(bot => ({
-        ...bot,
-        score: Math.min(
-          bot.score + Math.floor(Math.random() * 3),
-          15 // real users se bahut upar na chale jaye
-        )
-      }))
-    );
-  }, 2500);
-  return () => clearInterval(interval);
-}, [gameStarted]);
+  const [gameTime, setGameTime] =
+    useState(45);
+
+  const [winner, setWinner] =
+    useState(null);
+
+  const [clicked, setClicked] =
+    useState(false);
+
+  const [gameStarted, setGameStarted] =
+    useState(false);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
 
 
-const displayPlayers = useMemo(() => {
-  const realCount = players.length;
-
-  if (realCount >= 3) {
-    return players;
-  }
-
-  if (realCount === 2) {
-    return [...players, ...bots.slice(0, 1)];
-  }
-
-  if (realCount === 1) {
-    return [...players, ...bots.slice(0, 2)];
-  }
-
-  return bots.slice(0, 2);
-}, [players, bots]);
-/* end bot */
   // =========================
   // USER CHECK
   // =========================
@@ -141,7 +95,6 @@ const handleGameStarted = () => {
   setGameTime(45);
   //setGameStarted(true);
   setWinner(null);
-  setBots(generateBots()); //for bot
 };
 
 useEffect(() => {
@@ -189,14 +142,7 @@ const handleGameEnd = (data) => {
   setWinner(data?.winner || null);
   setRewardCoins(data?.rewardCoins || 0);
   setGameStarted(false);
-
   setCurrentColor("gray");
-    setBots(prev =>
-    prev.map(bot => ({
-      ...bot,
-      score: 0
-    }))
-  );
 };
 
   const handleError = (msg) => {
@@ -286,7 +232,17 @@ const handleGameEnd = (data) => {
   // =========================
   // TOP PLAYER
   // =========================
-  const topPlayer =  useMemo(() => { return [...players] .sort((a, b) => b.score - a.score)[0];}, [players]);
+  const topPlayer =
+    useMemo(() => {
+
+      return [...players]
+        .sort(
+          (a, b) =>
+            b.score -
+            a.score
+        )[0];
+
+    }, [players]);
 
 
   // =========================
@@ -524,8 +480,7 @@ const myScore =
 
       </div>
 
-      {/*<Leaderboard players={players} />*/}
-      <Leaderboard players={displayPlayers} />
+      <Leaderboard players={players} />
 
     </div>
 
@@ -590,15 +545,6 @@ const myScore =
 )}
 
   {/* WINNER POPUP */}
-  {winner?.userId?.startsWith("bot_") ? (
-  <p className="text-zinc-400">
-    Practice Round Complete
-  </p>
-) : (
-  <p className="text-green-400">
-  +{winner?.rewardCoins || 0} Coins Reward
-</p>
-)}
   {winner && (
     <div
       className="
