@@ -493,12 +493,12 @@ const deleteProfile = async () => {
       </div>
       <div className="bg-gradient-to-r from-pink-600 to-purple-600 rounded-2xl p-4 mt-4 shadow-lg">
           <h3 className="text-white font-bold text-lg">
-            🎁 Refer Friends & Earn 500 Coins
+            🎁 Refer Friends & Earn 1000 Coins
           </h3>
 
           <p className="text-white/90 text-sm mt-1">
             Invite your friends to IndianDost. When they join using your referral code,
-            you get <b>500 bonus coins</b>.
+            you get <b>1000 bonus coins</b>.
           </p>
 
           <div className="mt-3 bg-white/20 rounded-lg p-3 flex items-center justify-between">

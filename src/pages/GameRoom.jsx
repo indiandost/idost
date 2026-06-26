@@ -32,16 +32,16 @@ export default function GameRoom() {
 const [bots, setBots] = useState([]);
 const generateBots = () => {
   const names = [
-   "🤖 Alex",
-  "🤖 Maya",
-  "🤖 Rohan",
-  "🤖 Emma pr",
-  "🤖 Jack",
-  "🤖 Sophia",
-  "🤖 Arjun",
-  "🤖 Ava",
-  "🤖 Sandhya",
-  "🤖 Zara"
+   " Alex",
+  " Maya",
+  " Rohan",
+  " Emma pr",
+  " Jack",
+  " Sophia",
+  " Arjun",
+  " Ava",
+  " Sandhya",
+  " Zara"
   ];
   const count = Math.floor(Math.random() * 3) + 1;
 
@@ -428,7 +428,18 @@ const myScore =
       <p className="text-zinc-400 text-xs mb-2">
         TAP THIS COLOR
       </p>
-
+ <h2
+        className="
+          mt-3
+          text-center
+          text-xl
+          md:text-3xl
+          font-white
+          uppercase
+        "
+      >
+        {currentColor}
+      </h2>
       <div
         className="
           w-30
@@ -445,19 +456,7 @@ const myScore =
         }}
       />
 
-      <h2
-        className="
-          mt-3
-          text-center
-          text-xl
-          md:text-3xl
-          font-white
-          uppercase
-        "
-      >
-        {currentColor}
-      </h2>
-
+     
       {/* MY SCORE */}
       <div
         className="
@@ -525,7 +524,14 @@ const myScore =
       </div>
 
       {/*<Leaderboard players={players} />*/}
-      <Leaderboard players={displayPlayers} />
+    <div
+  style={{
+    maxHeight: "170px",
+    overflowY: "auto",
+  }}
+>
+  <Leaderboard players={displayPlayers} />
+</div>
 
     </div>
 
@@ -590,7 +596,7 @@ const myScore =
 )}
 
   {/* WINNER POPUP */}
-  {winner?.userId?.startsWith("bot_") ? (
+  {/*winner?.userId?.startsWith("bot_") ? (
   <p className="text-zinc-400">
     Practice Round Complete
   </p>
@@ -598,7 +604,7 @@ const myScore =
   <p className="text-green-400">
   +{winner?.rewardCoins || 0} Coins Reward
 </p>
-)}
+)*/}
   {winner && (
     <div
       className="

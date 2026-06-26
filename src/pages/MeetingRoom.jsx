@@ -618,12 +618,14 @@ billingIntervalRef.current = setInterval(async () => {
 const requestJoin = async () => {
   try {
     // minimum 30 coins required
+     /* console.log( user );
+    console.log("user-coins ---"+ user?.coins );
     if (Number(user?.coins || 0) < 30) {
       alert(
         "You need minimum 30 coins to join meeting"
       );
       return;
-    }
+    }*/
     setRequestPending(true);
     socket.emit("requestJoinMeeting", {
       roomId,

@@ -52,7 +52,13 @@
     filter: invert(1) brightness(2);
   }
 }
-
+html,
+body,
+#root {
+  background: #020617;
+  min-height: 100%;
+  margin: 0;
+}
 body {
   margin: 0;
 }

@@ -326,122 +326,130 @@ router.get("/",  (req, res) => {
 
   const hasLocation =
     req.query.lat !== undefined && req.query.lng !== undefined;
+const sqlWithDistance = `
 
-  const sqlWithDistance = `
+SELECT
 
-    SELECT 
+  srno,
+  name,
+  TIMESTAMPDIFF(YEAR, dob, CURDATE()) AS age,
+  mood,
+  city,
+  pic,
+  online,
+  onst,
+  live_status,
+  live_room,
+  coins,
+  fcm_token,
 
-      srno,
+  (
+    6371 * acos(
+      cos(radians(?))
+      * cos(radians(latitude))
+      * cos(radians(longitude) - radians(?))
+      + sin(radians(?))
+      * sin(radians(latitude))
+    )
+  ) AS distance
 
-      name,
+FROM users
 
-      TIMESTAMPDIFF(YEAR, dob, CURDATE()) AS age,
-      mood,
+WHERE status = 'A'
 
-      city,
+  AND NOT EXISTS (
 
-      pic,
+    SELECT 1
+    FROM ignorelist
 
-      online,
+    WHERE
+      (\`user\` = ? AND user2 = users.srno)
+      OR
+      (\`user\` = users.srno AND user2 = ?)
 
-      onst,
+  )
 
-      live_status,
+ORDER BY
 
-      live_room,
+  CASE
+    WHEN fcm_token IS NOT NULL
+      AND fcm_token != ''
+    THEN 1
+    ELSE 0
+  END DESC,
 
-      (
+  CASE
+    WHEN coins > 1
+    THEN 1
+    ELSE 0
+  END DESC,
 
-        6371 * acos(
+  onst DESC,
 
-          cos(radians(?)) * cos(radians(latitude)) *
+  distance ASC,
 
-          cos(radians(longitude) - radians(?)) +
+  srno DESC
+  
 
-          sin(radians(?)) * sin(radians(latitude))
-
-        )
-
-      ) AS distance
-
-    FROM users
-
-    WHERE status = 'A'
-
-      AND NOT EXISTS (
-
-        SELECT 1
-
-        FROM ignorelist
-
-        WHERE 
-
-          (\`user\` = ? AND user2 = users.srno)
-
-          OR
-
-          (\`user\` = users.srno AND user2 = ?)
-
-      )
-
-    ORDER BY 
-
-      onst DESC,       -- 🔥 online users first
-      distance ASC     -- then nearest users
-
-    LIMIT ? OFFSET ?
+LIMIT ? OFFSET ?
 
 `;
+const sqlWithoutDistance = `
 
-  //  AND srno != ?  add if not want see your profile
+SELECT
 
-  const sqlWithoutDistance = `
+  srno,
+  name,
+  TIMESTAMPDIFF(YEAR, dob, CURDATE()) AS age,
+  city,
+  mood,
+  pic,
+  status,
+  online,
+  onst,
+  live_status,
+  live_room,
+  coins,
+  fcm_token
 
-    SELECT 
+FROM users
 
-      srno,
+WHERE status = 'A'
 
-      name,
+  AND NOT EXISTS (
 
-      TIMESTAMPDIFF(YEAR, dob, CURDATE()) AS age,
+    SELECT 1
+    FROM ignorelist
 
-      city,
-      mood, 
-      pic,
+    WHERE
+      (\`user\` = ? AND user2 = users.srno)
+      OR
+      (\`user\` = users.srno AND user2 = ?)
 
-      status,
+  )
 
-      online,
+ORDER BY
 
-      onst,
+  CASE
+    WHEN fcm_token IS NOT NULL
+      AND fcm_token != ''
+    THEN 1
+    ELSE 0
+  END DESC,
 
-      live_status,
+  CASE
+    WHEN coins > 1
+    THEN 1
+    ELSE 0
+  END DESC,
 
-      live_room
+  onst DESC,
 
-    FROM users
+  srno DESC
 
-    WHERE status = 'A'
+LIMIT ? OFFSET ?
 
-      AND NOT EXISTS (
-
-        SELECT 1
-
-        FROM ignorelist
-
-        WHERE 
-
-          (\`user\` = ? AND user2 = users.srno)
-
-          OR
-
-          (\`user\` = users.srno AND user2 = ?)
-
-      )
-
-    LIMIT ? OFFSET ?
-
-  `;
+`;
 
   if (hasLocation) {
     const { lat, lng } = req.query;
