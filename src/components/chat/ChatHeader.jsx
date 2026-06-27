@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import socket from "../../socket";
+import { OnlineUsersContext } from "../../context/OnlineUsersContext";
 
 const API =
   import.meta.env.VITE_API_URL;
@@ -10,12 +11,11 @@ export default function ChatHeader({
   onAudioCall,
   onVideoCall,
   }) {
-
+const onlineUsers = useContext(OnlineUsersContext);
   const { id: friendId } =  useParams();
 
   const [friendData, setFriendData] = useState(null);
 
-  const [onlineUsers, setOnlineUsers] = useState([]);
   const navigate = useNavigate();
   // =========================
   // LOAD FRIEND DETAILS
@@ -47,33 +47,6 @@ export default function ChatHeader({
   }, [friendId]);
 
   // =========================
-  // ONLINE USERS
-  // =========================
-  useEffect(() => {
-
-    const handler = (list) => {
-
-      setOnlineUsers(list);
-
-    };
-
-    socket.on(
-      "onlineUsers",
-      handler
-    );
-
-    return () => {
-
-      socket.off(
-        "onlineUsers",
-        handler
-      );
-
-    };
-
-  }, []);
-
-  // =========================
   // ONLINE STATUS
   // =========================
   const isOnline =
@@ -81,7 +54,7 @@ export default function ChatHeader({
       String(friendId)
     );
 
-  return (
+    return (
     <div
   className="
     fixed top-[55px] left-0 right-0

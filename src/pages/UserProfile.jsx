@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import BattleBtn from "../components/BattleBtn";
 import { Helmet } from "react-helmet-async";
-
+import { OnlineUsersContext } from "../context/OnlineUsersContext";
 export default function UserProfile() {
 const { id } = useParams();
 const myId = JSON.parse(localStorage.getItem("user"))?.srno;
@@ -16,6 +16,7 @@ const myId = JSON.parse(localStorage.getItem("user"))?.srno;
   const [blocked, setBlocked] = useState(false);
 const API = import.meta.env.VITE_API_URL;
 const navigate = useNavigate();
+const onlineUsers = useContext(OnlineUsersContext);
 const token = localStorage.getItem("token"); 
 useEffect(() => {
   // ✅ 1. Fetch user
@@ -198,7 +199,8 @@ const userName = user?.name
   </div>
 )}
     <p className="text-sm text-gray-300">📍 {user.city}  | <span className="font-medium text-white">🪙 Coins:</span>{" "}
-    {Number(user.coins || 0).toLocaleString()} |   {Number(user.onst) === 1 ? "🟢 Online" : "⚪ Offline"} </p>
+    {Number(user.coins || 0).toLocaleString()} |  
+    {onlineUsers.includes(String(user.srno))?  "🟢 Online" : "⚪ Offline"} </p>
         </div>
       </div>
       {/* DETAILS */}

@@ -481,7 +481,7 @@ socket.on("joinMeetingRoom", ({ roomId, user }) => {
     [roomId, user.srno]
 
     );
-
+   io.emit("liveUsersUpdated"); 
   }
 
 
@@ -1223,85 +1223,89 @@ socket.on(
 // =============================
 
 socket.on("endMeetingRoom", ({ roomId }) => {
+  try {
 
+    const roomData = meetingRooms[roomId];
+    if (!roomData) return;
 
+    console.log("🛑 Ending Meeting:", roomId);
 
-  if (!meetingRooms[roomId]) return;
+    // ============================
+    // Notify everyone
+    // ============================
+    io.to(roomId).emit("meetingEnded");
 
+    // ============================
+    // Remove every socket from room
+    // ============================
+    const sockets = io.sockets.adapter.rooms.get(roomId);
 
+    if (sockets) {
+      sockets.forEach((socketId) => {
 
-  // 🔔 notify all
+        const s = io.sockets.sockets.get(socketId);
 
-  io.to(roomId).emit("meetingEnded");
-
-
-
-  // 🚪 leave all sockets
-
-  const room =
-
-    io.sockets.adapter.rooms.get(roomId);
-
-
-
-  if (room) {
-
-
-
-    room.forEach((socketId) => {
-
-
-
-      const s =
-
-        io.sockets.sockets.get(socketId);
-
-
-
-      if (s) {
+        if (!s) return;
 
         s.leave(roomId);
 
-      }
+        // cleanup socket memory
+        delete s.currentMeetingRoom;
+        delete s.meetingRole;
+        delete s.meetingRequest;
 
+      });
+    }
 
+    // ============================
+    // Update admin status
+    // ============================
+    if (roomData.admin) {
 
-    });
-
-
-
-  }
-
-   const adminId = meetingRooms[roomId].admin;
-
-    db.query(
-
-      `
-
-      UPDATE users
-
-      SET live_room = NULL,
-
+      db.query(
+        `
+        UPDATE users
+        SET
+          live_room = NULL,
           live_status = 0
+        WHERE srno = ?
+        `,
+        [roomData.admin],
+        (err) => {
+          if (err) {
+            console.log("❌ EndMeeting DB Error:", err);
+          }
+        }
+      );
+     io.emit("liveUsersUpdated");
+    }
 
-      WHERE srno = ?
+    // ============================
+    // Clear Arrays
+    // ============================
+    roomData.participants.length = 0;
+    roomData.viewers.length = 0;
+    roomData.requests.length = 0;
+    roomData.comments.length = 0;
 
-      `,
+    // ============================
+    // Clear Objects
+    // ============================
+    roomData.viewerRewards = {};
 
-      [adminId]
+    // remove admin reference
+    roomData.admin = null;
 
-    );
+    // ============================
+    // Delete room completely
+    // ============================
+    delete meetingRooms[roomId];
 
-  // 🗑 delete room
+    console.log("✅ Meeting destroyed:", roomId);
 
-  delete meetingRooms[roomId];
-
-
-
-  console.log("❌ meeting ended");
-
-
-
+  } catch (err) {
+    console.log("❌ endMeetingRoom Error:", err);
+  }
 });
 
 
@@ -1358,6 +1362,20 @@ socket.on("disconnect", (reason) => {
   if (disconnectedUserId) {
    delete activeCalls[disconnectedUserId];
   }
+  for (const key in activeCalls) {
+
+    const call = activeCalls[key];
+
+    if (
+        typeof call === "object" &&
+        (
+            call.from === disconnectedUserId ||
+            call.to === disconnectedUserId
+        )
+    ) {
+        delete activeCalls[key];
+    }
+}
   //delete activeCalls[disconnectedUserId];
 /*
   if (disconnectedUserId) {
@@ -1450,11 +1468,11 @@ socket.on("disconnect", (reason) => {
       );
 
 
-
+      io.emit("liveUsersUpdated");
       // delete room
 
       delete meetingRooms[roomId];
-
+      io.emit("liveUsersUpdated");
 
 
       continue;

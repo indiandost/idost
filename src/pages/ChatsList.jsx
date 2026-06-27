@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { OnlineUsersContext } from "../context/OnlineUsersContext";
 const API = import.meta.env.VITE_API_URL;
 
 export default function ChatsList() {
 
   const [chats, setChats] = useState([]);
-
+const onlineUsers = useContext(OnlineUsersContext);
   const navigate = useNavigate();
 
   const user = JSON.parse(
@@ -132,15 +133,25 @@ export default function ChatsList() {
                 }
             >
 
-              <img
-                src={c.pic || "/default-user.png"}
-                alt=""
-                className="
-                  w-12 h-12 rounded-full
-                  object-cover
-                "
-              />
+              
+  <div className="relative">
+    <img
+      src={c.pic || "/default-user.png"}
+      alt=""
+      className="
+        w-12 h-12 rounded-full
+        object-cover
+      "
+    />
 
+    <span
+      className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
+        onlineUsers.includes(String(c.userId))
+          ? "bg-green-500"
+          : "bg-gray-400"
+      }`}
+    />
+  </div>
               <div className="overflow-hidden"  onClick={() =>
                   navigate(`/profile/${c.userId}`)
                 }>
@@ -179,6 +190,7 @@ export default function ChatsList() {
                     ? "📷 Image"
                     : ""}
                 </div>
+
 
               </div>
 

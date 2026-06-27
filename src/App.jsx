@@ -10,6 +10,7 @@ import {
 import { Geolocation } from "@capacitor/geolocation";
 import { Camera } from "@capacitor/camera";
 import Splash from "./Splash";
+import { OnlineUsersContext } from "./context/OnlineUsersContext";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
 import Chat from "./pages/Chat";
@@ -123,17 +124,22 @@ useEffect(() => {
 }, [setCoins]);
 //my quiz alert pending
 useEffect(() => {
-  loadPendingQuizCount();
-  loadLiveRooms();
 
-  const interval = setInterval(() => {
-    loadLiveRooms();
-    loadPendingQuizCount();
-  }, 30000);
+   loadPendingQuizCount();
+   loadLiveRooms();
 
-  return () => clearInterval(interval);
+   const id = setInterval(() => {
 
-}, []);
+      if(document.visibilityState==="visible"){
+         loadPendingQuizCount();
+         loadLiveRooms();
+      }
+
+   },30000);
+
+   return ()=>clearInterval(id);
+
+},[]);
 
 
 //live rooms
@@ -187,15 +193,19 @@ const loadPendingQuizCount = async () => {
 };
 
   //reward popup
-  useEffect(() => {
-    socket.on("rewardReceived", (data) => {
-      alert(`🎉 Reward Earned! ${data.coins} Coins`);
-     //  alert(`🎉 Reward Earned! ${data.coins} Coins${data.value}`);
-    });
-    return () => {
-      socket.off("rewardReceived");
-    };
-  }, []);
+useEffect(() => {
+
+   const rewardHandler=(data)=>{
+      toast.success(`+${data.coins} Coins`);
+   };
+
+   socket.on("rewardReceived",rewardHandler);
+
+   return ()=>{
+      socket.off("rewardReceived",rewardHandler);
+   };
+
+},[]);
 
  useEffect(() => {
 
@@ -244,20 +254,24 @@ const loadPendingQuizCount = async () => {
   };
 
 }, [search, viewer, token]); 
-  const logout = () => {
-      const u = JSON.parse(localStorage.getItem("user"));
-        setMenuOpen(false);
-    fetch(`${API}/api/logout`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ userId: u.srno }),
-    }).then(() => {
+
+const logout = async () => {
+   try{
+      const u=JSON.parse(localStorage.getItem("user"));
+      await fetch(`${API}/api/logout`);
+   }catch(e){
+      console.log(e);
+   }finally{
       socket.disconnect();
       localStorage.removeItem("user");
       localStorage.removeItem("token");
+
       navigate("/login");
-    });
-  };
+
+   }
+
+};
+
 
   return (
     <div className="flex justify-between items-center p-4 bg-gray-800 text-white">
@@ -792,10 +806,10 @@ export default function App() {
   const [isInCall, setIsInCall] = useState(false);
   const inMeetingRef = useRef(false);
   const location = useLocation();
+  const [onlineUsers, setOnlineUsers] = useState([]);
   //const [callStartTime, setCallStartTime] = useState(null);
   const hideLayoutRoutes = ["/login", "/register", "/forgot-password"];
-  const shouldHideLayout =
-    hideLayoutRoutes.includes(location.pathname) ||
+  const shouldHideLayout = hideLayoutRoutes.includes(location.pathname) ||
     location.pathname.startsWith("/reset-password/");
 
   const hideLayout = hideLayoutRoutes.includes(location.pathname);
@@ -1185,46 +1199,44 @@ audio.play().catch(() => {});
     };
   }, [user?.srno]); 
   */
- useEffect(() => {
-
+// ==============================
+// SOCKET REGISTER
+// ==============================
+// ==============================
+// SOCKET REGISTER
+// ==============================
+useEffect(() => {
   if (!user?.srno) return;
 
   const registerUser = () => {
-
     if (!socket.connected) return;
 
     console.log(
-      "✅ Registering user:",
+      "✅ Register:",
       user.srno,
-      "Socket:",
       socket.id
     );
 
-    socket.emit(
-      "register",
-      Number(user.srno)
-    );
+    socket.emit("register", String(user.srno));
 
+    // Immediately ask for latest online users
+    socket.emit("getOnlineUsers");
   };
 
   const handleConnect = () => {
-
     console.log(
-      "🔌 Socket Connected:",
+      "🟢 Socket Connected:",
       socket.id
     );
 
     registerUser();
-
   };
 
   const handleDisconnect = (reason) => {
-
     console.log(
-      "❌ Socket Disconnected:",
+      "🔴 Socket Disconnected:",
       reason
     );
-
   };
 
   const handleConnectError = (err) => {
@@ -1232,28 +1244,16 @@ audio.play().catch(() => {});
       "⚠️ Socket Error:",
       err?.message
     );
-
   };
 
-  // Already connected on page load
+  // Already connected
   if (socket.connected) {
     registerUser();
   }
 
-  socket.on(
-    "connect",
-    handleConnect
-  );
-
-  socket.on(
-    "disconnect",
-    handleDisconnect
-  );
-
-  socket.on(
-    "connect_error",
-    handleConnectError
-  );
+  socket.on("connect", handleConnect);
+  socket.on("disconnect", handleDisconnect);
+  socket.on("connect_error", handleConnectError);
 
   return () => {
     socket.off("connect", handleConnect);
@@ -1262,7 +1262,54 @@ audio.play().catch(() => {});
   };
 
 }, [user?.srno]);
-  // 📞 Incoming call ringtone
+
+
+// ==============================
+// ONLINE USERS
+// ==============================
+useEffect(() => {
+
+  const onlineHandler = (list = []) => {
+
+    console.log("🟢 Online Users:", list);
+
+    setOnlineUsers(
+      list.map(String)
+    );
+
+  };
+
+  socket.on("onlineUsers", onlineHandler);
+
+  // Initial request
+  if (socket.connected) {
+    socket.emit("getOnlineUsers");
+  }
+
+  // Refresh every 30 seconds
+  const timer = setInterval(() => {
+
+    if (socket.connected) {
+
+      socket.emit("getOnlineUsers");
+
+    }
+
+  }, 30000);
+
+  return () => {
+
+    clearInterval(timer);
+
+    socket.off(
+      "onlineUsers",
+      onlineHandler
+    );
+
+  };
+
+}, []);
+// 📞 Incoming call ringtone
   const ringtoneRef = useRef(null);
 
   // 🔊 create ringtone ONCE
@@ -1416,6 +1463,7 @@ audio.play().catch(() => {});
       <div className="flex-grow">
        <HelmetProvider>
           {!hideAlert && <LiveRoomsAlert />}
+      <OnlineUsersContext.Provider value={onlineUsers}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -1623,7 +1671,7 @@ audio.play().catch(() => {});
              <Route path="/hire-requests" element={<PrivateRoute> {" "} <HireRequests /></PrivateRoute>} />
           <Route path="/timeline" element={<Timeline />} />
           <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
+        </Routes></OnlineUsersContext.Provider>
         </HelmetProvider>
       </div>
       {/*!shouldHideLayout && <BottomNav  setMenuOpen={setMenuOpen} />*/}

@@ -8,7 +8,7 @@ const rooms = {};
 const ENTRY_FEE = 10;
 
 const creatingRooms = {};
-
+const roomBroadcastTimers = {};
 
 function broadcastLiveRooms(io) {
   const liveRooms = Object.values(rooms)
@@ -24,6 +24,25 @@ function broadcastLiveRooms(io) {
     }));
 
   io.emit("live_rooms_update", liveRooms);
+}
+
+function safeRoom(room) {
+  return {
+    roomId: room.roomId,
+    hostUserId: room.hostUserId,
+    players: room.players,
+    viewers: room.viewers,
+    currentColor: room.currentColor,
+    gameStarted: room.gameStarted,
+    gameTime: room.gameTime,
+  };
+}
+function broadcastRoom(io, roomId, room) {
+  if (roomBroadcastTimers[roomId]) return;
+  roomBroadcastTimers[roomId] = setTimeout(() => {
+    io.to(roomId).emit("room_update", safeRoom(room));
+    delete roomBroadcastTimers[roomId];
+  }, 100);
 }
 
   // ===================================
@@ -627,10 +646,7 @@ if (
     name: name || "Viewer"
   });
 
-  io.to(socket.id).emit(
-    "room_update",
-    safeRoom(room)
-  );
+  broadcastRoom(io, roomId, room);
 
   return;
 }
@@ -769,10 +785,7 @@ if (
         roomId
       );
 
-      io.to(roomId).emit(
-        "room_update",
-        safeRoom(room)
-      );
+   broadcastRoom(io, roomId, room);
      broadcastLiveRooms(io);
     } catch (err) {
 
@@ -852,7 +865,7 @@ io.to(roomId).emit("game_tick", {
             "game_started"
           );
         if (room.interval) {
-          clearInterval(room.interval);
+          clearInterval(room.interval); room.interval = null;
         }
           room.interval =
             setInterval(
@@ -870,7 +883,7 @@ io.to(roomId).emit("game_tick", {
                     clearInterval(
                       room.interval
                     );
-
+                    room.interval = null;
                     room.gameStarted = false;
                     broadcastLiveRooms(io);
                     // =========================
@@ -1042,7 +1055,8 @@ io.to(roomId).emit("game_tick", {
                       `,
                       [roomId]
                     );
-                    
+                  delete room.activePlayers;
+                  delete lastEmit[roomId];  
 
                  /* io.to(roomId).emit(
                     "game_ended",
@@ -1100,10 +1114,7 @@ room.viewers.forEach(v => {
 
 room.viewers = [];
 
-io.to(roomId).emit(
-  "room_update",
-  safeRoom(room)
-);
+broadcastRoom(io, roomId, room);
 const viewers = [...room.viewers];
 
 room.viewers = [];
@@ -1291,17 +1302,7 @@ socket.on("color:send_message", async (data) => {
   io.to(roomId).emit("color:receive_message", msg);
 });
 
-function safeRoom(room) {
-  return {
-    roomId: room.roomId,
-    hostUserId: room.hostUserId,
-    players: room.players,
-    viewers: room.viewers,
-    currentColor: room.currentColor,
-    gameStarted: room.gameStarted,
-    gameTime: room.gameTime,
-  };
-}
+
 let lastEmit = {};
 function emitRoom(io, roomId, room) {
   const now = Date.now();
@@ -1309,7 +1310,7 @@ function emitRoom(io, roomId, room) {
 
   lastEmit[roomId] = now;
 
-  io.to(roomId).emit("room_update", safeRoom(room));
+  broadcastRoom(io, roomId, room);
 }
     // ===================================
     // DISCONNECT
@@ -1362,8 +1363,9 @@ function emitRoom(io, roomId, room) {
   if (room.interval) {
     clearInterval(room.interval);
   }
-
+room.interval = null;
   delete rooms[roomId];
+  socket.data.msgLock={};
 broadcastLiveRooms(io);
   console.log(
     "🗑 Room Deleted:",

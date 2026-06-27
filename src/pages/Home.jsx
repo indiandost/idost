@@ -1,5 +1,6 @@
-import React, { useEffect, useState, lazy, Suspense } from "react";
+import React, { useEffect, useState, useContext, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
+import { OnlineUsersContext } from "../context/OnlineUsersContext";
 import socket from "../socket";
 import { Helmet } from "react-helmet-async";
 export default function Home() {
@@ -25,29 +26,13 @@ export default function Home() {
   const [selectedMood, setSelectedMood] = useState("");
   const limit=10;
 const [currentMood, setCurrentMood] = useState( JSON.parse(localStorage.getItem("user"))?.mood || "");
+const onlineUsers = useContext(OnlineUsersContext);
 useEffect(() => {
   if (currentMood) {
     setSelectedMood(currentMood);
   }
 }, [currentMood]);
 //online check
-const [onlineUsers, setOnlineUsers] = useState([]);
-
-
-  // =========================
-  // ONLINE USERS
-  // =========================
-  useEffect(() => {
-    const handler = (list) => {
-       console.log("ONLINE USERS RECEIVED:", list);
-        setOnlineUsers(list);
-    };
-    socket.on("onlineUsers", handler);
-    return () => {
-      socket.off("onlineUsers", handler);
-    };
-  }, []);
-
 const [exploreOpen, setExploreOpen] = useState(false);
  // ======================
 // LOAD USERS
@@ -226,7 +211,7 @@ useEffect(() => {
 
 }, [loading, hasMore]);
 
-useEffect(() => {
+/*useEffect(() => {
   const fetchLiveUsers = async () => {
     try {
       const res = await fetch(
@@ -259,7 +244,38 @@ useEffect(() => {
   };
   fetchLiveUsers();
 }, []);
+*/
+useEffect(() => {
+  const fetchLiveUsers = async () => {
+    try {
+      const res = await fetch(
+        `${API}/users/live-users?limit=10`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
+      const data = await res.json();
+
+      setLiveUsers(Array.isArray(data) ? data : []);
+
+    } catch {
+      setLiveUsers([]);
+    }
+  };
+
+  // First load
+  fetchLiveUsers();
+
+  // Socket update
+  socket.on("liveUsersUpdated", fetchLiveUsers);
+
+  return () => {
+    socket.off("liveUsersUpdated", fetchLiveUsers);
+  };
+}, []);
 // same mood users
 useEffect(() => {
 
@@ -564,7 +580,23 @@ useEffect(() => {
       object-cover
     "
   />
-
+<span
+    className={`
+      absolute
+      top-2
+      right-2
+      w-3.5
+      h-3.5
+      rounded-full
+      border-2
+      border-white
+      ${
+        onlineUsers.some(id => String(id) === String(u.id))
+          ? "bg-green-500"
+          : "bg-gray-400"
+      }
+    `}
+  />
   {/* DARK OVERLAY */}
   <div
     className="
@@ -638,16 +670,6 @@ useEffect(() => {
       {u.name}, {u.age} 
           </div>
 
-    <div
-      className="
-        text-[11px]
-        text-gray-200
-      "
-    >
-     {/*  {onlineUsers.some(id => String(id) === String(u.id))
-        ? "🟢 Online"
-        : "⚪ Offline"}*/}
-    </div>
   </div>
 </div>
         ))}

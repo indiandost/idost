@@ -180,9 +180,10 @@ router.post("/send-gift", verifyToken, (req, res) => {
                         ],
                         (err) => {
                           if (err) {
+                             console.log(err.message);  console.log(err.sql);
                             return res.status(500).json({
                               success: false,
-                              message: "History error",
+                              message: "History error",    
                             });
                           }
 

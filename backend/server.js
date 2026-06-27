@@ -328,117 +328,162 @@ const io = new Server(server, {
 app.set("io", io);
 
 // =============================
-// USERS MAP
+// SOCKET CONNECTION
 // =============================
-//const users = {}; // userId -> socketId
-//export const users = {};
-
 io.on("connection", (socket) => {
 
   console.log("🔌 Connected:", socket.id);
+
+  // Register all socket modules
   chatSocket(io, socket, db);
   jamRoomSocket(io, socket);
   colorCrashSocket(io, socket);
+
+  // =============================
+  // GIFT
+  // =============================
   socket.on("giftSent", (data) => {
     try {
-      console.log(
-        "🎁 Gift received on server:",
-        data
-      );
+
       if (!data?.roomId) return;
-      // send to room
-      io.to(data.roomId).emit(
-        "giftReceived",
-        data
-      );
+
+      io.to(data.roomId).emit("giftReceived", data);
+
     } catch (err) {
-      console.log(
-        "❌ GIFT ERROR:",
-        err
-      );
+
+      console.log("❌ GIFT ERROR:", err);
+
     }
   });
-  
+
+  // =============================
+  // REGISTER USER
+  // =============================
 socket.on("register", (userId) => {
 
-  userId = String(userId);
+  try {
 
-  socket.userId = userId;
+    if (!userId) return;
 
-  // same user already connected?
-  if (
-    users[userId] &&
-    users[userId] !== socket.id
-  ) {
+    userId = String(userId);
 
-    const oldSocket =
-      io.sockets.sockets.get(
-        users[userId]
-      );
+    if (socket.userId === userId) return;
 
-    if (oldSocket) {
+    socket.userId = userId;
 
-      console.log(
-        `♻️ Replacing old socket for user ${userId}`
-      );
+    const oldSocketId = users[userId];
 
-      oldSocket.disconnect(true);
+    if (
+      oldSocketId &&
+      oldSocketId !== socket.id
+    ) {
+
+      const oldSocket =
+        io.sockets.sockets.get(oldSocketId);
+
+      if (oldSocket) {
+
+        oldSocket.emit("forceLogout");
+
+        setTimeout(() => {
+
+          oldSocket.disconnect(true);
+
+        }, 100);
+
+      }
 
     }
+
+    users[userId] = socket.id;
+
+    socket.join(`user-${userId}`);
+
+    console.log(
+      `👤 Registered ${userId}`
+    );
+
+    console.log(
+      `🟢 Online: ${Object.keys(users).length}`
+    );
+
+    // ⭐ Broadcast FULL LIST
+    io.emit(
+      "onlineUsers",
+      Object.keys(users)
+    );
+
+  } catch (err) {
+
+    console.log(
+      "REGISTER ERROR",
+      err
+    );
 
   }
 
-  users[userId] = socket.id;
+});
 
-  socket.join(`user-${userId}`);
+//reconnecte
+socket.on("getOnlineUsers", () => {
 
-  console.log(
-    `👤 User ${userId} registered -> ${socket.id}`
-  );
-
-  console.log(
-    "ONLINE USERS:",
-    Object.keys(users)
-  );
-
-  io.emit(
+  socket.emit(
     "onlineUsers",
     Object.keys(users)
   );
 
 });
 
-  socket.on("disconnect", () => {
+// =============================
+// DISCONNECT
+// =============================
+socket.on("disconnect", () => {
+
+  try {
 
     console.log(
-      "🔌 Disconnected:",
+      "Disconnected:",
       socket.id
     );
-
-    if (!socket.userId) return;
 
     const userId = socket.userId;
 
     if (
-      users[userId] &&
+      userId &&
       users[userId] === socket.id
     ) {
 
       delete users[userId];
 
       console.log(
-        `❌ User Offline: ${userId}`
+        `Offline ${userId}`
       );
 
+      console.log(
+        `Online ${Object.keys(users).length}`
+      );
+
+      // ⭐ Broadcast FULL LIST
       io.emit(
         "onlineUsers",
         Object.keys(users)
       );
+
     }
-  });
+
+    socket.removeAllListeners();
+
+  } catch (err) {
+
+    console.log(
+      err
+    );
+
+  }
 
 });
 
+});
 // =============================
 // SERVER START
 // =============================

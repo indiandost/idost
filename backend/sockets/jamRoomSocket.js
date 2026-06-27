@@ -75,9 +75,9 @@ const jamRoomSocket = (io, socket) => {
 
             viewers: [],
 
-            reactions: [],
+            //reactions: [],
 
-            votes: {},
+           // votes: {},
 
             micRequests: [],
 
@@ -278,9 +278,9 @@ const jamRoomSocket = (io, socket) => {
               ],
               viewers: [],
 
-              reactions: [],
+              //reactions: [],
 
-              votes: {},
+              //votes: {},
 
               micRequests: [],
 
@@ -1071,12 +1071,9 @@ socket.on(
             );
 
             // START AUTO DELETE TIMER
+if (!roomDeleteTimers[roomId]) {
 
-            roomDeleteTimers[
-              roomId
-            ] = setTimeout(
-              async () => {
-
+  roomDeleteTimers[roomId] = setTimeout(async () => {
                 try {
 
                   console.log(
@@ -1129,7 +1126,7 @@ socket.on(
             );
 
           }
-
+        }
           // =====================================
           // UPDATE USERS
           // =====================================

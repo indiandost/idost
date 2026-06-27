@@ -28,6 +28,7 @@ export default function GameRoom() {
   const [gameStarted, setGameStarted] =   useState(false);
   const [loading, setLoading] =   useState(true);
   const [error, setError] =  useState("");
+  const [nextRoundCountdown, setNextRoundCountdown] = useState(0);
   /* bot games */
 const [bots, setBots] = useState([]);
 const generateBots = () => {
@@ -682,25 +683,48 @@ const myScore =
         >
         +{winner?.rewardCoins || 0} Coins Reward
         </p>
-
-        <button
+<button
+  disabled={nextRoundCountdown > 0}
   onClick={() => {
-    setWinner(null);
-    setRewardCoins(0);
+    setNextRoundCountdown(7);
+
+    const timer = setInterval(() => {
+      setNextRoundCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+
+          // Open next round
+          setWinner(null);
+          setRewardCoins(0);
+
+          return 0;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
   }}
-  className="
+  className={`
     mt-8
-    bg-yellow-500
-    hover:bg-yellow-600
-    text-black
-    px-6
+    w-full
     py-3
     rounded-2xl
     font-black
-    w-full
-  "
+    text-lg
+    transition-all
+    duration-300
+    ${
+      nextRoundCountdown > 0
+        ? "bg-gray-700 text-gray-300 cursor-not-allowed animate-pulse"
+        : "bg-yellow-500 hover:bg-yellow-400 text-black hover:scale-105 active:scale-95 shadow-lg shadow-yellow-500/40"
+    }
+  `}
 >
-  Play Next Round
+  {nextRoundCountdown > 0 ? (
+    <>⏳ Next Round Starts in {nextRoundCountdown}s</>
+  ) : (
+    <>🎮 Play Next Round</>
+  )}
 </button>
       </div>
     </div>
