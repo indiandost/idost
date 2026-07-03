@@ -686,7 +686,7 @@ function BottomNav({ setMenuOpen, setSearchOpen, setSearch }) {
   : [
       {
         name: "Home",
-        path: "/",
+        path: "/home",
         icon: HomeIcon,
       },
       {
@@ -794,7 +794,8 @@ export default function App() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const viewer = user?.srno || 0;
-   const token = localStorage.getItem("token"); 
+  const token = localStorage.getItem("token"); 
+  const isLoggedIn = !!localStorage.getItem("token");
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -1469,10 +1470,20 @@ useEffect(() => {
           <Route path="/register" element={<Register />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />          
           <Route path="/post/:id" element={<Timeline />} />
-<Route path="/" element={<Home />} />
-          
+          <Route
+            path="/"
+            element={
+              isLoggedIn ? (
+                <Navigate to="/home" replace />
+              ) : (
+                <Navigate to="/timeline" replace />
+              )
+            }
+          />
+          <Route path="/home" element={<Home />} />
+          <Route path="/timeline" element={<Timeline />} />          
           <Route
             path="/me"
             element={
@@ -1669,7 +1680,6 @@ useEffect(() => {
              <Route path="/hireme-payment" element={<PrivateRoute> {" "} <HireMePayment /></PrivateRoute>} />
             <Route path="/admin/hire-me" element={<PrivateRoute> {" "} <HireMeAdmin /></PrivateRoute>} />
              <Route path="/hire-requests" element={<PrivateRoute> {" "} <HireRequests /></PrivateRoute>} />
-          <Route path="/timeline" element={<Timeline />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes></OnlineUsersContext.Provider>
         </HelmetProvider>

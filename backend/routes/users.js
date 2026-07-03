@@ -316,190 +316,128 @@ router.get("/lati", async (req, res) => {
   });
 });
 
-router.get("/",  (req, res) => {
+router.get("/", (req, res) => {
   const db = req.app.get("db");
-    const page = Number(req.query.page) || 1;
-    //const limit = Number(req.query.limit) || 10;
-    const limit = Math.min( Number(req.query.limit) || 10,  60);
-    const offset = (page - 1) * limit;
-  const myId = req.query.myId || 0;
 
-  const hasLocation =
-    req.query.lat !== undefined && req.query.lng !== undefined;
-const sqlWithDistance = `
-
-SELECT
-
-  srno,
-  name,
-  TIMESTAMPDIFF(YEAR, dob, CURDATE()) AS age,
-  mood,
-  city,
-  pic,
-  online,
-  onst,
-  live_status,
-  live_room,
-  coins,
-  fcm_token,
-
-  (
-    6371 * acos(
-      cos(radians(?))
-      * cos(radians(latitude))
-      * cos(radians(longitude) - radians(?))
-      + sin(radians(?))
-      * sin(radians(latitude))
-    )
-  ) AS distance
-
-FROM users
-
-WHERE status = 'A'
-
-  AND NOT EXISTS (
-
-    SELECT 1
-    FROM ignorelist
-
-    WHERE
-      (\`user\` = ? AND user2 = users.srno)
-      OR
-      (\`user\` = users.srno AND user2 = ?)
-
-  )
-
-ORDER BY
-
-  CASE
-    WHEN fcm_token IS NOT NULL
-      AND fcm_token != ''
-    THEN 1
-    ELSE 0
-  END DESC,
-
-  CASE
-    WHEN coins > 1
-    THEN 1
-    ELSE 0
-  END DESC,
-
-  onst DESC,
-
-  distance ASC,
-
-  srno DESC
-  
-
-LIMIT ? OFFSET ?
-
-`;
-const sqlWithoutDistance = `
-
-SELECT
-
-  srno,
-  name,
-  TIMESTAMPDIFF(YEAR, dob, CURDATE()) AS age,
-  city,
-  mood,
-  pic,
-  status,
-  online,
-  onst,
-  live_status,
-  live_room,
-  coins,
-  fcm_token
-
-FROM users
-
-WHERE status = 'A'
-
-  AND NOT EXISTS (
-
-    SELECT 1
-    FROM ignorelist
-
-    WHERE
-      (\`user\` = ? AND user2 = users.srno)
-      OR
-      (\`user\` = users.srno AND user2 = ?)
-
-  )
-
-ORDER BY
-
-  CASE
-    WHEN fcm_token IS NOT NULL
-      AND fcm_token != ''
-    THEN 1
-    ELSE 0
-  END DESC,
-
-  CASE
-    WHEN coins > 1
-    THEN 1
-    ELSE 0
-  END DESC,
-
-  onst DESC,
-
-  srno DESC
-
-LIMIT ? OFFSET ?
-
-`;
-
-  if (hasLocation) {
-    const { lat, lng } = req.query;
-
-    db.query(
-      sqlWithDistance,
-
-      [lat, lng, lat, myId, myId, limit, offset],
-
-      (err, result) => {
-        if (err) return res.json(err);
-
-        const users = result.map((u) => ({
-          id: u.srno,
-
-          name: u.name,
-
-          age: u.age,
-
-          city: u.city,
-
-          pic: u.status === "N" ? "" : u.pic,
-
-          online: u.online,
-
-          onst: u.onst,
-
-          live_status: u.live_status,
-
-          live_room: u.live_room,
-
-          distance: u.distance ? u.distance.toFixed(1) + " km" : "N/A",
-        }));
-
-        res.json(users);
-      },
-    );
-  } else {
-    db.query(
-      sqlWithoutDistance,
-
-      [myId, myId, limit, offset],
-
-      (err, result) => {
-        if (err) return res.json(err);
-
-        res.json(result);
-      },
-    );
+  const page = parseInt(req.query.page || 1);
+  if (page > 8) {
+  return res.json([]);
   }
+  const limit = Math.min(parseInt(req.query.limit || 10), 60);
+  const offset = (page - 1) * limit;
+
+  const myId = parseInt(req.query.myId || 0);
+
+  const lat = req.query.lat ? parseFloat(req.query.lat) : null;
+  const lng = req.query.lng ? parseFloat(req.query.lng) : null;
+  const hasLocation = lat !== null && lng !== null;
+console.log({
+  myId,
+  page: page,
+  limit,
+  lat,
+  lng,
+});
+  const sql = `
+SELECT
+    u.srno,
+    u.name,
+    TIMESTAMPDIFF(YEAR,u.dob,CURDATE()) AS age,
+    u.city,
+    u.mood,
+    u.pic,
+    u.status,
+    u.online,
+    u.onst,
+    u.live_status,
+    u.live_room,
+    u.coins,
+    u.fcm_token,
+
+    CASE
+        WHEN ? IS NULL THEN NULL
+        ELSE ROUND(
+            6371 * ACOS(
+                COS(RADIANS(?))
+                * COS(RADIANS(u.latitude))
+                * COS(RADIANS(u.longitude) - RADIANS(?))
+                + SIN(RADIANS(?))
+                * SIN(RADIANS(u.latitude))
+            ),1)
+    END AS distance
+
+FROM users u
+
+LEFT JOIN ignorelist i
+ON (
+      (i.user=? AND i.user2=u.srno)
+   OR (i.user=u.srno AND i.user2=?)
+)
+
+WHERE
+    u.status='A'
+    AND i.user IS NULL
+
+ORDER BY
+
+    (u.fcm_token IS NOT NULL AND u.fcm_token<>'') DESC,
+
+    (u.coins>1) DESC,
+
+    u.onst DESC,
+
+    CASE
+        WHEN ? IS NULL THEN 0
+        ELSE distance
+    END ASC,
+
+    u.srno DESC
+
+LIMIT ?
+OFFSET ?;
+`;
+
+  db.query(
+    sql,
+    [
+      lat,       // CASE
+      lat,       // COS
+      lng,       // LONG
+      lat,       // SIN
+
+      myId,
+      myId,
+
+      lat,
+
+      limit,
+      offset,
+    ],
+    (err, rows) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).json(err);
+      }
+
+      const users = rows.map((u) => ({
+        id: u.srno,
+        name: u.name,
+        age: u.age,
+        city: u.city,
+        mood: u.mood,
+        pic: u.status === "N" ? "" : u.pic,
+        online: u.online,
+        onst: u.onst,
+        live_status: u.live_status,
+        live_room: u.live_room,
+        coins: u.coins,
+        distance:
+          u.distance === null ? null : `${u.distance} km`,
+      }));
+
+      res.json(users);
+    }
+  );
 });
 
 // =============================
@@ -798,7 +736,7 @@ ORDER BY srno DESC;
     `,
     [String(userCode),userCode],
     (err, rows) => {
-      console.log(rows);
+      //console.log(rows);
       if (err) return res.status(500).json(err);
       res.json({
         success: true,

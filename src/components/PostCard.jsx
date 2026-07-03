@@ -339,7 +339,7 @@ if (!user) {
   alert("Link copied");
 
 };
-
+const displayViews =  post.total_views > 1 ? post.total_views + 31 : (post.total_views || 0);
   return (
 
     <div  ref={postRef} className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden shadow-lg">
@@ -528,8 +528,9 @@ if (!user) {
           Like
 
         </button>
+   
         <button className="hover:text-blue-400">
-          👁️ {post.total_views || 0} Views
+          👁️ {displayViews} Views
         </button>
 
         <button

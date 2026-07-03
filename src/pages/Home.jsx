@@ -21,7 +21,7 @@ export default function Home() {
   const BirthdayUsers = lazy(() => import("../components/BirthdayUsers"));
   const NewUsers = lazy(() => import("../components/NewUsers"));
   const MoodBar = lazy(() => import("../components/MoodBar"));
-  const myId = JSON.parse(localStorage.getItem("user"))?.srno;
+const myId = Number(JSON.parse(localStorage.getItem("user") || "{}").srno) || 0;
   const token = localStorage.getItem("token"); 
   const [selectedMood, setSelectedMood] = useState("");
   const limit=10;
@@ -37,141 +37,48 @@ const [exploreOpen, setExploreOpen] = useState(false);
  // ======================
 // LOAD USERS
 // ======================
+const [location, setLocation] = useState(null);
 useEffect(() => {
-
-  // 🔥 instant load first
-  fetchDefaultUsers(pageNum);
-
-  // 🔥 then try location
-  if (!navigator.geolocation) return;
-
-  navigator.geolocation.getCurrentPosition(
-
-    async (pos) => {
-
-      try {
-
-        setLoading(true);
-
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-
-        const res = await fetch(
-
-          `${API}/users?lat=${lat}&lng=${lng}&myId=${myId}&page=${pageNum}&limit=${limit}`,
-
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-
-        );
-
-        const data = await res.json();
-
-        if (!Array.isArray(data)) return;
-
-        // no more records
-        if (data.length < limit) {
-          setHasMore(false);
-        }
-
-        // first page
-        if (pageNum === 1) {
-
-          setUsers(data);
-
-        } else {
-
-          setUsers((prev) => [...prev, ...data]);
-
-        }
-
-      } catch (err) {
-
-        console.log(err);
-
-      } finally {
-
-        setLoading(false);
-
-      }
-
-    },
-
-    (err) => {
-
-      console.log(err);
-
-    },
-
-    {
-      timeout: 5000,
-      maximumAge: 60000,
-      enableHighAccuracy: false,
-    }
-
-  );
-
-}, [pageNum]);
-
-
-// ======================
-// DEFAULT USERS
-// ======================
-const fetchDefaultUsers = async (page = 1) => {
-
-  try {
-
-    setLoading(true);
-
-    const res = await fetch(
-
-      `${API}/users?page=${page}&limit=${limit}&myId=${myId}`,
-
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            setLocation({
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude
+            });
         },
-      }
-
+        () => {
+            setLocation(null);
+        }
     );
 
-    const data = await res.json();
+}, []);
 
-    if (!Array.isArray(data)) return;
+useEffect(() => {
+    fetchUsers();
+}, [pageNum, location]);
 
-    // no more data
-    if (data.length < limit) {
-      setHasMore(false);
+const fetchUsers = async () => {
+    setLoading(true);
+    try {
+        let url = `${API}/users?page=${pageNum}&limit=${limit}&myId=${myId}`;
+        if (location) {
+            url += `&lat=${location.lat}&lng=${location.lng}`;
+        }
+        const res = await fetch(url, {
+                headers: {Authorization: `Bearer ${token}`,},
+        });
+        const data = await res.json();
+        if (!Array.isArray(data)) return;
+        setHasMore(data.length === limit);
+        setUsers(prev =>
+            pageNum === 1
+                ? data
+                : [...prev, ...data]
+        );
+    } finally {
+        setLoading(false);
     }
-
-    // first page
-    if (page === 1) {
-
-      setUsers(data);
-
-    }
-
-    // next pages
-    else {
-
-      setUsers((prev) => [...prev, ...data]);
-
-    }
-
-  } catch (err) {
-
-    console.log(err);
-    setError("Failed to load users");
-
-  } finally {
-
-    setLoading(false);
-
-  }
-
 };
 
 
@@ -179,72 +86,26 @@ const fetchDefaultUsers = async (page = 1) => {
 // INFINITE SCROLL
 // ======================
 useEffect(() => {
-
   const handleScroll = () => {
-
     if (
-
       window.innerHeight + window.scrollY >=
       document.body.offsetHeight - 300 &&
-
       !loading &&
       hasMore
-
     ) {
      if (selectedMood?.trim() && moodUsers.length > 0) return;
       setPageNum((prev) => prev + 1);
-
     }
-
   };
-
   window.addEventListener("scroll", handleScroll);
-
   return () => {
-
     window.removeEventListener(
       "scroll",
       handleScroll
     );
-
   };
-
 }, [loading, hasMore]);
 
-/*useEffect(() => {
-  const fetchLiveUsers = async () => {
-    try {
-      const res = await fetch(
-        `${API}/users/live-users?limit=10`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      // ✅ prevent HTML/error response crash
-      const text = await res.text();
-      let data = [];
-      try {
-        data = JSON.parse(text);
-      } catch {
-        console.log("Invalid JSON:", text);
-        data = [];
-      }
-      // ✅ ensure always array
-      if (Array.isArray(data)) {
-        setLiveUsers(data);
-      } else {
-        setLiveUsers([]);
-      }
-    } catch (err) {
-      console.log("Live users fetch error:", err);
-      setLiveUsers([]);
-    }
-  };
-  fetchLiveUsers();
-}, []);
-*/
 useEffect(() => {
   const fetchLiveUsers = async () => {
     try {
