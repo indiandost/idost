@@ -50,6 +50,7 @@ import withdrawRoutes from "./routes/withdraw.js";
 import depositRoutes from "./routes/deposit.js";
 import quizRoutes from "./routes/quiz.js";
 import hiremeRoutes from "./routes/hireme.js";
+import rewardAdsRoutes from "./routes/rewardAds.js";
 
 
 //import colorCrashSocket from "./sockets/colorCrashSocket.js";
@@ -284,6 +285,7 @@ app.use("/api/game", gameRoutes);
 app.use("/api/jam-room", jamRoutes);
 app.use("/api/quiz", quizRoutes);
 app.use("/hireme",hiremeRoutes);
+app.use("reward-ad", rewardAdsRoutes);
 
 // =============================
 

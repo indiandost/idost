@@ -81,6 +81,7 @@ import {  App as CapacitorApp } from "@capacitor/app";
 import notificationSound from "./assets/sounds/notification.mp3";
 //import notificationSound2 from "./assets/sounds/notification2.mp3";
 import notificationSound2 from "./assets/sounds/notification-mini.mp3";
+import mobileAds from "react-native-google-mobile-ads";
 const API = import.meta.env.VITE_API_URL;
 // 🔐 Protected Route
 function PrivateRoute({ children }) {
@@ -821,6 +822,11 @@ export default function App() {
     location.pathname.startsWith("/register") ||
     location.pathname.startsWith("/register") ||
     location.pathname.startsWith("/quiz/");
+
+  //for ads 
+  useEffect(() => {
+    mobileAds().initialize();
+}, []);  
 //check sockit connection
 useEffect(() => {
   const listener = CapacitorApp.addListener(
