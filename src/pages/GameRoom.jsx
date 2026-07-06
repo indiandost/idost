@@ -574,24 +574,10 @@ const myScore =
 
 
   {/* CHAT */}
-  <div
-    className="
-      mt-3
-      bg-zinc-900
-      border
-      border-zinc-800
-      rounded-2xl
-      p-3
-    "
-  >
-
-    <ChatBox
-      roomId={roomId}
-      messages={messages}
-    />
-
-  </div>
-
+  <ChatBox
+    roomId={roomId}
+    messages={messages}
+  />
 </div>
 
 )}

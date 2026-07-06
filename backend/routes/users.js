@@ -377,6 +377,7 @@ ON (
 WHERE
     u.status='A'
     AND i.user IS NULL
+    and u.user!='yum'
 
 ORDER BY
 

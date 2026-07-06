@@ -8,36 +8,34 @@ export default function ChatBox({
   messages,
 }) {
 
-  const [message, setMessage] =
-    useState("");
+  const [message, setMessage] =  useState("");
+  const [showChat, setShowChat] = useState(true);
+  const [unread, setUnread] = useState(0);
 
-  const chatEndRef =
-    useRef(null);
+  const chatEndRef = useRef(null);
 
   const user = JSON.parse(
     localStorage.getItem("user")
   );
-
-
   // =========================
   // AUTO SCROLL
   // =========================
   useEffect(() => {
-
     chatEndRef.current?.scrollIntoView({
       behavior: "smooth",
     });
-
   }, [messages]);
 
-
-  // =========================
+  useEffect(() => {
+  if (!showChat && messages.length > 0) {
+    setUnread(prev => prev + 1);
+  }
+}, [messages]);
+ // =========================
   // SEND MESSAGE
   // =========================
   const sendMessage = () => {
-
     if (!message.trim()) return;
-
     socket.emit(
       "color:send_message",
       {
@@ -50,55 +48,102 @@ export default function ChatBox({
           message.trim(),
       }
     );
-
     setMessage("");
   };
-
-
   // =========================
   // ENTER KEY SEND
   // =========================
   const handleKeyDown = (e) => {
-
     if (e.key === "Enter") {
-
       sendMessage();
     }
   };
+  const openChat = () => {
+  setShowChat(true);
+  setUnread(0);
+};
+  return (<>
+    {!showChat && (
+  <button
+    onClick={openChat}
+className="
+fixed
+bottom-24
+right-4
+z-[99999]
+w-14
+h-14
+rounded-full
+bg-blue-600
+shadow-2xl
+text-2xl
+flex
+items-center
+justify-center
+animate-bounce
+"
+  >
+    💬
 
-
-  return (
-
-    <div className="
-      bg-zinc-900
-      border
-      border-zinc-800
-      rounded-3xl
-      overflow-hidden
-      shadow-2xl
-    ">
-
-      {/* HEADER */}
-      <div className="
-        px-5
-        py-4
-        border-b
-        border-zinc-800
-        flex
-        items-center
-        justify-between
-      ">
-
-        <h2 className="
-          text-2xl
-          text-white
-        ">
-
-          💬 Live Chat
-
-        </h2>
-
-        <div className="
+    {unread > 0 && (
+      <span
+        className="
+          absolute
+          -top-1
+          -right-1
+          min-w-5
+          h-5
+          px-1
+          rounded-full
+          bg-red-600
+          text-[10px]
+          font-bold
+          flex
+          items-center
+          justify-center
+        "
+      >
+        {unread > 99 ? "99+" : unread}
+      </span>
+    )}
+  </button>
+)}
+   {showChat && (
+    
+<div
+className="
+fixed
+top-32
+right-3
+z-[9999]
+w-72
+rounded-2xl
+bg-black/10
+border
+border-white/10
+shadow-lg
+overflow-hidden
+"
+>
+  <button
+onClick={() => setShowChat(false)}
+className="
+absolute
+top-2
+right-2
+z-50
+w-7
+h-7
+rounded-full
+bg-black/50
+hover:bg-red-500
+text-white
+text-sm
+"
+>
+✕
+</button>
+ <div className="
           text-sm
           text-zinc-400
         ">
@@ -106,23 +151,30 @@ export default function ChatBox({
           {messages.length}
           {" "}
           msgs
-
-        </div>
-
       </div>
 
-
       {/* CHAT AREA */}
-      <div className="
-        h-[350px]
-        overflow-y-auto
-        bg-black
-        px-4
-        py-4
-        space-y-3
-      ">
-
-        {messages.length === 0 && (
+<style>{`
+.chat-scroll::-webkit-scrollbar{
+  display:none;
+}
+`}</style>
+<div
+  className="
+    chat-scroll
+    h-[250px]
+    overflow-y-auto
+    px-2
+    py-2
+    space-y-1
+    bg-transparent
+  "
+  style={{
+    scrollbarWidth: "none",
+    msOverflowStyle: "none",
+  }}
+>
+       {messages.length === 0 && (
 
           <div className="
             h-full
@@ -132,21 +184,14 @@ export default function ChatBox({
             text-zinc-500
             text-center
           ">
-
             No chats yet 👀
-
           </div>
         )}
-
-
         {messages.map((msg, index) => {
-
           const isMe =
             msg.userId ===
             user?.srno;
-
           return (
-
             <div
               key={
                 msg.id ||
@@ -160,86 +205,69 @@ export default function ChatBox({
                 }
               `}
             >
-
               <div
                 className={`
-                  max-w-[80%]
-                  px-4
-                  py-3
-                  rounded-2xl
-                  break-words
-                  shadow-lg
+                  max-w-[88%]
+      px-2.5
+      py-1.5
+      rounded-xl
+      backdrop-blur-md
+      text-xs
+      break-words 
                   ${
                     isMe
                       ? `
-                        bg-blue-500
+                        bg-blue-500/70
                         text-white
-                        rounded-br-md
                       `
                       : `
-                        bg-zinc-800
+                        bg-black/35
                         text-white
-                        rounded-bl-md
                       `
                   }
                 `}
               >
-
                 {/* NAME */}
                 <div className={`
-                  text-xs
-                  font-bold
-                  mb-1
+                    text-[10px]
+                  font-semibold
+                  mb-0.5
                   ${
                     isMe
                       ? "text-blue-100"
-                      : "text-green-400"
+                      : "text-green-300"
                   }
                 `}>
-
                   {isMe
                     ? "You"
                     : msg.name
                   }
-
                 </div>
-
-
                 {/* MESSAGE */}
                 <div className="
-                  text-sm
-                  leading-relaxed
+                  leading-4
                 ">
-
                   {msg.message}
-
                 </div>
-
               </div>
-
             </div>
           );
         })}
-
         <div ref={chatEndRef} />
-
       </div>
-
-
       {/* INPUT */}
       <div className="
-        border-t
-        border-zinc-800
-        bg-zinc-950
-        p-4
+    border-t
+    border-white/10
+    bg-black/15
+    backdrop-blur-md
+    p-2
       ">
-
         <div className="
           flex
           items-center
-          gap-3
+          gap-2
         ">
-
           <input
             value={message}
             onChange={(e) =>
@@ -251,48 +279,42 @@ export default function ChatBox({
               handleKeyDown
             }
             maxLength={120}
-            placeholder="Type your message..."
+            placeholder="Message..."
             className="
-              flex-1
-              bg-black
-              border
-              border-zinc-700
-              focus:border-blue-500
-              outline-none
-              rounded-2xl
-              px-5
-              py-3
-              text-white
-              placeholder:text-zinc-500
-            "
+        flex-1
+        h-9
+        bg-black/25
+        border
+        border-white/10
+        rounded-full
+        px-4
+        text-sm
+        text-white
+        placeholder:text-gray-400
+        outline-none
+      "
           />
-
-
-          <button
-            onClick={sendMessage}
-            disabled={!message.trim()}
-            className="
-              bg-blue-500
-              hover:bg-blue-600
-              disabled:opacity-50
-              disabled:cursor-not-allowed
-              transition-all
-              px-6
-              py-3
-              rounded-2xl
-              font-bold
-              shadow-lg
-            "
-          >
-
-            Send
-
-          </button>
-
+             <button
+      onClick={sendMessage}
+      disabled={!message.trim()}
+      className="
+        w-9
+        h-9
+        rounded-full
+        bg-blue-500/80
+        hover:bg-blue-600
+        disabled:opacity-40
+        flex
+        items-center
+        justify-center
+        transition
+      "
+    >
+      ➤
+    </button>
         </div>
-
       </div>
-
-    </div>
+    </div>)}
+    </>
   );
 }
