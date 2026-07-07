@@ -285,7 +285,7 @@ app.use("/api/game", gameRoutes);
 app.use("/api/jam-room", jamRoutes);
 app.use("/api/quiz", quizRoutes);
 app.use("/hireme",hiremeRoutes);
-app.use("reward-ad", rewardAdsRoutes);
+app.use("/reward-ad", rewardAdsRoutes);
 
 // =============================
 
