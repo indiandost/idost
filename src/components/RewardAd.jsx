@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { AdMob, RewardAdPluginEvents } from "@capacitor-community/admob";
 
 const API = import.meta.env.VITE_API_URL;
 
 export default function RewardAd() {
   const token = localStorage.getItem("token");
+  const [loading,setLoading]=useState(false);
   const rewardUser = async () => {
     try {
       const res = await fetch(`${API}/reward-ad`, {
@@ -26,44 +28,80 @@ export default function RewardAd() {
     }
   };
   const showRewardAd = async () => {
-    console.log('rewards--');
-    try {
-      // Remove old listeners
-      AdMob.removeAllListeners();
-      // Reward received
-      AdMob.addListener(
-        RewardAdPluginEvents.Rewarded,
-        async () => {
-          console.log("Reward Earned");
+  if (loading) return;
+
+  setLoading(true);
+
+  try {
+    // Remove previous listeners
+    await AdMob.removeAllListeners();
+
+    // Reward earned
+    AdMob.addListener(
+      RewardAdPluginEvents.Rewarded,
+      async () => {
+        console.log("🎉 Reward Earned");
+
+        try {
           await rewardUser();
+        } catch (err) {
+          console.log(err);
         }
-      );
-      // Ad Closed
-      AdMob.addListener(
-        RewardAdPluginEvents.Dismissed,
-        () => {
-          console.log("Ad Closed");
-        }
-      );
+      }
+    );
 
-      await AdMob.prepareRewardVideoAd({
-        adId: "ca-app-pub-3940256099942544/5224354917", //ca-app-pub-2089056578441092/7368531738", // Test Rewarded Ad
-      });
+    // Ad closed
+    AdMob.addListener(
+      RewardAdPluginEvents.Dismissed,
+      async () => {
+        console.log("❌ Ad Closed");
 
-      await AdMob.showRewardVideoAd();
+        setLoading(false);
 
-    } catch (err) {
-      console.log(err);
-      alert("Unable to load advertisement.");
-    }
-  };
+        await AdMob.removeAllListeners();
+      }
+    );
 
+    // Prepare ad
+    await AdMob.prepareRewardVideoAd({
+      adId: "ca-app-pub-3940256099942544/5224354917", // Test Reward Ad
+      // adId: "ca-app-pub-2089056578441092/XXXXXXXXXX" // Production
+    });
+
+    // Show ad
+    await AdMob.showRewardVideoAd();
+
+  } catch (err) {
+    console.log("Reward Ad Error:", err);
+
+    setLoading(false);
+
+    await AdMob.removeAllListeners();
+
+    alert("Unable to load advertisement.");
+  }
+};
   return (
    <button
   onClick={showRewardAd}
-  className="w-full rounded-2xl bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 py-4 text-lg font-bold text-black shadow-lg hover:scale-105 transition-all duration-300"
+  disabled={loading}
+  className={`
+    w-full
+    rounded-2xl
+    py-4
+    text-lg
+    font-bold
+    text-black
+    shadow-lg
+    transition-all
+    ${
+      loading
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 hover:scale-105"
+    }
+  `}
 >
-  🪙 Watch Ad & Earn 20 Coins
+  {loading ? "Loading Ad..." : "🪙 Watch Ad & Earn 20 Coins"}
 </button>
   );
 }
