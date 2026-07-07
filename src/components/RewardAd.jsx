@@ -47,7 +47,7 @@ export default function RewardAd() {
       );
 
       await AdMob.prepareRewardVideoAd({
-        adId: "ca-app-pub-2089056578441092/7368531738", // Test Rewarded Ad
+        adId: "ca-app-pub-3940256099942544/5224354917", //ca-app-pub-2089056578441092/7368531738", // Test Rewarded Ad
       });
 
       await AdMob.showRewardVideoAd();
