@@ -29,9 +29,7 @@ export default function RewardAd() {
   };
   const showRewardAd = async () => {
   if (loading) return;
-
   setLoading(true);
-
   try {
     // Remove previous listeners
     await AdMob.removeAllListeners();
