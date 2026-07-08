@@ -10,8 +10,7 @@ router.post("/", verifyToken, (req, res) => {
     const io = req.app.get("io");
 
     // User id from JWT
-    const userId = req.user.srno;
-
+    const userId = req.user.id;
     // 20 coins per ad
     const COINS = 20;
 
