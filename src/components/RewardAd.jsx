@@ -70,7 +70,10 @@ export default function RewardAd() {
 
   } catch (err) {
     console.log("Reward Ad Error:", err);
-    alert(JSON.stringify(err, null, 2));
+  console.error("message:", err?.message);
+  console.error("code:", err?.code);
+
+  alert( `Message: ${err?.message}\nCode: ${err?.code}` );
     setLoading(false);
 
     await AdMob.removeAllListeners();
