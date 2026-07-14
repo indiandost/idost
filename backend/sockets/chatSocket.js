@@ -1055,9 +1055,10 @@ socket.on("meetingComment", ({ roomId, comment }) => {
   if (!meetingRooms[roomId]) return;
 
 
-
-  meetingRooms[roomId].comments.push(comment);
-
+meetingRooms[roomId].comments.push(comment);
+if (meetingRooms[roomId].comments.length > 100) {
+  meetingRooms[roomId].comments.shift();
+}
 
 
   io.to(roomId).emit(
@@ -1352,6 +1353,14 @@ socket.on("disconnect", () => {
    }
 */
 
+setInterval(() => {
+  const now = Date.now();
+  for (const callId in pendingCalls) {
+    if (!pendingCalls[callId].accepted && now - pendingCalls[callId].createdAt > 60000) {
+      delete pendingCalls[callId];
+    }
+  }
+}, 30000);
 
 socket.on("disconnect", (reason) => {
 
@@ -1359,9 +1368,24 @@ socket.on("disconnect", (reason) => {
 
   const disconnectedUserId = Number(socket.userId);
 
-  if (disconnectedUserId) {
+  /*if (disconnectedUserId) {
    delete activeCalls[disconnectedUserId];
+  }*/
+ const pendingCalls = {};   // callId -> {from, to, type, accepted}
+const busyUsers = {};      // userId -> partnerUserId
+
+// on disconnect:
+const partnerId = busyUsers[disconnectedUserId];
+if (partnerId) {
+  delete busyUsers[partnerId];
+  delete busyUsers[disconnectedUserId];
+}
+for (const callId in pendingCalls) {
+  const call = pendingCalls[callId];
+  if (call.from === disconnectedUserId || call.to === disconnectedUserId) {
+    delete pendingCalls[callId];
   }
+}
   for (const key in activeCalls) {
 
     const call = activeCalls[key];
