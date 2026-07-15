@@ -5,6 +5,8 @@ import users from "../users.js";
 //const users = {}; // shared memory
 const meetingRooms = {};
 const activeCalls = {};
+const pendingCalls = {};   // callId -> {from, to, type, accepted, createdAt}
+const busyUsers = {};      // userId -> partnerUserId
 
 export default function chatSocket(io, socket, db) {
 
@@ -109,12 +111,8 @@ const mediaUrl = data.media_url || null;
 const type = data.type || "text";
 const room = io.sockets.adapter.rooms.get(`user-${toId}`);
 
-console.log("ROOM USERS:", room);
-
-
-console.log("📩 Message:", data);
-
-
+//console.log("ROOM USERS:", room);
+//console.log("📩 Message:", data);
 
 // 1️⃣ SAVE TO DATABASE
 
@@ -334,8 +332,42 @@ socket.on("acceptCall", ({ callId, from, to, type }) => {
     });
   }
 });
+socket.on("rejectCall", ({ callId, from, to }) => {
+  const fromId = Number(from); // caller
+  const toId = Number(to);     // receiver (the one who rejected)
 
-socket.on("rejectCall", ({ callerId, receiverId, callId }) => {
+  //console.log("📴 RejectCall:", { fromId, toId, callId });
+
+  // clear busy mapping
+  if (activeCalls[fromId] === toId) {
+    delete activeCalls[fromId];
+  }
+
+  if (activeCalls[toId] === fromId) {
+    delete activeCalls[toId];
+  }
+
+  // clear pending call object
+  delete activeCalls[callId];
+
+  //console.log("ACTIVE CALLS:", activeCalls);
+
+  // notify caller -> close their "calling..." popup
+  const callerSocket = users[fromId];
+  if (callerSocket) {
+    io.to(callerSocket).emit("callRejected", {
+      callId,
+      reason: "rejected",
+    });
+  }
+
+  // notify the rejecter's own client too -> close their incoming-call popup
+  io.to(socket.id).emit("callRejected", {
+    callId,
+    reason: "rejected",
+  });
+});
+/*socket.on("rejectCall", ({ callerId, receiverId, callId }) => {
   const caller = Number(callerId);
   const receiver = Number(receiverId);
 
@@ -368,6 +400,7 @@ socket.on("rejectCall", ({ callerId, receiverId, callId }) => {
     });
   }
 });
+*/
 /*
 socket.on("endCall", ({ callId, from, to }) => {
   const fromId = Number(from);
@@ -1352,6 +1385,20 @@ socket.on("disconnect", () => {
     }
    }
 */
+setInterval(() => {
+  const now = Date.now();
+  for (const key in activeCalls) {
+    const call = activeCalls[key];
+    if (
+      call &&
+      typeof call === "object" &&
+      !call.accepted &&
+      now - call.createdAt > 60000
+    ) {
+      delete activeCalls[key];
+    }
+  }
+}, 30000);
 
 setInterval(() => {
   const now = Date.now();

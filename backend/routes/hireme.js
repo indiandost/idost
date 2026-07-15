@@ -29,15 +29,15 @@ const getPublicIdFromUrl = (url) => {
 };
 const deleteCloudinaryFile = async (url) => {
   const publicId = getPublicIdFromUrl(url);
-  console.log("URL:", url);
-  console.log("PUBLIC ID:", publicId);
+  //console.log("URL:", url);
+  //console.log("PUBLIC ID:", publicId);
 
   if (!publicId) return;
   try {
     const result =  await cloudinary.uploader.destroy(publicId);
-    console.log("DELETE RESULT:", result);
+    //console.log("DELETE RESULT:", result);
   } catch (err) {
-    console.error("DELETE ERROR:", err);
+    //console.error("DELETE ERROR:", err);
   }
 };
 
@@ -862,150 +862,115 @@ router.get("/list", (req, res) => {
     sort,
     lat,
     lng,
-    radius
+    radius,
+    page = 1,
+    limit = 20
   } = req.query;
 
-  let where = `
-    h.profile_status='Approved'
-    AND h.payment_status='Approved'
-  `;
+  const params = [];
+  let where = `h.profile_status='Approved' AND h.payment_status='Approved'`;
 
   if (keyword) {
-    where += `
-      AND (
-        u.name LIKE '%${keyword}%'
-        OR h.service_title LIKE '%${keyword}%'
-        OR h.description LIKE '%${keyword}%'
-      )
-    `;
+    where += ` AND (u.name LIKE ? OR h.service_title LIKE ? OR h.description LIKE ?)`;
+    const kw = `%${keyword}%`;
+    params.push(kw, kw, kw);
   }
 
   if (category) {
-    where += ` AND h.service_category='${category}'`;
+    where += ` AND h.service_category = ?`;
+    params.push(category);
   }
 
   if (city) {
-    where += ` AND u.city LIKE '%${city}%'`;
+    where += ` AND u.city LIKE ?`;
+    params.push(`%${city}%`);
   }
 
   if (state) {
-    where += ` AND u.state LIKE '%${state}%'`;
+    where += ` AND u.state LIKE ?`;
+    params.push(`%${state}%`);
   }
 
   if (minPrice) {
-    where += ` AND h.rate_amount >= ${Number(minPrice)}`;
+    where += ` AND h.rate_amount >= ?`;
+    params.push(Number(minPrice));
   }
 
   if (maxPrice) {
-    where += ` AND h.rate_amount <= ${Number(maxPrice)}`;
+    where += ` AND h.rate_amount <= ?`;
+    params.push(Number(maxPrice));
   }
 
-  // Distance Calculation
+  // Distance calculation (only computed when lat/lng given)
   let distanceSelect = "";
+  const hasLocation = lat && lng && !isNaN(lat) && !isNaN(lng);
 
-  if (lat && lng) {
-    distanceSelect = `
-      ,
-      (
-        6371 * acos(
-          cos(radians(${lat}))
-          * cos(radians(u.latitude))
-          * cos(radians(u.longitude) - radians(${lng}))
-          + sin(radians(${lat}))
-          * sin(radians(u.latitude))
-        )
-      ) AS distance
-    `;
+  if (hasLocation) {
+    distanceSelect = `,
+      (6371 * acos(
+        cos(radians(?)) * cos(radians(u.latitude))
+        * cos(radians(u.longitude) - radians(?))
+        + sin(radians(?)) * sin(radians(u.latitude))
+      )) AS distance`;
+    params.push(Number(lat), Number(lng), Number(lat));
   }
 
   // HAVING conditions
-  let havingConditions = [];
+  const havingConditions = [];
+  const havingParams = [];
 
   if (minRating) {
-    havingConditions.push(
-      `ROUND(COALESCE(AVG(hr.rating),0),1) >= ${Number(minRating)}`
-    );
+    havingConditions.push(`ROUND(COALESCE(AVG(hr.rating),0),1) >= ?`);
+    havingParams.push(Number(minRating));
   }
 
-  if (radius && lat && lng) {
-    havingConditions.push(
-      `distance <= ${Number(radius)}`
-    );
+  if (radius && hasLocation) {
+    havingConditions.push(`distance <= ?`);
+    havingParams.push(Number(radius));
   }
 
-  const havingClause =
-    havingConditions.length > 0
-      ? `HAVING ${havingConditions.join(" AND ")}`
-      : "";
+  const havingClause = havingConditions.length
+    ? `HAVING ${havingConditions.join(" AND ")}`
+    : "";
 
-  // Sorting
-  let orderBy = "h.id DESC";
+  // Sorting - whitelist only, never accept raw column names from client
+  const sortMap = {
+    rating: "avg_rating DESC",
+    price_low: "h.rate_amount ASC",
+    price_high: "h.rate_amount DESC",
+    nearest: hasLocation ? "distance ASC" : "h.id DESC"
+  };
+  const orderBy = sortMap[sort] || "h.id DESC";
 
-  switch (sort) {
-    case "rating":
-      orderBy = "avg_rating DESC";
-      break;
-
-    case "price_low":
-      orderBy = "h.rate_amount ASC";
-      break;
-
-    case "price_high":
-      orderBy = "h.rate_amount DESC";
-      break;
-
-    case "nearest":
-      if (lat && lng) {
-        orderBy = "distance ASC";
-      }
-      break;
-
-    default:
-      orderBy = "h.id DESC";
-  }
+  // Pagination
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const pageSize = Math.min(50, Math.max(1, parseInt(limit, 10) || 20)); // cap at 50
+  const offset = (pageNum - 1) * pageSize;
 
   const sql = `
     SELECT
-      h.*,
-      u.name,
-      u.pic,
-      u.city,
-      u.state,
-      u.latitude,
-      u.longitude,
+      h.id, h.service_title, h.service_category, h.rate_amount, h.description,
+      u.name, u.pic, u.city, u.state, u.latitude, u.longitude,
       ROUND(COALESCE(AVG(hr.rating),0),1) AS avg_rating,
       COUNT(hr.id) AS total_reviews
       ${distanceSelect}
-
     FROM hire_me_profiles h
-
-    INNER JOIN users u
-      ON u.srno = h.user_id
-
-    LEFT JOIN hire_reviews hr
-      ON hr.to_user = h.user_id
-
+    INNER JOIN users u ON u.srno = h.user_id
+    LEFT JOIN hire_reviews hr ON hr.to_user = h.user_id
     WHERE ${where}
-
     GROUP BY h.id
-
     ${havingClause}
-
     ORDER BY ${orderBy}
+    LIMIT ? OFFSET ?
   `;
 
-  console.log(sql);
+  const allParams = [...params, ...havingParams, pageSize, offset];
 
-  db.query(sql, (err, rows) => {
+  db.query(sql, allParams, (err, rows) => {
     if (err) {
       console.error(err);
-
-      return res.status(500).json({
-        success: false,
-        message: err.message
-      });
+      return res.status(500).json({ success: false, message: "Server error" });
     }
-
     res.json(rows);
   });
 });

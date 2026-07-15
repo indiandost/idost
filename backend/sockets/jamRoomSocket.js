@@ -179,6 +179,53 @@ const jamRoomSocket = (io, socket) => {
       }
     );
 
+   // =========================================
+// GENERIC EMPTY ROOM CLEANUP (naya helper — file ke top pe, jamRooms ke pass rakho)
+// =========================================
+function scheduleRoomDeleteIfEmpty(io, db, roomId) {
+  const room = jamRooms[roomId];
+  if (!room) return;
+
+  const isEmpty = room.viewers.length === 0;
+
+  if (!isEmpty) return; // koi abhi bhi room me hai, kuch mat karo
+
+  if (roomDeleteTimers[roomId]) return; // timer already chal raha hai
+
+  console.log("⏳ Room empty — scheduling auto delete:", roomId);
+
+  roomDeleteTimers[roomId] = setTimeout(async () => {
+    try {
+      const currentRoom = jamRooms[roomId];
+
+      // agar isbeech koi wapas join kar gaya ho to safety check
+      if (currentRoom && currentRoom.viewers.length > 0) {
+        delete roomDeleteTimers[roomId];
+        return;
+      }
+
+      console.log("🗑 AUTO DELETE EMPTY ROOM:", roomId);
+
+      await db.promise().query(
+        `UPDATE jam_rooms SET is_live=0 WHERE room_id=?`,
+        [roomId]
+      );
+
+      await db.promise().query(
+        `DELETE FROM jam_room_users WHERE room_id=?`,
+        [roomId]
+      );
+
+      io.to(roomId).emit("jam_room_ended");
+
+      delete jamRooms[roomId];
+      delete roomDeleteTimers[roomId];
+
+    } catch (err) {
+      console.log("AUTO DELETE ERROR:", err);
+    }
+  }, 5 * 60 * 1000);
+}
     // =========================================
     // JOIN ROOM
     // =========================================
@@ -1146,13 +1193,8 @@ if (!roomDeleteTimers[roomId]) {
             "speaker_update",
             room.speakers
           );
-
-          io.to(roomId).emit(
-            "user_left",
-            {
-              userId,
-            }
-          );
+          io.to(roomId).emit("user_left", { userId });
+        scheduleRoomDeleteIfEmpty(io, db, roomId); // ✅ add this
 
         }
 
@@ -1285,10 +1327,8 @@ if (!roomDeleteTimers[roomId]) {
                     "Host disconnected. Room will end in 5 minutes.",
                 }
               );
-
-              roomDeleteTimers[
-                roomId
-              ] = setTimeout(
+          if (!roomDeleteTimers[roomId]) {
+              roomDeleteTimers[roomId] = setTimeout(
                 async () => {
 
                   try {
@@ -1336,13 +1376,11 @@ if (!roomDeleteTimers[roomId]) {
                 },
                 5 * 60 * 1000
               );
-
+            }
             }
 
-            console.log(
-              "👀 ROOM USERS:",
-              room.viewers.length
-            );
+            //console.log( "👀 ROOM USERS:", room.viewers.length);
+            scheduleRoomDeleteIfEmpty(io, db, roomId);
 
           }
 

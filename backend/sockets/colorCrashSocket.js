@@ -4,11 +4,33 @@ import db from "../db.js";
 import rewardUser from "../utils/rewardUser.js";
 
 const rooms = {};
-
+const lastEmit = {}; 
 const ENTRY_FEE = 10;
 
 const creatingRooms = {};
 const roomBroadcastTimers = {};
+// ✅ ADD THE SWEEP HERE — top level, runs once per server process
+let io_ref = null; // see note below
+
+function startRoomSweep(io) {
+  setInterval(() => {
+    const now = Date.now();
+    for (const roomId in rooms) {
+      const room = rooms[roomId];
+      const empty =
+        room.players.length === 0 &&
+        room.viewers.length === 0;
+
+      if (empty && !room.gameStarted) {
+        if (room.interval) clearInterval(room.interval);
+        delete rooms[roomId];
+        delete lastEmit[roomId];
+        console.log("🧹 Sweep: removed stale empty room", roomId);
+      }
+    }
+    broadcastLiveRooms(io);
+  }, 5 * 60 * 1000); // every 5 minutes
+}
 
 function broadcastLiveRooms(io) {
   const liveRooms = Object.values(rooms)
@@ -42,8 +64,8 @@ function broadcastRoom(io, roomId, room) {
   roomBroadcastTimers[roomId] = setTimeout(() => {
     io.to(roomId).emit("room_update", safeRoom(room));
     delete roomBroadcastTimers[roomId];
-  }, 100);
-}
+   }, 100);
+ }
 
   // ===================================
   // COIN UPDATE
@@ -136,7 +158,10 @@ function broadcastRoom(io, roomId, room) {
 
 //const colorCrashSocket = (io) => {
 const colorCrashSocket = (io, socket) => {
-
+ if (!io_ref) {
+    io_ref = io;
+    startRoomSweep(io);
+  }
     // ===================================
     // USER ROOM
     // ===================================
@@ -1080,60 +1105,75 @@ io.to(roomId).emit("game_tick", {
   }
 );
 
-                  setTimeout(() => {
+setTimeout(() => {
 
-                   // delete rooms[roomId];
-                   room.gameStarted = false;
-room.gameTime = 45;
+                    room.gameStarted = false;
+                    room.gameTime = 45;
 
-room.players.forEach(p => {
-  p.score = 0;
-});
+                    room.players.forEach(p => {
+                      p.score = 0;
+                    });
 
-room.viewers.forEach(v => {
+                    room.viewers.forEach(v => {
 
-  const exists =
-    room.players.some(
-      p =>
-        String(p.userId) ===
-        String(v.userId)
-    );
+                      const exists =
+                        room.players.some(
+                          p =>
+                            String(p.userId) ===
+                            String(v.userId)
+                        );
 
-  if (!exists) {
+                      if (!exists) {
 
-    room.players.push({
-      socketId: v.socketId,
-      userId: v.userId,
-      name: v.name,
-      score: 0
-    });
+                        room.players.push({
+                          socketId: v.socketId,
+                          userId: v.userId,
+                          name: v.name,
+                          score: 0
+                        });
 
-  }
+                      }
 
-});
+                    });
 
-room.viewers = [];
+                    room.viewers = [];
 
-broadcastRoom(io, roomId, room);
-const viewers = [...room.viewers];
+                    // =========================
+                    // DELETE ROOM IF NOBODY CONNECTED
+                    // =========================
+                    const anyoneConnected =
+                      room.players.some(p =>
+                        io.sockets.sockets.has(p.socketId)
+                      );
 
-room.viewers = [];
+                    if (!anyoneConnected) {
 
-for (const v of viewers) {
+                      if (room.interval) {
+                        clearInterval(room.interval);
+                        room.interval = null;
+                      }
 
-  room.players.push({
-    socketId: v.socketId,
-    userId: v.userId,
-    name: v.name,
-    score: 0
-  });
+                      delete rooms[roomId];
+                      delete lastEmit[roomId];
 
-}
+                      console.log(
+                        "🗑 Ended Empty Room Deleted:",
+                        roomId
+                      );
 
+                      broadcastLiveRooms(io);
+
+                      return;
+                    }
+
+                    // =========================
+                    // ROOM STILL HAS USERS - RESET FOR NEXT ROUND
+                    // =========================
+                    broadcastRoom(io, roomId, room);
                     broadcastLiveRooms(io);
 
                     console.log(
-                      "🗑 Ended Room Deleted:",
+                      "🔄 Room Reset For Next Round:",
                       roomId
                     );
 
@@ -1194,7 +1234,6 @@ for (const v of viewers) {
         }
       }
     );
-
 
     // ===================================
     // TAP COLOR

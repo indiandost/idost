@@ -29,6 +29,17 @@ export default function GameRoom() {
   const [loading, setLoading] =   useState(true);
   const [error, setError] =  useState("");
   const [nextRoundCountdown, setNextRoundCountdown] = useState(0);
+
+  // =========================
+  // GAME-ACTIVE GUARD (prevents bot swap + blocks navigation)
+  // =========================
+  const gameActiveRef = useRef(false); // true only while a round is actually running
+  const gameStartedRef = useRef(false); // mirrors gameStarted state for event listeners
+
+  useEffect(() => {
+    gameStartedRef.current = gameStarted;
+  }, [gameStarted]);
+
   /* bot games */
 const [bots, setBots] = useState([]);
 const generateBots = () => {
@@ -139,6 +150,11 @@ useEffect(() => {
 
 //////
 const handleGameStarted = () => {
+  // 🔒 GUARD: agar round already active hai to dubara reset mat karo
+  // (duplicate "game_started" event se bots/timer beech round me change nahi honge)
+  if (gameActiveRef.current) return;
+  gameActiveRef.current = true;
+
   setGameTime(45);
   //setGameStarted(true);
   setWinner(null);
@@ -187,6 +203,8 @@ useEffect(() => {
   };*/
 
 const handleGameEnd = (data) => {
+  gameActiveRef.current = false; // round ended -> bots can regenerate on next start
+
   setWinner(data?.winner || null);
   setRewardCoins(data?.rewardCoins || 0);
   setGameStarted(false);
@@ -229,6 +247,76 @@ const handleGameEnd = (data) => {
     });
   };
 }, [roomId]);
+
+
+  // =========================
+  // 🚧 NAVIGATION GUARD — game chalte time page leave block karo
+  // =========================
+
+  // 1️⃣ Tab close / refresh warning
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (gameStartedRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () =>
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
+
+  // 2️⃣ Browser BACK button block
+  useEffect(() => {
+    const blockBack = () => {
+      if (gameStartedRef.current) {
+        const confirmLeave = window.confirm(
+          "Game abhi chal raha hai! Kya aap page chhodna chahte hain? Progress/entry loss ho sakta hai."
+        );
+
+        if (!confirmLeave) {
+          // wapas isi page pe rok do
+          window.history.pushState(null, "", window.location.href);
+        } else {
+          gameActiveRef.current = false;
+          navigate(-1);
+        }
+      }
+    };
+
+    // ek extra history entry daal do taaki back button pehle usko hit kare
+    window.history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", blockBack);
+
+    return () => window.removeEventListener("popstate", blockBack);
+  }, [navigate]);
+
+  // 3️⃣ Header/Footer ya kisi bhi <Link>/<a> click ko intercept karo jab game chal raha ho
+  useEffect(() => {
+    const handleClickCapture = (e) => {
+      if (!gameStartedRef.current) return;
+
+      const link = e.target.closest("a[href]");
+      if (!link) return;
+
+      // agar kisi link pe explicitly data-allow-nav diya ho to usko chhod do
+      if (link.dataset.allowNav) return;
+
+      const confirmLeave = window.confirm(
+        "Game abhi chal raha hai! Is page se jaane par aap round miss kar sakte hain. Continue?"
+      );
+
+      if (!confirmLeave) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    document.addEventListener("click", handleClickCapture, true);
+    return () =>
+      document.removeEventListener("click", handleClickCapture, true);
+  }, []);
 
 
   // =========================
@@ -583,15 +671,6 @@ const myScore =
 )}
 
   {/* WINNER POPUP */}
-  {/*winner?.userId?.startsWith("bot_") ? (
-  <p className="text-zinc-400">
-    Practice Round Complete
-  </p>
-) : (
-  <p className="text-green-400">
-  +{winner?.rewardCoins || 0} Coins Reward
-</p>
-)*/}
   {winner && (
     <div
       className="
@@ -679,9 +758,12 @@ const myScore =
         if (prev <= 1) {
           clearInterval(timer);
 
-          // Open next round
+          // Close popup + reset local state
           setWinner(null);
           setRewardCoins(0);
+
+          // ✅ FIX: actually start the next round on the server
+          //socket.emit("start_game", { roomId });
 
           return 0;
         }

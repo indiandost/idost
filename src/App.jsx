@@ -58,6 +58,7 @@ import HireMeDirectory from "./pages/HireMeDirectory";
 import HireMeProfile from "./pages/HireMeProfile";
 import HireMeAdmin from "./pages/HireMeAdmin";
 import HireRequests from "./pages/HireRequests";
+import Toaster from "react-hot-toast";
 import {
   Home as HomeIcon,
   Users,
@@ -89,8 +90,8 @@ function PrivateRoute({ children }) {
   const user = localStorage.getItem("user");
   return user ? children : <Navigate to="/login" />;
 }
-const user = JSON.parse(localStorage.getItem("user") || "null");
-const viewer = user?.srno || 0;
+//const user = JSON.parse(localStorage.getItem("user") || "null");
+//const viewer = user?.srno || 0;
 // 🔝 Navbar
 function Navbar({
   menuOpen,
@@ -101,7 +102,7 @@ function Navbar({
   setSearch
 }) {
   const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem("user") || "null");
+  const user = JSON.parse(localStorage.getItem("user") || "null");
 const viewer = user?.srno || 0;
  const token = localStorage.getItem("token");
  // const [searchOpen, setSearchOpen] = useState(false);
@@ -636,17 +637,20 @@ function BottomNav({ setMenuOpen, setSearchOpen, setSearch }) {
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const token = localStorage.getItem("token"); 
   const [unreadCount, setUnreadCount] = useState(0);
- useEffect(() => {
+
+useEffect(() => {
+  // User not logged in
+  if (!token) return;
   const fetchUnreadCount = async () => {
     try {
       const res = await fetch(`${API}/api/chat/unread-count`, {
         headers: {
-          Authorization: `Bearer ${token}`,
-        },
+          Authorization: `Bearer ${token}`
+        }
       });
+      if (!res.ok) return;
       const data = await res.json();
-      setUnreadCount(data.unreadCount);
-      //console.log('unread message -'+ data.unreadCount);
+      setUnreadCount(data.count || 0);
     } catch (err) {
       console.error(err);
     }
@@ -791,7 +795,7 @@ function BottomNav({ setMenuOpen, setSearchOpen, setSearch }) {
 }
 
 export default function App() {
-  console.log("APP RENDER");
+  //console.log("APP RENDER");
   
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -924,11 +928,9 @@ useEffect(() => {
     try {
       // Prevent asking again
       const permissionAsked = localStorage.getItem("perm_done");
-
       if (permissionAsked) {
         return;
       }
-
       const isNative =
         Capacitor.isNativePlatform &&
         Capacitor.isNativePlatform();
@@ -1015,13 +1017,14 @@ useEffect(() => {
 
   askPermissions();
 }, []);
-
+/*
 const permissionAsked = localStorage.getItem("perm_done");
 
 if (!permissionAsked) {
   // ask permissions
   localStorage.setItem("perm_done", "1");
 }
+  */
   //check meeting
   /*useEffect(() => {
 
@@ -1048,7 +1051,7 @@ if (!permissionAsked) {
 */
 //battel invitation
 useEffect(() => {
-  socket.on("battleInvite", ({ battleId }) => {
+  const handleBattleInvite = ({ battleId }) => {
     if (
       window.confirm(
         "⚔️ New Quiz Battle Challenge"
@@ -1056,26 +1059,28 @@ useEffect(() => {
     ) {
       navigate("/quiz-battles");
     }
-  });
+  };
 
-  socket.on("battleAccepted", () => {
+  const handleBattleAccepted = () => {
     alert(
       "✅ Your battle was accepted"
     );
-  });
+  };
 
-  socket.on("battleRejected", () => {
-
+  const handleBattleRejected = () => {
     alert(
       "❌ Your battle was rejected"
     );
+  };
 
-  });
+  socket.on("battleInvite", handleBattleInvite);
+  socket.on("battleAccepted", handleBattleAccepted);
+  socket.on("battleRejected", handleBattleRejected);
+
   return () => {
-    socket.off("battleInvite");
-    socket.off("battleAccepted");
-    socket.off("battleRejected");
-
+    socket.off("battleInvite", handleBattleInvite);
+    socket.off("battleAccepted", handleBattleAccepted);
+    socket.off("battleRejected", handleBattleRejected);
   };
 }, [navigate]);
 
@@ -1092,6 +1097,21 @@ useEffect(() => {
 
     return () => {
       window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
+
+// 🔊 create notification audio ONCE
+  const notificationAudioRef = useRef(null);
+
+  useEffect(() => {
+    notificationAudioRef.current = new Audio(notificationSound);
+
+    return () => {
+      if (notificationAudioRef.current) {
+        notificationAudioRef.current.pause();
+        notificationAudioRef.current.currentTime = 0;
+        notificationAudioRef.current = null;
+      }
     };
   }, []);
 
@@ -1119,12 +1139,15 @@ useEffect(() => {
         return;
       }
 
-const audio = new Audio(notificationSound);
-audio.play().catch(() => {});
+      // ✅ reuse single Audio instance instead of creating a new one every message
+      if (notificationAudioRef.current) {
+        notificationAudioRef.current.currentTime = 0;
+        notificationAudioRef.current.play().catch(() => {});
+      }
 
       try {
-        const res = await fetch(`${API}/users/${data.from}`,{
-           headers: {Authorization: `Bearer ${token}`}
+        const res = await fetch(`${API}/users/${data.from}`, {
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         const user = await res.json();
@@ -1138,7 +1161,6 @@ audio.play().catch(() => {});
       }
     };
     socket.on("receiveMessage", handleMessageNotification);
-
     return () => {
       socket.off("receiveMessage", handleMessageNotification);
     };
@@ -1364,15 +1386,14 @@ useEffect(() => {
     return () => window.removeEventListener("beforeunload", cleanup);
   }, []);
 
+const missedCallTimeoutRef = useRef(null);
+
   useEffect(() => {
     const incomingHandler = (data) => {
-      console.log(
-      "INCOMING", data,  "isInCall:",  localStorage.getItem("isInCall")
-    );
+      console.log("INCOMING", data, "isInCall:", localStorage.getItem("isInCall"));
 
       // ❌ only REAL busy check
       const isBusy = localStorage.getItem("isInCall") === "1";
-
       if (isBusy) {
         socket.emit("rejectCall", {
           from: data.from,
@@ -1382,35 +1403,34 @@ useEffect(() => {
         return;
       }
 
+      // ✅ clear any previous pending missed-call timer before starting a new call
+      if (missedCallTimeoutRef.current) {
+        clearTimeout(missedCallTimeoutRef.current);
+        missedCallTimeoutRef.current = null;
+      }
+
       // ✅ create unique call
-      //const callId = `${data.from}_${data.to}_${Date.now()}`;
-        const callData = {
-          ...data,
-          callId: data.callId || `${data.from}_${data.to}_${Date.now()}`,
-        };
+      const callData = {
+        ...data,
+        callId: data.callId || `${data.from}_${data.to}_${Date.now()}`,
+        uiKey: Date.now(), // used as React key to force remount, not a second state update
+      };
 
       incomingCallRef.current = callData;
-      // 🔥 IMPORTANT: force state update
-     // setIncomingCall(null); // reset first
-      setIncomingCall({
-          ...callData,
-          uiKey: Date.now(), // force re-render
-        });
-      setTimeout(() => {
-        setIncomingCall(callData);
-      }, 10);
+
+      // ✅ single state update — no need for a second setTimeout-delayed call
+      setIncomingCall(callData);
 
       // ringtone
       stopRingtone();
-
       if (ringtoneRef.current) {
         ringtoneRef.current.loop = true;
         ringtoneRef.current.play().catch(() => {});
       }
 
       // missed call timer
-      const currentCallId = data.callId;
-      setTimeout(() => {
+      const currentCallId = callData.callId;
+      missedCallTimeoutRef.current = setTimeout(() => {
         if (incomingCallRef.current?.callId === currentCallId) {
           socket.emit("sendMessage", {
             from: data.from,
@@ -1424,6 +1444,8 @@ useEffect(() => {
           setIncomingCall(null);
           incomingCallRef.current = null;
         }
+
+        missedCallTimeoutRef.current = null;
       }, 30000);
     };
 
@@ -1431,6 +1453,11 @@ useEffect(() => {
 
     return () => {
       socket.off("incomingCall", incomingHandler);
+
+      if (missedCallTimeoutRef.current) {
+        clearTimeout(missedCallTimeoutRef.current);
+        missedCallTimeoutRef.current = null;
+      }
     };
   }, []);
 
@@ -1460,6 +1487,8 @@ useEffect(() => {
   }
 
   return (
+    <>
+     <Toaster position="top-center" />
     <div className="min-h-screen bg-gray-900 flex flex-col">
       {/* search function */}
       {!shouldHideLayout && <Navbar
@@ -1702,7 +1731,7 @@ useEffect(() => {
       {/* 📞 GLOBAL CALL POPUP (FIXED POSITION) */}
 
       {incomingCall && (
-        <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-50">
+        <div key={incomingCall.uiKey} className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-50">
           <h2 className="text-white text-xl">
             📞 Incoming {incomingCall.type} call
           </h2>
@@ -1860,5 +1889,6 @@ useEffect(() => {
         </div>
       )}
     </div>
+    </>
   );
 }

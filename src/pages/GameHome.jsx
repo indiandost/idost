@@ -24,28 +24,20 @@ export default function Home() {
   // GET ROOMS
   // =========================
   const getRooms = async () => {
-
     try {
-
       const res = await fetch(
         `${API}/api/game/rooms`
       );
-
       const data = await res.json();
-
       setRooms(data.rooms || []);
-
     } catch (err) {
-
       console.log(err);
     }
   };
 
 
   useEffect(() => {
-
     getRooms();
-
   }, []);
 
 
