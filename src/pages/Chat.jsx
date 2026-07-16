@@ -16,25 +16,29 @@ import AgoraRTC from "agora-rtc-sdk-ng";
 import { Helmet } from "react-helmet-async";
 
 import socket from "../socket";
-
+import { useWebrtcCall } from "../context/WebrtcCallContext";
 AgoraRTC.setLogLevel(2);
 
 export default function Chat() {
   const navigate = useNavigate();
   const { id: friendId } = useParams();
-const isConnectedRef = useRef(false);
+  const isConnectedRef = useRef(false);
   const location = useLocation();
-const { callStartRef } = useAgoraCall(friendId);
+  const { callStartRef } = useAgoraCall(friendId);
   const myId = JSON.parse(localStorage.getItem("user"))?.srno;
   const token = localStorage.getItem("token"); 
-    const callTypeRef = useRef("audio");
+  const callTypeRef = useRef("audio");
   const billingIntervalRef = useRef(null);
   const isCallerRef = useRef(false);  //for only caller's coins reduce
+
+  // ✅ FRIEND KA NAAM (chat header/messages se already pata chal raha hoga)
+  const [friendName, setFriendName] = useState("");
+
   // =========================
   // MESSAGES
   // =========================
   const { messages, sendMessage } = useChatMessages(friendId);
-
+  const { startWebrtcCall } = useWebrtcCall(); 
   // =========================
   // AGORA
   // =========================
@@ -57,6 +61,28 @@ const { callStartRef } = useAgoraCall(friendId);
     isMuted,
     isCameraOn,
   } = useAgoraCall(friendId);
+
+  // ✅ FRIEND KI PROFILE INFO FETCH (naam WebRTC call popup me dikhane ke liye)
+  useEffect(() => {
+    if (!friendId || !token) return;
+
+    const fetchFriendInfo = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/users/${friendId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const data = await res.json();
+        setFriendName(data?.name || "");
+      } catch (err) {
+        console.log("Friend info fetch error:", err);
+      }
+    };
+
+    fetchFriendInfo();
+  }, [friendId, token]);
 
   //auto remove url query parameters
   useEffect(() => {
@@ -239,11 +265,7 @@ const startCallBilling = () => {
       overflow-hidden
     "
     >
-      {/* HEADER    flex flex-col
-      h-screen
-      bg-black
-      text-white
-      overflow-hidden*/}
+      {/* HEADER */}
       <ChatHeader
         token={token}
          onAudioCall={() => {
@@ -257,8 +279,20 @@ const startCallBilling = () => {
           isCallerRef.current = true;
           startCall("video");
         }}
+        // ✅ WebRTC ke liye — friendId aur friendName use kiya    
+        onWebrtcAudioCall={() =>
+          startWebrtcCall(friendId, friendName, "audio")
+        }
+        onWebrtcVideoCall={() =>
+          startWebrtcCall(friendId, friendName, "video")
+        }  
       />
-
+ {/* onWebrtcAudioCall={() =>
+          startWebrtcCall(friendId, friendName, "audio")
+        }
+        onWebrtcVideoCall={() =>
+          startWebrtcCall(friendId, friendName, "video")
+        }*/} 
       {/* VIDEO */}
       <VideoCall
         localVideoRef={localVideoRef}

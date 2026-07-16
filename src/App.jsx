@@ -58,7 +58,7 @@ import HireMeDirectory from "./pages/HireMeDirectory";
 import HireMeProfile from "./pages/HireMeProfile";
 import HireMeAdmin from "./pages/HireMeAdmin";
 import HireRequests from "./pages/HireRequests";
-import Toaster from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";   // ✅ dono ek saath import
 import {
   Home as HomeIcon,
   Users,
@@ -83,6 +83,7 @@ import notificationSound from "./assets/sounds/notification.mp3";
 //import notificationSound2 from "./assets/sounds/notification2.mp3";
 import notificationSound2 from "./assets/sounds/notification-mini.mp3";
 import { AdMob } from "@capacitor-community/admob";
+import { WebrtcCallProvider } from "./context/WebrtcCallContext"; //web RTC
 
 const API = import.meta.env.VITE_API_URL;
 // 🔐 Protected Route
@@ -199,7 +200,7 @@ const loadPendingQuizCount = async () => {
 useEffect(() => {
 
    const rewardHandler=(data)=>{
-      toast.success(`+${data.coins} Coins`);
+      toast.success(`+${data.coins} Coins`); 
    };
 
    socket.on("rewardReceived",rewardHandler);
@@ -1359,17 +1360,20 @@ useEffect(() => {
     };
   }, []);
 
+  //reset ringtone
+  const resetRingtoneAudio = () => {
+  try {
+    if (ringtoneRef.current) {
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
+    }
+  } catch (err) {
+    console.log(err);
+  }
+};
   // 🔇 stop ringtone
   const stopRingtone = () => {
-    try {
-      if (ringtoneRef.current) {
-        ringtoneRef.current.pause();
-        ringtoneRef.current.currentTime = 0;
-      }
-    } catch (err) {
-      console.log(err);
-    }
-
+    resetRingtoneAudio();
     setIncomingCall(null);
   };
 
@@ -1389,77 +1393,73 @@ useEffect(() => {
 const missedCallTimeoutRef = useRef(null);
 
   useEffect(() => {
-    const incomingHandler = (data) => {
-      console.log("INCOMING", data, "isInCall:", localStorage.getItem("isInCall"));
+  const incomingHandler = (data) => {
+    console.log("INCOMING", data, "isInCall:", localStorage.getItem("isInCall"));
 
-      // ❌ only REAL busy check
-      const isBusy = localStorage.getItem("isInCall") === "1";
-      if (isBusy) {
-        socket.emit("rejectCall", {
+    // ❌ only REAL busy check
+    const isBusy = localStorage.getItem("isInCall") === "1";
+    if (isBusy) {
+      socket.emit("rejectCall", { from: data.from, to: data.to, reason: "busy" });
+      return;
+    }
+
+    // ✅ clear any previous pending missed-call timer before starting a new call
+    if (missedCallTimeoutRef.current) {
+      clearTimeout(missedCallTimeoutRef.current);
+      missedCallTimeoutRef.current = null;
+    }
+
+    // ✅ create unique call
+    const callData = {
+      ...data,
+      callId: data.callId || `${data.from}_${data.to}_${Date.now()}`,
+      uiKey: Date.now(), // used as React key to force remount, not a second state update
+    };
+
+    incomingCallRef.current = callData;
+
+    // ✅ single state update — no need for a second setTimeout-delayed call
+    setIncomingCall(callData);
+
+    // ringtone — ✅ FIX: sirf audio reset, popup ko touch nahi karega
+    resetRingtoneAudio();
+    if (ringtoneRef.current) {
+      ringtoneRef.current.loop = true;
+      ringtoneRef.current.play().catch(() => {});
+    }
+
+    // missed call timer
+    const currentCallId = callData.callId;
+    missedCallTimeoutRef.current = setTimeout(() => {
+      if (incomingCallRef.current?.callId === currentCallId) {
+        socket.emit("sendMessage", {
           from: data.from,
           to: data.to,
-          reason: "busy",
+          message: `Missed ${data.type} call`,
+          type: "call_missed",
+          createdAt: new Date().toISOString(),
         });
-        return;
+
+        // ✅ yahan stopRingtone() sahi hai — call miss ho gayi, popup band hona chahiye
+        stopRingtone();
+        incomingCallRef.current = null;
       }
 
-      // ✅ clear any previous pending missed-call timer before starting a new call
-      if (missedCallTimeoutRef.current) {
-        clearTimeout(missedCallTimeoutRef.current);
-        missedCallTimeoutRef.current = null;
-      }
+      missedCallTimeoutRef.current = null;
+    }, 30000);
+  };
 
-      // ✅ create unique call
-      const callData = {
-        ...data,
-        callId: data.callId || `${data.from}_${data.to}_${Date.now()}`,
-        uiKey: Date.now(), // used as React key to force remount, not a second state update
-      };
+  socket.on("incomingCall", incomingHandler);
 
-      incomingCallRef.current = callData;
+  return () => {
+    socket.off("incomingCall", incomingHandler);
 
-      // ✅ single state update — no need for a second setTimeout-delayed call
-      setIncomingCall(callData);
-
-      // ringtone
-      stopRingtone();
-      if (ringtoneRef.current) {
-        ringtoneRef.current.loop = true;
-        ringtoneRef.current.play().catch(() => {});
-      }
-
-      // missed call timer
-      const currentCallId = callData.callId;
-      missedCallTimeoutRef.current = setTimeout(() => {
-        if (incomingCallRef.current?.callId === currentCallId) {
-          socket.emit("sendMessage", {
-            from: data.from,
-            to: data.to,
-            message: `Missed ${data.type} call`,
-            type: "call_missed",
-            createdAt: new Date().toISOString(),
-          });
-
-          stopRingtone();
-          setIncomingCall(null);
-          incomingCallRef.current = null;
-        }
-
-        missedCallTimeoutRef.current = null;
-      }, 30000);
-    };
-
-    socket.on("incomingCall", incomingHandler);
-
-    return () => {
-      socket.off("incomingCall", incomingHandler);
-
-      if (missedCallTimeoutRef.current) {
-        clearTimeout(missedCallTimeoutRef.current);
-        missedCallTimeoutRef.current = null;
-      }
-    };
-  }, []);
+    if (missedCallTimeoutRef.current) {
+      clearTimeout(missedCallTimeoutRef.current);
+      missedCallTimeoutRef.current = null;
+    }
+  };
+}, []);
 
   // ❌ ALL STOP EVENTS
   useEffect(() => {
@@ -1488,18 +1488,18 @@ const missedCallTimeoutRef = useRef(null);
 
   return (
     <>
-     <Toaster position="top-center" />
+   <WebrtcCallProvider>
+   <Toaster position="top-center" />
     <div className="min-h-screen bg-gray-900 flex flex-col">
       {/* search function */}
       {!shouldHideLayout && <Navbar
-  menuOpen={menuOpen}
-  setMenuOpen={setMenuOpen}
-  searchOpen={searchOpen}
-  setSearchOpen={setSearchOpen}
-  search={search}
-  setSearch={setSearch}
-/>}
-
+        menuOpen={menuOpen}
+        setMenuOpen={setMenuOpen}
+        searchOpen={searchOpen}
+        setSearchOpen={setSearchOpen}
+        search={search}
+        setSearch={setSearch}
+      />}
 
       <div className="flex-grow">
        <HelmetProvider>
@@ -1725,7 +1725,7 @@ const missedCallTimeoutRef = useRef(null);
         </HelmetProvider>
       </div>
       {/*!shouldHideLayout && <BottomNav  setMenuOpen={setMenuOpen} />*/}
- <BottomNav  setMenuOpen={setMenuOpen} 
+    <BottomNav  setMenuOpen={setMenuOpen} 
       setSearchOpen={setSearchOpen}
       setSearch={setSearch} />
       {/* 📞 GLOBAL CALL POPUP (FIXED POSITION) */}
@@ -1799,13 +1799,13 @@ const missedCallTimeoutRef = useRef(null);
             {/* ================= REJECT ================= */}
             <button
               className="
-    bg-red-500
-    hover:bg-red-600
-    px-5 py-2
-    rounded-lg
-    text-white
-    font-semibold
-  "
+              bg-red-500
+              hover:bg-red-600
+              px-5 py-2
+              rounded-lg
+              text-white
+              font-semibold
+            "
               onClick={() => {
                 try {
                   if (!incomingCall) return;
@@ -1889,6 +1889,7 @@ const missedCallTimeoutRef = useRef(null);
         </div>
       )}
     </div>
+    </WebrtcCallProvider>
     </>
   );
 }

@@ -7,9 +7,8 @@ import cors from "cors";
 import http from "http";
 
 import { Server } from "socket.io";
-
+import webrtcCallSocket, { startWebrtcCallSweep } from "./sockets/webrtcCallSocket.js";
 import chatSocket from "./sockets/chatSocket.js";
-
 // ✅ Routes
 import users from "./users.js"; //for socket users
 import usersRoutes from "./routes/users.js";
@@ -67,6 +66,7 @@ import dotenv from "dotenv";
 import db from "./db.js";
 
 import postRoutes from "./routes/posts.js";
+import mergeRoutes from "./routes/mergeGameRoutes.js";
 
 // 🔥 FIX __dirname for ES Modules
 
@@ -286,7 +286,7 @@ app.use("/api/jam-room", jamRoutes);
 app.use("/api/quiz", quizRoutes);
 app.use("/hireme",hiremeRoutes);
 app.use("/reward-ad", rewardAdsRoutes);
-
+app.use("/merge", mergeRoutes);
 // =============================
 
 // ✅ TEST API
@@ -328,7 +328,7 @@ const io = new Server(server, {
 
 // IMPORTANT
 app.set("io", io);
-
+let sweepStarted = false;
 // =============================
 // SOCKET CONNECTION
 // =============================
@@ -338,6 +338,11 @@ io.on("connection", (socket) => {
 
   // Register all socket modules
   chatSocket(io, socket, db);
+  webrtcCallSocket(io, socket, users); //web rtc 
+   if (!sweepStarted) {
+    sweepStarted = true;
+    startWebrtcCallSweep();
+  }
   jamRoomSocket(io, socket);
   colorCrashSocket(io, socket);
 
@@ -542,171 +547,3 @@ process.on(
     );
   }
 );
-
-// 👇 attach socket.io
-
-/*const io = new Server(server, {
-
-  pingTimeout: 60000,
-
-  pingInterval: 25000,
-
-  cors: {
-
-    origin: "*"
-
-  }
-
-});*/
-
-/*const io = new Server(server, {
-
-  cors: {
-
-    origin: "*",
-
-    methods: ["GET", "POST"]
-
-  },
-
-  transports: ["websocket", "polling"],
-
-  pingTimeout: 60000,
-
-  pingInterval: 25000
-
-});
-// IMPORTANT
-app.set("io", io);
-chatSocket(io, db);
-  jamRoomSocket(io);
-if (!global.__socket_initialized__) {
-  global.__socket_initialized__ = true;
-  colorCrashSocket(io);
-}
-// 👇 socket connection
-
-const users = {}; // userId -> socketId
-
-io.on("connection", (socket) => {
-console.log("🔌 Connected:", socket.id);
-// ===================
-// GAME SOCKET
-// ===================
-//colorCrashSocket(io);
- // 🔥 REMOVE OLD LISTENERS IF ANY (fix leak)
-  //socket.removeAllListeners();
- // 🎁 GIFT HANDLER
-  socket.on("giftSent", (data) => {
-    console.log("🎁 Gift received on server:", data);
-
-    // send to room
-    io.to(data.roomId).emit("giftReceived", data);
-  });
-  // =========================
-
-  // ✅ REGISTER USER
-
-  // =========================
-
-  socket.on("register", (userId) => {
-
-    const id = Number(userId);
-
-    // prevent duplicate register
-
-    if (socket.userId === id) {
-
-      return;
-
-    }
-
-    // save on socket
-
-    socket.userId = id;
-
-    // map user => socket
-
-    users[id] = socket.id;
-
-    // optional private room
-
-    socket.join(`user-${id}`);
-
-    // broadcast online users
-
-    io.emit("onlineUsers", Object.keys(users));
-
-    console.log("👤 User mapped:", id, "=>", socket.id);
-
-  });
-
-
-
-  // =========================
-
-  // ✅ DISCONNECT
-
-  // =========================
-
-  socket.on("disconnect", () => {
-
-    console.log("🔌 Disconnected:", socket.id);
-
-    // remove mapped user
-
-    if (socket.userId) {
-
-      delete users[socket.userId];
-
-      io.emit("onlineUsers", Object.keys(users));
-
-    }
-
-  });
-
-});
-
-// 👇 VERY IMPORTANT (use server.listen, not app.listen)
-
-server.listen(5000, "0.0.0.0", () => {
-
-  console.log("Server running on 5000");
-
-});
-
-
-
-server.timeout = 300000;
-
-server.keepAliveTimeout = 300000;
-
-server.headersTimeout = 300000;
-
-// 👉 Initialize chat socket
-
-//chatSocket(io);
-
-
-
-
-
-// =============================
-
-// 🚀 START SERVER
-
-// =============================
-
-/*server.listen(5000, () => {
-
-  console.log("Server running on http://localhost:5000 🚀");
-
-});*/
-
-/*app.listen(5000, "0.0.0.0", () => {
-
-  console.log("Server running on port 5000");
-
-});
-
-*/

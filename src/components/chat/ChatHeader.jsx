@@ -10,6 +10,8 @@ export default function ChatHeader({
   token,
   onAudioCall,
   onVideoCall,
+  onWebrtcAudioCall = () => {},  
+  onWebrtcVideoCall = () => {}
   }) {
 const onlineUsers = useContext(OnlineUsersContext);
   const { id: friendId } =  useParams();
@@ -178,6 +180,23 @@ const onlineUsers = useContext(OnlineUsersContext);
             🎥
           </span>
         </button>
+        {/* ✅ NAYA WebRTC audio button */}
+      <button
+        onClick={onWebrtcAudioCall}
+        className="w-11 h-11 rounded-full bg-green-500/20 hover:bg-green-500/30 flex items-center justify-center transition"
+        title="Free WebRTC Audio Call"
+      >
+        <span className="text-lg">📞</span>
+      </button>
+
+      {/* ✅ NAYA WebRTC video button */}
+      <button
+        onClick={onWebrtcVideoCall}
+        className="w-11 h-11 rounded-full bg-blue-500/20 hover:bg-blue-500/30 flex items-center justify-center transition"
+        title="Free WebRTC Video Call"
+      >
+        <span className="text-lg">🎦</span>
+      </button>
 
          </div>
 
