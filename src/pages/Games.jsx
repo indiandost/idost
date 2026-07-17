@@ -26,10 +26,10 @@ const games = [
     btnColor: "bg-gray-600",
   },
   {
-    name: "Coming Soon",
-    icon: "🃏",
-    desc: "New multiplayer challenges coming soon.",
-    path: "#",
+    name: "Infinity Merge",
+    icon: "🔲♾️",
+    desc: "Every merge increases your Score",
+    path: "/game-infinity",
     btnColor: "bg-gray-600",
   },
 ];

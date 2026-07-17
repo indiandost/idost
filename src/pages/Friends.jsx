@@ -47,12 +47,15 @@ const loadFriends = async (pageNum = 1, reset = false) => {
 
     const data = await res.json();
 
-    if (data.length < 10) {
-      setHasMore(false);
+   const list = Array.isArray(data) ? data : data.requests || [];
+    setRequests(list);
+    if (list.length < 10) {
+        setHasMore(false);
     }
 
     if (reset) {
-      setFriends(data);
+      const list = Array.isArray(data) ? data : data.friends || [];
+      setFriends(list);
     } else {
       setFriends(prev => [...prev, ...data]);
     }

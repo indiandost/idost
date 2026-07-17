@@ -286,7 +286,7 @@ app.use("/api/jam-room", jamRoutes);
 app.use("/api/quiz", quizRoutes);
 app.use("/hireme",hiremeRoutes);
 app.use("/reward-ad", rewardAdsRoutes);
-app.use("/merge", mergeRoutes);
+app.use("/api/merge", mergeRoutes);
 // =============================
 
 // ✅ TEST API
