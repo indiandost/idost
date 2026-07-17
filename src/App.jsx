@@ -60,6 +60,7 @@ import HireMeAdmin from "./pages/HireMeAdmin";
 import HireRequests from "./pages/HireRequests";
 import toast, { Toaster } from "react-hot-toast";   // ✅ dono ek saath import
 import GameInfinity from "./pages/GameInfinityMerge/MergeGame";
+import LudoGame from "./pages/LudoGame";
 import {
   Home as HomeIcon,
   Users,
@@ -1721,7 +1722,10 @@ const missedCallTimeoutRef = useRef(null);
              <Route path="/hireme-payment" element={<PrivateRoute> {" "} <HireMePayment /></PrivateRoute>} />
             <Route path="/admin/hire-me" element={<PrivateRoute> {" "} <HireMeAdmin /></PrivateRoute>} />
              <Route path="/hire-requests" element={<PrivateRoute> {" "} <HireRequests /></PrivateRoute>} />
-              <Route path="/game-infinity" element={<PrivateRoute> {" "} <GameInfinity /></PrivateRoute>} />
+             <Route path="/game-infinity" element={<PrivateRoute> {" "} <GameInfinity /></PrivateRoute>} />
+             <Route path="/game-infinity" element={<PrivateRoute> {" "} <GameInfinity /></PrivateRoute>} />
+             <Route path="/games/ludo"  element={<PrivateRoute> {" "}<LudoGame  socket={socket} apiBase={`${API}/api/ludo`}/></PrivateRoute>}
+      />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes></OnlineUsersContext.Provider>
         </HelmetProvider>

@@ -19,10 +19,10 @@ const games = [
     btnColor: "bg-orange-600 hover:bg-orange-700",
   },
   {
-    name: "Coming Soon",
+    name: "Luddo",
     icon: "🎲",
-    desc: "More exciting games are on the way.",
-    path: "#",
+    desc: "Play and win Coins.",
+    path: "/games/ludo",
     btnColor: "bg-gray-600",
   },
   {

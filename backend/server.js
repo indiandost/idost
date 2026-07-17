@@ -50,7 +50,7 @@ import depositRoutes from "./routes/deposit.js";
 import quizRoutes from "./routes/quiz.js";
 import hiremeRoutes from "./routes/hireme.js";
 import rewardAdsRoutes from "./routes/rewardAds.js";
-
+import { ludoRouter, registerLudoSocket } from "./controllers/ludoController.js";
 
 //import colorCrashSocket from "./sockets/colorCrashSocket.js";
 
@@ -287,6 +287,7 @@ app.use("/api/quiz", quizRoutes);
 app.use("/hireme",hiremeRoutes);
 app.use("/reward-ad", rewardAdsRoutes);
 app.use("/api/merge", mergeRoutes);
+app.use("/api/ludo", ludoRouter);
 // =============================
 
 // ✅ TEST API
@@ -345,7 +346,7 @@ io.on("connection", (socket) => {
   }
   jamRoomSocket(io, socket);
   colorCrashSocket(io, socket);
-
+  registerLudoSocket(io, socket);
   // =============================
   // GIFT
   // =============================
