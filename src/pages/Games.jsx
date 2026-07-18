@@ -23,14 +23,14 @@ const games = [
     icon: "🎲",
     desc: "Play and win Coins.",
     path: "/games/ludo",
-    btnColor: "bg-gray-600",
+    btnColor: "bg-red-600 hover:bg-red-700",
   },
   {
     name: "Infinity Merge",
     icon: "🔲♾️",
     desc: "Every merge increases your Score",
     path: "/game-infinity",
-    btnColor: "bg-gray-600",
+    btnColor: "bg-blue-600 hover:bg-blue-700",
   },
 ];
   return (

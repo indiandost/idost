@@ -18,6 +18,9 @@ const socket = io(import.meta.env.VITE_SOCKET_URL, {
    reconnectionAttempts: 50,
    reconnectionDelay: 1000,
    timeout: 20000,
+    auth: {
+    token: localStorage.getItem("token"),
+  },
 });
 
 socket.on("connect", () => {

@@ -3,14 +3,22 @@
 // React + Vite + Tailwind
 // ------------------------------------------------------------
 // USAGE:
-//   <LudoGame socket={socket} currentUser={{ userId }} apiBase="/api/ludo" />
+//   <LudoGame socket={socket} apiBase="/api/ludo" />
 //
 // ASSUMPTIONS:
 //   - `socket` is your ALREADY-CONNECTED socket.io-client instance
 //     (reuse the one your app already opens app-wide — don't create
 //     a second connection here).
-//   - Your axios/fetch call to apiBase automatically attaches auth
-//     (cookie / bearer token) the same way the rest of your app does.
+//   - IMPORTANT: wherever that socket is created (io(url, {...})),
+//     make sure you pass the JWT so the backend can authenticate the
+//     socket the same way it authenticates REST calls:
+//
+//       const socket = io(SOCKET_URL, {
+//         auth: { token: localStorage.getItem("token") },
+//       });
+//
+//     Without this, the backend has no reliable way to know which
+//     user a given socket belongs to.
 // ============================================================
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -19,7 +27,25 @@ const COLORS = ["red", "green", "yellow", "blue"];
 const COLOR_HEX = { red: "#ef4444", green: "#22c55e", yellow: "#eab308", blue: "#3b82f6" };
 const START_OFFSET = { red: 0, green: 13, yellow: 26, blue: 39 };
 const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47];
- const token = localStorage.getItem("token"); // <-- your JWT
+
+// Read the token fresh on every request instead of caching it once at
+// module-load time — a cached copy goes stale the moment the real
+// token is refreshed/rotated anywhere else in the app, which is what
+// was causing the intermittent "token expired" errors.
+function getToken() {
+  return localStorage.getItem("token");
+}
+
+// localStorage only stores strings — "user" needs to be parsed back
+// into an object before you can read .srno off it.
+function getCurrentUser() {
+  try {
+    return JSON.parse(localStorage.getItem("user"));
+  } catch {
+    return null;
+  }
+}
+
 // 52-cell common track coordinates on a 15x15 grid
 const PATH_COORDS = [
   [6, 1], [6, 2], [6, 3], [6, 4], [6, 5],
@@ -103,7 +129,6 @@ function Pawn({ row, col, color, onClick, clickable, stackIndex = 0 }) {
 
 function buildBoardCells() {
   const cells = [];
-  // 4 base quadrants
   cells.push(
     <div
       key="base-red"
@@ -132,7 +157,6 @@ function buildBoardCells() {
       style={{ top: "60%", left: "0%", width: "40%", height: "40%", background: "#dbeafe" }}
     />
   );
-  // center home triangle area
   cells.push(
     <div
       key="center"
@@ -142,7 +166,6 @@ function buildBoardCells() {
       HOME
     </div>
   );
-  // common path cells
   PATH_COORDS.forEach(([r, c], i) => {
     cells.push(
       <Cell
@@ -153,7 +176,6 @@ function buildBoardCells() {
       />
     );
   });
-  // home stretch cells
   COLORS.forEach((color) => {
     HOME_COORDS[color].forEach(([r, c], i) => {
       cells.push(<Cell key={`${color}-home-${i}`} row={r} col={c} bg={COLOR_HEX[color] + "55"} />);
@@ -163,8 +185,8 @@ function buildBoardCells() {
 }
 
 export default function LudoGame({ socket, apiBase = "/api/ludo" }) {
-  //console.log(currentUser);
-  const currentUser = localStorage.getItem("user");
+  const currentUser = useMemo(() => getCurrentUser(), []);
+
   const [screen, setScreen] = useState("lobby"); // lobby | waiting | playing | over
   const [roomCode, setRoomCode] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(4);
@@ -179,6 +201,11 @@ export default function LudoGame({ socket, apiBase = "/api/ludo" }) {
   const roomCodeRef = useRef(roomCode);
   roomCodeRef.current = roomCode;
 
+   const myColorRef = useRef();
+
+useEffect(()=>{
+    myColorRef.current=myColor;
+},[myColor]);
   useEffect(() => {
     if (!socket) return;
 
@@ -186,6 +213,7 @@ export default function LudoGame({ socket, apiBase = "/api/ludo" }) {
       setState(s);
       setScreen(s.status === "waiting" ? "waiting" : s.status === "playing" ? "playing" : "over");
     };
+   
     const onDice = ({ color, dice, movablePawns }) => {
       setDice(dice);
       if (color === myColor) setMovablePawns(movablePawns);
@@ -193,18 +221,37 @@ export default function LudoGame({ socket, apiBase = "/api/ludo" }) {
     };
     const onMoveMade = ({ state: s }) => {
       setState(s);
-      setMovablePawns([]);
+      //setMovablePawns([]);
     };
-    const onTurnChanged = () => {
-      setDice(null);
-      setMovablePawns([]);
-    };
+const onTurnChanged = ({ turnColor }) => {
+    setDice(null);
+    setMovablePawns([]);
+
+    setState(prev => {
+        if (!prev) return prev;
+
+        return {
+            ...prev,
+            turnColor
+        };
+    });
+};
     const onGameOver = ({ winnerUserId, winnerColor }) => {
       setWinner({ userId: winnerUserId, color: winnerColor });
       setScreen("over");
     };
     const onError = ({ message }) => setError(message);
 
+    // If the socket drops and reconnects mid-game, re-announce
+    // ourselves to the room so the server can re-attach our socketId
+    // to our existing player record.
+    const onConnect = () => {
+      if (roomCodeRef.current) {
+        socket.emit("ludo:joinSocket", { roomCode: roomCodeRef.current });
+      }
+    };
+
+    socket.on("connect", onConnect);
     socket.on("ludo:state", onState);
     socket.on("ludo:diceRolled", onDice);
     socket.on("ludo:moveMade", onMoveMade);
@@ -213,6 +260,7 @@ export default function LudoGame({ socket, apiBase = "/api/ludo" }) {
     socket.on("ludo:error", onError);
 
     return () => {
+      socket.off("connect", onConnect);
       socket.off("ludo:state", onState);
       socket.off("ludo:diceRolled", onDice);
       socket.off("ludo:moveMade", onMoveMade);
@@ -224,30 +272,47 @@ export default function LudoGame({ socket, apiBase = "/api/ludo" }) {
 
   async function createRoom() {
     setError("");
-    const res = await fetch(`${apiBase}/create`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json",  Authorization: `Bearer ${token}` },
-      
-      body: JSON.stringify({ maxPlayers }),
-    }).then((r) => r.json());
-    if (!res.success) return setError(res.message);
-    await joinRoomByCode(res.roomCode);
+    try {
+      const res = await fetch(`${apiBase}/create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({ maxPlayers }),
+      }).then((r) => r.json());
+
+      if (!res.success) return setError(res.message);
+      await joinRoomByCode(res.roomCode);
+    } catch (err) {
+      console.error("createRoom error:", err);
+      setError("Could not create room");
+    }
   }
 
   async function joinRoomByCode(code) {
     setError("");
-    const res = await fetch(`${apiBase}/join`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" ,  Authorization: `Bearer ${token}`},
-      body: JSON.stringify({ roomCode: code }),
-    }).then((r) => r.json());
-    if (!res.success) return setError(res.message);
+    try {
+      const res = await fetch(`${apiBase}/join`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({ roomCode: code }),
+      }).then((r) => r.json());
 
-    setRoomCode(code);
-    setMyColor(res.color);
-    setState(res.state);
-    setScreen(res.state.status === "waiting" ? "waiting" : "playing");
-    socket.emit("ludo:joinSocket", { roomCode: code });
+      if (!res.success) return setError(res.message);
+
+      setRoomCode(code);
+      setMyColor(res.color);
+      setState(res.state);
+      setScreen(res.state.status === "waiting" ? "waiting" : "playing");
+      socket.emit("ludo:joinSocket", { roomCode: code });
+    } catch (err) {
+      console.error("joinRoomByCode error:", err);
+      setError("Could not join room");
+    }
   }
 
   function rollDice() {
@@ -258,7 +323,15 @@ export default function LudoGame({ socket, apiBase = "/api/ludo" }) {
     if (!movablePawns.includes(pawnIndex)) return;
     socket.emit("ludo:movePawn", { roomCode: roomCodeRef.current, pawnIndex });
   }
-
+const copyRoomCode = async () => {
+  try {
+    await navigator.clipboard.writeText(roomCode);
+    alert("✅ Room code copied!");
+  } catch (err) {
+    console.log(err);
+    alert("Unable to copy.");
+  }
+};
   const isMyTurn = state && state.turnColor === myColor;
 
   // ---------------- LOBBY ----------------
@@ -325,9 +398,25 @@ export default function LudoGame({ socket, apiBase = "/api/ludo" }) {
     return (
       <div className="max-w-md mx-auto p-6 bg-white rounded-2xl shadow-lg mt-8 text-center">
         <h2 className="text-xl font-bold mb-2">Waiting for players…</h2>
-        <p className="text-gray-500 mb-4">
-          Room code: <span className="font-mono font-bold">{roomCode}</span>
-        </p>
+<div className="flex items-center justify-center gap-2 mb-4">
+  <span className="text-gray-500">Room Code:</span>
+
+  <button
+    onClick={copyRoomCode}
+    className="px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 border font-mono font-bold text-indigo-600 transition"
+    title="Click to Copy"
+  >
+    {roomCode}
+  </button>
+
+  <button
+    onClick={copyRoomCode}
+    className="px-2 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
+    title="Copy"
+  >
+    📋
+  </button>
+</div>
         <div className="flex justify-center gap-3 mb-4">
           {state?.players.map((p) => (
             <div
@@ -343,6 +432,7 @@ export default function LudoGame({ socket, apiBase = "/api/ludo" }) {
           )}
         </div>
         <p className="text-sm text-gray-400">Share the room code with friends to start.</p>
+        {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
       </div>
     );
   }

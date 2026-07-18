@@ -325,7 +325,7 @@ export default function MergeGame() {
         {/* Header */}
         <div className="flex flex-col lg:flex-row justify-between items-center mb-6">
           <div>
-            <h1 className="text-4xl font-black">Infinity Merge</h1>
+            <h1 className="text-4xl font-black text-white">Infinity Merge</h1>
             <p className="text-slate-400 mt-2">
               Merge blocks • Beat today's champion • Win Coins
             </p>

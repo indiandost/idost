@@ -8,17 +8,25 @@
 //      real Promise resolving to [rows/result, fields] — standard
 //      mysql2/promise behaviour. If ../db.js already exports a
 //      mysql2/promise pool, the wrap is a no-op.
-//   2. `verifyToken` (../middlewares/auth.js) sets req.user, and
-//      getUserId() below reads srno/id/userId off it — adjust the
-//      field name if your JWT payload uses something else.
-//   3. Your socket layer authenticates the socket first and sets
-//      socket.user = { userId, sessionToken } before any ludo event
-//      fires (adjust the two spots marked "AUTH" below if your
-//      pattern is different).
-//   4. In server.js you already do something like:
+//   2. `verifyToken` (../middlewares/auth.js) is an Express-style
+//      middleware: (req, res, next) => { ... sets req.user ... }.
+//      Both the REST routes AND the socket handlers below authenticate
+//      through this SAME function now — the socket side just calls it
+//      with a fake req/res, so there is exactly one place that decides
+//      who a token belongs to.
+//   3. In server.js you already do something like:
 //         import { ludoRouter, registerLudoSocket } from "./controllers/ludoController.js";
 //         app.use("/api/ludo", ludoRouter);
 //         io.on("connection", (socket) => registerLudoSocket(io, socket));
+//   4. On the client, wherever the shared socket is created, the JWT
+//      must be sent at connect time so verifyToken has something to
+//      check:
+//         const socket = io(SOCKET_URL, {
+//           auth: { token: localStorage.getItem("token") },
+//         });
+//      If verifyToken instead expects the token as a normal
+//      `Authorization: Bearer <token>` header, that also works — the
+//      fake req below sets that header from socket.handshake too.
 // ============================================================
 
 import express from "express";
@@ -26,18 +34,66 @@ import rawDb from "../db.js";               // <-- your mysql pool/wrapper
 import rewardUser from "../utils/rewardUser.js";
 import { verifyToken } from "../middlewares/auth.js";
 
-// If ../db.js exports a callback-style mysql2 pool (mysql.createPool),
-// db.execute(sql, params) with no callback silently returns undefined
-// and never resolves -> ("Cannot read insertId", "cb is not a function").
-// Wrapping with .promise() gives every call below a real Promise.
-// If ../db.js already exports a mysql2/promise pool, rawDb.promise is
-// undefined and we just use it as-is.
 const db = typeof rawDb.promise === "function" ? rawDb.promise() : rawDb;
 
 export const ludoRouter = express.Router();
 
+// Same field-priority everywhere a user id is read off req.user /
+// socket.user, so REST and sockets can never disagree about who the
+// user is.
+function resolveUserId(payload) {
+  return payload?.srno || payload?.id || payload?.userId || null;
+}
+
 function getUserId(req) {
-  return req.user?.srno || req.user?.id || req.user?.userId || null;
+  return resolveUserId(req.user);
+}
+
+// ---------------- SOCKET AUTH (reuses verifyToken, no raw JWT here) ----------------
+// verifyToken is an Express middleware: (req, res, next). Sockets
+// don't have a real req/res, so we build the minimal fake versions it
+// needs and capture whatever it sets on req.user. Whether verifyToken
+// succeeds by calling next(), or fails by calling res.status(401).json(...),
+// this always resolves (never hangs) — with the user on success, or
+// null on failure.
+function authenticateSocket(socket) {
+  return new Promise((resolve) => {
+    const token =
+      socket.handshake?.auth?.token ||
+      (socket.handshake?.headers?.authorization || "").replace(/^Bearer\s+/i, "");
+
+    const fakeReq = {
+      headers: { authorization: token ? `Bearer ${token}` : "" },
+    };
+
+    let settled = false;
+    const finish = (user) => {
+      if (settled) return;
+      settled = true;
+      resolve(user || null);
+    };
+
+    const fakeRes = {
+      status() {
+        return this;
+      },
+      json() {
+        finish(null); // verifyToken responded with an error -> auth failed
+        return this;
+      },
+      send() {
+        finish(null);
+        return this;
+      },
+    };
+
+    try {
+      verifyToken(fakeReq, fakeRes, () => finish(fakeReq.user)); // verifyToken called next() -> success
+    } catch (err) {
+      console.error("ludo socket verifyToken threw:", err);
+      finish(null);
+    }
+  });
 }
 
 // ---------------- CONSTANTS ----------------
@@ -49,10 +105,18 @@ const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47]; // global track indices (star
 
 // ---------------- IN-MEMORY LIVE STATE ----------------
 // roomCode -> { id, maxPlayers, status, players:[{userId,color,seatNo,pawns,consecutiveSixes,socketId,active}], turnIndex, lastDice }
+// NOTE: this Map only lives in ONE process's memory. If you run this
+// behind a cluster (PM2 cluster mode, multiple dynos, etc.) or the
+// dev server restarts (nodemon) between a create and a join, the
+// second request can land on a process that never saw the room ->
+// "Room not found". If you're seeing that intermittently in dev,
+// it's almost always a nodemon restart between create and join, not
+// a logic bug. For production with multiple instances you'd want
+// this state in Redis instead of a local Map.
 const liveRooms = new Map();
 
 function genRoomCode() {
-  return "LD" + Math.random().toString(36).slice(2, 8).toUpperCase();
+  return "LD" + Math.random().toString(36).slice(2, 4).toUpperCase();
 }
 
 function freshPawns() {
@@ -195,48 +259,129 @@ ludoRouter.get("/open-rooms", async (req, res) => {
 
 // POST /api/ludo/join  { roomCode }
 ludoRouter.post("/join", verifyToken, async (req, res) => {
-  const { roomCode } = req.body;
-  const userId = getUserId(req);              // AUTH
-  const sessionToken = req.user?.sessionToken; // AUTH
-
-  const room = liveRooms.get(roomCode);
-  if (!room) return res.status(404).json({ success: false, message: "Room not found" });
-  if (room.status !== "waiting") return res.status(400).json({ success: false, message: "Room already started" });
-  if (room.players.length >= room.maxPlayers)
-    return res.status(400).json({ success: false, message: "Room is full" });
-  if (room.players.some((p) => p.userId === userId))
-    return res.status(400).json({ success: false, message: "Already joined" });
-
   try {
-    // Debit entry fee using your existing reward util (1 = debit)
-    await rewardUser(db, req.app.get("io"), userId, ENTRY_FEE, "GAME_FEES", sessionToken, 1);
+    const { roomCode } = req.body;
+
+    const userId = getUserId(req);
+    const sessionToken = req.user?.sessionToken;
+    const io = req.app.get("io");
+
+    const room = liveRooms.get(roomCode);
+
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: "Room not found",
+      });
+    }
+
+    if (room.status !== "waiting") {
+      return res.status(400).json({
+        success: false,
+        message: "Room already started",
+      });
+    }
+
+    if (room.players.length >= room.maxPlayers) {
+      return res.status(400).json({
+        success: false,
+        message: "Room is full",
+      });
+    }
+
+    if (room.players.some((p) => p.userId === userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Already joined",
+      });
+    }
+
+    // Debit Entry Fee
+    const debit = 1;
+    await rewardUser(
+      rawDb,
+      io,
+      userId,
+      ENTRY_FEE,
+      "LUDO_FEES",
+      ENTRY_FEE,
+      debit
+    );
 
     const seatNo = room.players.length;
     const color = COLORS[seatNo];
     const pawns = freshPawns();
 
     await db.execute(
-      `INSERT INTO ludo_players (room_id, user_id, seat_no, color, pawns_json, entry_debited) VALUES (?,?,?,?,?,1)`,
-      [room.id, userId, seatNo, color, JSON.stringify(pawns)]
+      `INSERT INTO ludo_players
+      (room_id,user_id,seat_no,color,pawns_json,entry_debited)
+      VALUES (?,?,?,?,?,1)`,
+      [
+        room.id,
+        userId,
+        seatNo,
+        color,
+        JSON.stringify(pawns),
+      ]
     );
 
-    room.players.push({ userId, color, seatNo, pawns, consecutiveSixes: 0, socketId: null, active: true });
+    room.players.push({
+      userId,
+      color,
+      seatNo,
+      pawns,
+      consecutiveSixes: 0,
+      socketId: null,
+      active: true,
+    });
 
-    if (room.players.length === room.maxPlayers) {
-      room.status = "playing";
-      await db.execute(`UPDATE ludo_rooms SET status='playing' WHERE id = ?`, [room.id]);
-    }
-
-    const io = req.app.get("io");
+    // Send latest room state
     io.to(roomCode).emit("ludo:state", publicState(room));
 
-    res.json({ success: true, roomCode, color, seatNo, state: publicState(room) });
+    // Start game automatically
+    if (room.players.length === room.maxPlayers) {
+
+      room.status = "playing";
+      room.turnIndex = 0;
+      room.lastDice = null;
+
+      await db.execute(
+        `UPDATE ludo_rooms
+         SET status='playing'
+         WHERE id=?`,
+        [room.id]
+      );
+
+      io.to(roomCode).emit("ludo:state", publicState(room));
+
+     /* io.to(roomCode).emit("ludo:gameStarted", {
+        state: publicState(room),
+      });
+*/
+      io.to(roomCode).emit("ludo:turnChanged", {
+        turnColor: room.players[0].color,
+      });
+    }
+
+    return res.json({
+      success: true,
+      roomCode,
+      color,
+      seatNo,
+      state: publicState(room),
+    });
+
   } catch (err) {
-    console.error("ludo/join error:", err);
-    res.status(500).json({ success: false, message: "Join failed (entry fee debit may have failed)" });
+
+    console.error("========== LUDO JOIN ERROR ==========");
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 });
-
 // GET /api/ludo/room/:roomCode
 ludoRouter.get("/room/:roomCode", async (req, res) => {
   const room = liveRooms.get(req.params.roomCode);
@@ -248,9 +393,18 @@ ludoRouter.get("/room/:roomCode", async (req, res) => {
 // SOCKET HANDLERS
 // ============================================================
 
-export function registerLudoSocket(io, socket) {
-  const userId = socket.user?.userId || socket.handshake?.auth?.userId; // AUTH
-  const sessionToken = socket.user?.sessionToken || socket.handshake?.auth?.sessionToken; // AUTH
+export async function registerLudoSocket(io, socket) {
+  // Authenticate via the SAME verifyToken middleware the REST routes
+  // use — no separate JWT logic to keep in sync.
+  const user = await authenticateSocket(socket);
+  const userId = resolveUserId(user);
+  const sessionToken = user?.sessionToken || null;
+
+  if (!userId) {
+    socket.emit("ludo:error", { message: "Socket authentication failed — please reconnect and try again" });
+    socket.disconnect(true);
+    return;
+  }
 
   socket.on("ludo:joinSocket", ({ roomCode }) => {
     const room = liveRooms.get(roomCode);
@@ -262,6 +416,20 @@ export function registerLudoSocket(io, socket) {
     player.socketId = socket.id;
     player.active = true;
     socket.join(roomCode);
+    if (
+    room.status === "playing" &&
+    room.players.every(p => p.socketId)
+) {
+
+   /* io.to(roomCode).emit("ludo:gameStarted", {
+        state: publicState(room)
+    });
+*/
+    io.to(roomCode).emit("ludo:turnChanged", {
+        turnColor: room.players[room.turnIndex].color
+    });
+
+}
     socket.data.ludoRoomCode = roomCode;
 
     io.to(roomCode).emit("ludo:state", publicState(room));
@@ -276,6 +444,7 @@ export function registerLudoSocket(io, socket) {
 
     const dice = 1 + Math.floor(Math.random() * 6);
     room.lastDice = dice;
+    io.to(roomCode).emit("ludo:state", publicState(room));
 
     if (dice === 6) player.consecutiveSixes += 1;
     else player.consecutiveSixes = 0;
@@ -342,7 +511,7 @@ export function registerLudoSocket(io, socket) {
       ]);
 
       try {
-        await rewardUser(db, io, userId, WINNER_REWARD, "GAME_WINNING", sessionToken, 0); // 0 = credit
+        await rewardUser(rawDb, io, userId, WINNER_REWARD, "LUDO_WINNING", WINNER_REWARD, 0); // 0 = credit
       } catch (err) {
         console.error("ludo winner reward error:", err);
       }
@@ -380,7 +549,7 @@ export function registerLudoSocket(io, socket) {
         room.id,
       ]).catch((e) => console.error(e));
 
-      rewardUser(db, io, winner.userId, WINNER_REWARD, "GAME_WINNING", sessionToken, 0).catch((e) =>
+      rewardUser(rawDb, io, winner.userId, WINNER_REWARD, "LUDO_WINNING", WINNER_REWARD, 0).catch((e) =>
         console.error("ludo disconnect reward error:", e)
       );
 
