@@ -86,6 +86,8 @@ import notificationSound from "./assets/sounds/notification.mp3";
 import notificationSound2 from "./assets/sounds/notification-mini.mp3";
 import { AdMob } from "@capacitor-community/admob";
 import { WebrtcCallProvider } from "./context/WebrtcCallContext"; //web RTC
+import { LudoActiveGameProvider } from "./context/LudoActiveGameContext";
+import FloatingLudoBadge from "./components/FloatingLudoBadge";
 
 const API = import.meta.env.VITE_API_URL;
 // 🔐 Protected Route
@@ -1490,6 +1492,7 @@ const missedCallTimeoutRef = useRef(null);
 
   return (
     <>
+   <LudoActiveGameProvider>
    <WebrtcCallProvider>
    <Toaster position="top-center" />
     <div className="min-h-screen bg-gray-900 flex flex-col">
@@ -1894,8 +1897,10 @@ const missedCallTimeoutRef = useRef(null);
           </div>
         </div>
       )}
+     <FloatingLudoBadge />
     </div>
     </WebrtcCallProvider>
+    </LudoActiveGameProvider>
     </>
   );
 }

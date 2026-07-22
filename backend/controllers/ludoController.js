@@ -103,6 +103,14 @@ const COLORS = ["red", "green", "yellow", "blue"];
 const START_OFFSET = { red: 0, green: 13, yellow: 26, blue: 39 };
 const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47]; // global track indices (start + star squares)
 
+// ✅ NEW: how long a disconnected player has to reconnect before the
+// game is declared abandoned in favour of the remaining player(s).
+// Covers exactly the "phone call / accidental nav" scenario — without
+// this, ANY disconnect that drops active players to 1 ends the game
+// and pays out the 500-coin reward INSTANTLY, even for a 3-second
+// network blip.
+const RECONNECT_GRACE_MS = 60000; // 60 seconds
+
 // ---------------- IN-MEMORY LIVE STATE ----------------
 // roomCode -> { id, maxPlayers, status, players:[{userId,color,seatNo,pawns,consecutiveSixes,socketId,active}], turnIndex, lastDice }
 // NOTE: this Map only lives in ONE process's memory. If you run this
@@ -142,6 +150,11 @@ function getValidPawnMoves(pawns, dice) {
 }
 
 // Applies a move server-side, handles capture + finish detection.
+// NOTE: this does NOT implement the "blockade" rule (2+ same-color
+// pawns stacked on one cell being un-capturable) — every opponent
+// pawn found on the landed cell gets sent home unconditionally. Most
+// casual Ludo implementations skip blockades entirely so this may be
+// intentional; flagging it here in case you want that rule added.
 function applyMove(room, playerColor, pawnIndex, dice) {
   const player = room.players.find((p) => p.color === playerColor);
   const pawns = player.pawns;
@@ -206,6 +219,70 @@ async function persistRoomSnapshot(room) {
   }
 }
 
+// ✅ NEW: instead of ending the game the instant only one active
+// player remains, wait RECONNECT_GRACE_MS for someone to come back
+// via ludo:joinSocket. If nobody does, THEN settle the game.
+function scheduleGameOverIfStillAbandoned(io, room) {
+  if (room.abandonTimeout) return; // already counting down, don't restart it
+
+  room.abandonTimeout = setTimeout(async () => {
+    room.abandonTimeout = null;
+
+    // room may have been deleted/finished normally while we waited
+    const currentRoom = liveRooms.get(room.roomCode);
+    if (!currentRoom || currentRoom.status !== "playing") return;
+
+    const activePlayers = currentRoom.players.filter((p) => p.active);
+
+    // enough players reconnected during the grace period — carry on
+    if (activePlayers.length > 1) return;
+
+    if (activePlayers.length === 1) {
+      const winner = activePlayers[0];
+      currentRoom.status = "completed";
+
+      try {
+        await db.execute(
+          `UPDATE ludo_rooms SET status='completed', winner_user_id=? WHERE id=?`,
+          [winner.userId, currentRoom.id]
+        );
+        // ✅ FIX: 6th arg is the reference id (roomCode), not the coin amount again
+        await rewardUser(
+          rawDb,
+          io,
+          winner.userId,
+          WINNER_REWARD,
+          "LUDO_WINNING",
+          currentRoom.roomCode,
+          0 // credit
+        );
+      } catch (err) {
+        console.error("ludo abandon reward error:", err);
+      }
+
+      io.to(currentRoom.roomCode).emit("ludo:gameOver", {
+        winnerUserId: winner.userId,
+        winnerColor: winner.color,
+        reason: "opponents_left",
+      });
+      liveRooms.delete(currentRoom.roomCode);
+    } else {
+      // everyone disconnected — no winner, just close the room out
+      currentRoom.status = "completed";
+      try {
+        await db.execute(`UPDATE ludo_rooms SET status='completed' WHERE id=?`, [currentRoom.id]);
+      } catch (err) {
+        console.error("ludo all-abandoned cleanup error:", err);
+      }
+      io.to(currentRoom.roomCode).emit("ludo:gameOver", {
+        winnerUserId: null,
+        reason: "all_left",
+      });
+      liveRooms.delete(currentRoom.roomCode);
+    }
+  }, RECONNECT_GRACE_MS);
+}
+
 // ============================================================
 // REST ROUTES
 // ============================================================
@@ -230,6 +307,7 @@ ludoRouter.post("/create", verifyToken, async (req, res) => {
       players: [],
       turnIndex: 0,
       lastDice: null,
+      abandonTimeout: null, // ✅ NEW
     });
 
     res.json({ success: true, roomCode, maxPlayers, entryFee: ENTRY_FEE, winnerReward: WINNER_REWARD });
@@ -263,7 +341,6 @@ ludoRouter.post("/join", verifyToken, async (req, res) => {
     const { roomCode } = req.body;
 
     const userId = getUserId(req);
-    const sessionToken = req.user?.sessionToken;
     const io = req.app.get("io");
 
     const room = liveRooms.get(roomCode);
@@ -272,6 +349,26 @@ ludoRouter.post("/join", verifyToken, async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Room not found",
+      });
+    }
+
+    // ✅ Reconnect path: same user rejoining a room they already paid
+    // into (e.g. after the frontend's auto-rejoin-on-mount kicks in) —
+    // treat this as a resume, not a fresh join / second entry fee.
+    const existingPlayer = room.players.find((p) => p.userId === userId);
+    if (existingPlayer) {
+      if (room.abandonTimeout) {
+        clearTimeout(room.abandonTimeout);
+        room.abandonTimeout = null;
+      }
+      existingPlayer.active = true;
+
+      return res.json({
+        success: true,
+        roomCode,
+        color: existingPlayer.color,
+        seatNo: existingPlayer.seatNo,
+        state: publicState(room),
       });
     }
 
@@ -288,31 +385,6 @@ ludoRouter.post("/join", verifyToken, async (req, res) => {
         message: "Room is full",
       });
     }
-/*
-    if (room.players.some((p) => p.userId === userId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Already joined",
-      });
-    }*/
-   const existingPlayer = room.players.find(
-    p => p.userId === userId
-);
-
-if (existingPlayer) {
-
-    existingPlayer.active = true;
-
-    return res.json({
-        success:true,
-        roomCode,
-        color: existingPlayer.color,
-        seatNo: existingPlayer.seatNo,
-        reconnect:true,
-        state: publicState(room)
-    });
-
-}
 
     // Debit Entry Fee
     const debit = 1;
@@ -322,7 +394,7 @@ if (existingPlayer) {
       userId,
       ENTRY_FEE,
       "LUDO_FEES",
-      ENTRY_FEE,
+      roomCode, // ✅ FIX: reference id, was ENTRY_FEE (duplicate of the coin amount) before
       debit
     );
 
@@ -351,8 +423,6 @@ if (existingPlayer) {
       consecutiveSixes: 0,
       socketId: null,
       active: true,
-      reconnectTimer:null,
-    disconnectedAt:null
     });
 
     // Send latest room state
@@ -374,10 +444,6 @@ if (existingPlayer) {
 
       io.to(roomCode).emit("ludo:state", publicState(room));
 
-     /* io.to(roomCode).emit("ludo:gameStarted", {
-        state: publicState(room),
-      });
-*/
       io.to(roomCode).emit("ludo:turnChanged", {
         turnColor: room.players[0].color,
       });
@@ -418,7 +484,6 @@ export async function registerLudoSocket(io, socket) {
   // use — no separate JWT logic to keep in sync.
   const user = await authenticateSocket(socket);
   const userId = resolveUserId(user);
-  const sessionToken = user?.sessionToken || null;
 
   if (!userId) {
     socket.emit("ludo:error", { message: "Socket authentication failed — please reconnect and try again" });
@@ -436,20 +501,24 @@ export async function registerLudoSocket(io, socket) {
     player.socketId = socket.id;
     player.active = true;
     socket.join(roomCode);
+
+    // ✅ NEW: this player is back — cancel any pending "opponents left"
+    // countdown for this room so the game doesn't get settled out from
+    // under them right as they reconnect.
+    if (room.abandonTimeout) {
+      clearTimeout(room.abandonTimeout);
+      room.abandonTimeout = null;
+    }
+
     if (
-    room.status === "playing" &&
-    room.players.every(p => p.socketId)
-) {
-
-   /* io.to(roomCode).emit("ludo:gameStarted", {
-        state: publicState(room)
-    });
-*/
-    io.to(roomCode).emit("ludo:turnChanged", {
+      room.status === "playing" &&
+      room.players.every(p => p.socketId)
+    ) {
+      io.to(roomCode).emit("ludo:turnChanged", {
         turnColor: room.players[room.turnIndex].color
-    });
+      });
+    }
 
-}
     socket.data.ludoRoomCode = roomCode;
 
     io.to(roomCode).emit("ludo:state", publicState(room));
@@ -521,6 +590,13 @@ export async function registerLudoSocket(io, socket) {
     const allFinished = player.pawns.every((s) => s === 57);
     if (allFinished) {
       room.status = "completed";
+
+      // ✅ a normal finish also means any pending abandon-timer is stale
+      if (room.abandonTimeout) {
+        clearTimeout(room.abandonTimeout);
+        room.abandonTimeout = null;
+      }
+
       await db.execute(`UPDATE ludo_rooms SET status='completed', winner_user_id=? WHERE id=?`, [
         userId,
         room.id,
@@ -531,7 +607,8 @@ export async function registerLudoSocket(io, socket) {
       ]);
 
       try {
-        await rewardUser(rawDb, io, userId, WINNER_REWARD, "LUDO_WINNING", WINNER_REWARD, 0); // 0 = credit
+        // ✅ FIX: 6th arg is the reference id (roomCode), not the coin amount again
+        await rewardUser(rawDb, io, userId, WINNER_REWARD, "LUDO_WINNING", roomCode, 0); // 0 = credit
       } catch (err) {
         console.error("ludo winner reward error:", err);
       }
@@ -551,7 +628,6 @@ export async function registerLudoSocket(io, socket) {
     }
   });
 
-  /*
   socket.on("disconnect", () => {
     const roomCode = socket.data.ludoRoomCode;
     if (!roomCode) return;
@@ -561,161 +637,18 @@ export async function registerLudoSocket(io, socket) {
     const player = room.players.find((p) => p.socketId === socket.id);
     if (player) player.active = false;
 
+    // ✅ let everyone else's UI reflect the disconnect (state.players[].active)
+    io.to(roomCode).emit("ludo:state", publicState(room));
+
     const activePlayers = room.players.filter((p) => p.active);
-    if (room.status === "playing" && activePlayers.length === 1) {
-      const winner = activePlayers[0];
-      room.status = "completed";
-      db.execute(`UPDATE ludo_rooms SET status='completed', winner_user_id=? WHERE id=?`, [
-        winner.userId,
-        room.id,
-      ]).catch((e) => console.error(e));
 
-      rewardUser(rawDb, io, winner.userId, WINNER_REWARD, "LUDO_WINNING", WINNER_REWARD, 0).catch((e) =>
-        console.error("ludo disconnect reward error:", e)
-      );
-
-      io.to(roomCode).emit("ludo:gameOver", { winnerUserId: winner.userId, winnerColor: winner.color, reason: "opponents_left" });
-      liveRooms.delete(roomCode);
+    if (room.status === "playing" && activePlayers.length <= 1) {
+      // ✅ FIX: don't end the game instantly — give a reconnect window
+      scheduleGameOverIfStillAbandoned(io, room);
     } else if (room.status === "playing" && room.players[room.turnIndex]?.socketId === socket.id) {
       room.turnIndex = nextTurnIndex(room);
       room.lastDice = null;
       io.to(roomCode).emit("ludo:turnChanged", { turnColor: room.players[room.turnIndex]?.color });
     }
-  });*/
-
-  function startTurnTimeout(room) {
-  if (room.turnTimeout) clearTimeout(room.turnTimeout);
-
-  room.turnTimeout = setTimeout(() => {
-    const currentPlayer = room.players.find(p => p.color === room.turnColor);
-    if (currentPlayer && !currentPlayer.connected) {
-      // auto-skip: turn agle player ko de do
-      advanceTurn(room);
-      io.to(room.roomCode).emit("ludo:turnChanged", { turnColor: room.turnColor });
-    }
-  }, 40000); // 40 second grace period
-}
-
-  socket.on("ludo:joinSocket", ({ roomCode }) => {
-
-  const room = liveRooms.get(roomCode);
-
-  if (!room) {
-    return socket.emit("ludo:error", {
-      message: "Room not found",
-    });
-  }
-
-  const player = room.players.find(
-    (p) => p.userId === socket.userId
-  );
-
-  if (!player) {
-    return socket.emit("ludo:error", {
-      message: "Player not found",
-    });
-  }
-
-  // Cancel disconnect timer
-  if (player.reconnectTimer) {
-    clearTimeout(player.reconnectTimer);
-    player.reconnectTimer = null;
-  }
-
-  player.socketId = socket.id;
-  player.active = true;
-  player.disconnectedAt = null;
-
-  socket.data.ludoRoomCode = roomCode;
-
-  socket.join(roomCode);
-
-  io.to(roomCode).emit("ludo:playerStatus", {
-    userId: player.userId,
-    connected: true,
   });
-
-  socket.emit("ludo:state", room);
-});
-
-  socket.on("disconnect", () => {
-  const roomCode = socket.data.ludoRoomCode;
-  if (!roomCode) return;
-
-  const room = liveRooms.get(roomCode);
-  if (!room) return;
-
-  const player = room.players.find((p) => p.socketId === socket.id);
-  if (!player) return;
-
-  // Already disconnected
-  if (!player.active) return;
-
-  // Mark offline only
-  player.active = false;
-  player.disconnectedAt = Date.now();
-
-  io.to(roomCode).emit("ludo:playerStatus", {
-    userId: player.userId,
-    connected: false,
-  });
-
-  // If player disconnects during his turn,
-  // start timeout (don't change turn immediately)
-  if (
-    room.status === "playing" &&
-    room.players[room.turnIndex]?.userId === player.userId
-  ) {
-    startTurnTimeout(room);
-  }
-
-  // Start reconnect grace timer
-  player.reconnectTimer = setTimeout(async () => {
-
-    // Player came back
-    if (player.active) return;
-
-    const activePlayers = room.players.filter((p) => p.active);
-
-    // Only one player left
-    if (room.status === "playing" && activePlayers.length === 1) {
-
-      const winner = activePlayers[0];
-      room.status = "completed";
-
-      try {
-        await db.execute(
-          `UPDATE ludo_rooms
-             SET status='completed',
-                 winner_user_id=?
-           WHERE id=?`,
-          [winner.userId, room.id]
-        );
-
-        await rewardUser(
-          rawDb,
-          io,
-          winner.userId,
-          WINNER_REWARD,
-          "LUDO_WINNING",
-          WINNER_REWARD,
-          0
-        );
-      } catch (e) {
-        console.error("ludo disconnect reward error:", e);
-      }
-
-      io.to(roomCode).emit("ludo:gameOver", {
-        winnerUserId: winner.userId,
-        winnerColor: winner.color,
-        reason: "opponents_left",
-      });
-
-      liveRooms.delete(roomCode);
-    }
-
-  }, 45000); // 45 sec reconnect window
-});
-
-
 }

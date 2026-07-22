@@ -22,6 +22,7 @@
 // ============================================================
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useLudoActiveGame } from "../context/LudoActiveGameContext";
 
 // localStorage key used to remember "I'm currently in an active Ludo
 // room" across accidental navigation / app backgrounding / component
@@ -333,6 +334,7 @@ function buildBoardCells() {
 
 export default function LudoGame({ socket, apiBase = "/api/ludo" }) {
   const currentUser = useMemo(() => getCurrentUser(), []);
+  const { setActiveGame } = useLudoActiveGame();
 
   const [screen, setScreen] = useState("lobby"); // lobby | waiting | playing | over
   const [roomCode, setRoomCode] = useState("");
@@ -437,6 +439,37 @@ export default function LudoGame({ socket, apiBase = "/api/ludo" }) {
     window.addEventListener("popstate", blockBack);
     return () => window.removeEventListener("popstate", blockBack);
   }, []);
+
+  // ------------------------------------------------------------
+  // ✅ NEW: keep the global "active game" signal in sync so the
+  // floating badge (visible on every OTHER page) always reflects the
+  // current room/turn — and clear it once the game genuinely ends so
+  // the badge disappears app-wide.
+  // ------------------------------------------------------------
+  useEffect(() => {
+    if ((screen === "waiting" || screen === "playing") && roomCode) {
+      setActiveGame({
+        roomCode,
+        myColor,
+        isMyTurn: state?.turnColor === myColor,
+        status: screen,
+      });
+    } else {
+      setActiveGame(null);
+    }
+  }, [screen, roomCode, myColor, state?.turnColor, setActiveGame]);
+
+  // clear the badge on unmount too, ONLY if the game already ended —
+  // if it's still active we deliberately keep it so the badge stays
+  // visible on other pages after navigating away.
+  useEffect(() => {
+    return () => {
+      if (screen === "over" || screen === "lobby") {
+        setActiveGame(null);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen]);
 
   useEffect(() => {
     if (!socket) return;
