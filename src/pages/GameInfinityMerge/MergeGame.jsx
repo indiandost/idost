@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
 const API = import.meta.env.VITE_API_URL;
@@ -29,6 +29,9 @@ export default function MergeGame() {
     Array(SIZE).fill(null).map(() => Array(SIZE).fill(0))
   );
 
+  // ✅ NEW: tracks the finger's starting position for swipe detection
+  const touchStartRef = useRef(null);
+
   // ---------- initial load ----------
   useEffect(() => {
     loadPage();
@@ -46,14 +49,12 @@ export default function MergeGame() {
   async function loadPage() {
     try {
       const lb = await axios.get(`${API}/api/merge/leaderboard`);
-      // ✅ FIX: controller { success, leaderboard: [...] } bhejta hai — array unwrap karna zaroori hai
       setLeaderboard(lb.data?.leaderboard || []);
 
       const me = await axios.get(`${API}/api/merge/me`, {
-        headers: { Authorization: `Bearer ${token}` }, // ✅ FIX: stray "S" hataya
+        headers: { Authorization: `Bearer ${token}` },
       });
       setMyStats(me.data);
-      // ✅ FIX: controller bestScore (camelCase) bhejta hai, best_score nahi
       setBestScore(me.data?.bestScore || 0);
     } catch (err) {
       console.log(err);
@@ -246,14 +247,39 @@ export default function MergeGame() {
     return () => window.removeEventListener("keydown", keyHandler);
   }, [board, started, gameOver]);
 
+  // ---------- ✅ NEW: touch / swipe controls for mobile ----------
+  function handleTouchStart(e) {
+    if (!started || gameOver) return;
+    const t = e.changedTouches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  }
+
+  function handleTouchEnd(e) {
+    if (!started || gameOver) return;
+    if (!touchStartRef.current) return;
+
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStartRef.current.x;
+    const dy = t.clientY - touchStartRef.current.y;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+    const SWIPE_THRESHOLD = 20; // pixels — below this, treat as a tap, not a swipe
+
+    touchStartRef.current = null;
+
+    if (Math.max(absX, absY) < SWIPE_THRESHOLD) return;
+
+    if (absX > absY) {
+      dx > 0 ? moveRight() : moveLeft();
+    } else {
+      dy > 0 ? moveDown() : moveUp();
+    }
+  }
+
   // ---------- end of game: submit result to backend ----------
   async function endGame(finalScore, finalHighest, finalMoves) {
     setGameOver(true);
     try {
-      // ✅ FIX: endpoint /end nahi, /submit hai (routes/controller me yahi define hai)
-      // ✅ FIX: body me sessionToken bhejna hai (controller isi field ko dhoondta hai)
-      // Note: controller sirf { sessionToken, score } accept karta hai — highestTile/moves/duration
-      // sirf local UI display ke liye hain, backend inhe store nahi karta abhi
       const res = await axios.post(
         `${API}/api/merge/submit`,
         {
@@ -264,17 +290,15 @@ export default function MergeGame() {
       );
 
       if (res.data?.success) {
-        // ✅ FIX: bestScore (camelCase)
         if (res.data.bestScore !== undefined) {
           setBestScore(res.data.bestScore);
         } else if (finalScore > bestScore) {
           setBestScore(finalScore);
         }
 
-        setLastResult(res.data); // isNewBest, rank, reward — game-over banner me dikhane ke liye
+        setLastResult(res.data);
       }
 
-      // refresh leaderboard / stats after submitting
       loadPage();
     } catch (err) {
       console.log(err);
@@ -294,9 +318,7 @@ export default function MergeGame() {
         return;
       }
 
-      // ✅ FIX: controller sessionToken bhejta hai, sessionId nahi
       setSessionToken(res.data.sessionToken);
-      // ✅ FIX: controller coinsLeft nahi, entryFee bhejta hai
       setEntryFee(res.data.entryFee || 0);
       setScore(0);
       setMoves(0);
@@ -406,8 +428,14 @@ export default function MergeGame() {
                 </div>
               )}
 
-              {/* Grid */}
-              <div className="grid grid-cols-4 gap-3 bg-slate-700 rounded-2xl p-3">
+              {/* ✅ NEW: swipe listeners + touchAction:none stops the page from
+                  scrolling/pulling-to-refresh while the player is swiping the board */}
+              <div
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                style={{ touchAction: "none" }}
+                className="grid grid-cols-4 gap-3 bg-slate-700 rounded-2xl p-3 select-none"
+              >
                 {board.map((row, rowIndex) =>
                   row.map((cell, colIndex) => (
                     <div
@@ -446,6 +474,40 @@ export default function MergeGame() {
                   ))
                 )}
               </div>
+
+              {/* ✅ NEW: on-screen D-pad — fallback for players who prefer
+                  tapping over swiping, and helps on smaller/older phones
+                  where swipe gestures can be less precise */}
+              {started && !gameOver && (
+                <div className="flex flex-col items-center gap-2 mt-5">
+                  <button
+                    onClick={moveUp}
+                    className="w-14 h-14 rounded-xl bg-slate-700 hover:bg-slate-600 active:scale-90 transition flex items-center justify-center text-2xl font-bold"
+                  >
+                    ↑
+                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={moveLeft}
+                      className="w-14 h-14 rounded-xl bg-slate-700 hover:bg-slate-600 active:scale-90 transition flex items-center justify-center text-2xl font-bold"
+                    >
+                      ←
+                    </button>
+                    <button
+                      onClick={moveDown}
+                      className="w-14 h-14 rounded-xl bg-slate-700 hover:bg-slate-600 active:scale-90 transition flex items-center justify-center text-2xl font-bold"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      onClick={moveRight}
+                      className="w-14 h-14 rounded-xl bg-slate-700 hover:bg-slate-600 active:scale-90 transition flex items-center justify-center text-2xl font-bold"
+                    >
+                      →
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -474,7 +536,6 @@ export default function MergeGame() {
                       <div className="text-xs text-slate-400">Best Score</div>
                     </div>
                   </div>
-                  {/* ✅ FIX: controller bestScore (camelCase) bhejta hai */}
                   <div className="font-bold">{p.bestScore}</div>
                 </div>
               ))}
@@ -482,53 +543,54 @@ export default function MergeGame() {
           </div>
         </div>
         {/* ================= HOW TO PLAY ================= */}
-<div className="mt-6 rounded-2xl bg-slate-800/70 border border-slate-700 p-5">
+        <div className="mt-6 rounded-2xl bg-slate-800/70 border border-slate-700 p-5">
 
-    <h3 className="text-lg font-bold text-yellow-400 mb-3 flex items-center gap-2">
-        🎮 How to Play Infinity Merge
-    </h3>
+          <h3 className="text-lg font-bold text-yellow-400 mb-3 flex items-center gap-2">
+            🎮 How to Play Infinity Merge
+          </h3>
 
-    <div className="space-y-3 text-sm text-slate-300 leading-7">
+          <div className="space-y-3 text-sm text-slate-300 leading-7">
 
-        <p>
-            • Tap or swipe <span className="text-white font-semibold">Up, Down, Left or Right</span> to move all blocks.
-        </p>
+            <p>
+              • On desktop, use <span className="text-white font-semibold">Arrow Keys</span>. On mobile,{" "}
+              <span className="text-white font-semibold">swipe</span> anywhere on the board, or use the on-screen arrows below it.
+            </p>
 
-        <p>
-            • When two blocks with the <span className="text-green-400 font-semibold">same number</span> touch each other,
-            they merge into one bigger block.
-        </p>
+            <p>
+              • When two blocks with the <span className="text-green-400 font-semibold">same number</span> touch each other,
+              they merge into one bigger block.
+            </p>
 
-        <p>
-            Example:
-            <span className="ml-2 font-bold text-cyan-400">
+            <p>
+              Example:
+              <span className="ml-2 font-bold text-cyan-400">
                 2 + 2 = 4 → 4 + 4 = 8 → 8 + 8 = 16 → 32 → 64 → 128...
-            </span>
-        </p>
+              </span>
+            </p>
 
-        <p>
-            • Every merge increases your <span className="text-yellow-400 font-semibold">Score</span>.
-        </p>
+            <p>
+              • Every merge increases your <span className="text-yellow-400 font-semibold">Score</span>.
+            </p>
 
-        <p>
-            • The game ends when there are <span className="text-red-400 font-semibold">no more possible moves</span>.
-        </p>
+            <p>
+              • The game ends when there are <span className="text-red-400 font-semibold">no more possible moves</span>.
+            </p>
 
-        <p>
-            • Try to create the <span className="text-green-400 font-semibold">highest tile</span> and beat your own record.
-        </p>
+            <p>
+              • Try to create the <span className="text-green-400 font-semibold">highest tile</span> and beat your own record.
+            </p>
 
-        <p>
-            • Climb the <span className="text-orange-400 font-semibold">Global Leaderboard</span> and become the Champion.
-        </p>
+            <p>
+              • Climb the <span className="text-orange-400 font-semibold">Global Leaderboard</span> and become the Champion.
+            </p>
 
-        <div className="rounded-xl bg-slate-900 border border-yellow-600 p-4 mt-4 text-left">
+            <div className="rounded-xl bg-slate-900 border border-yellow-600 p-4 mt-4 text-left">
 
-            <div className="font-bold text-yellow-400 mb-2">
+              <div className="font-bold text-yellow-400 mb-2">
                 🏆 Tips to Score Higher
-            </div>
+              </div>
 
-            <ul className="list-disc pl-5 space-y-2 text-left">
+              <ul className="list-disc pl-5 space-y-2 text-left">
 
                 <li>Keep your biggest tile in one corner.</li>
 
@@ -540,12 +602,12 @@ export default function MergeGame() {
 
                 <li>Think 2–3 moves ahead.</li>
 
-            </ul>
+              </ul>
 
+            </div>
+
+          </div>
         </div>
-
-    </div>
-</div>
       </div>
     </div>
   );
